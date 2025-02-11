@@ -105,6 +105,8 @@
 // Function prototypes
 std::vector<std::string> readFieldList();
 void reset();
+void saveGenericExport(int);
+void saveGenericFields(int);
 
 //Globals
 
@@ -184,7 +186,7 @@ static bool profileLoaded = false;     // Check if incoming data was from a prof
 std::string displayFileName(const std::string& directory) {
     static std::string chosenName;
     std::vector<std::string> fileNames;
-    for (const auto& entry : std::filesystem::directory_iterator(directory))
+    for (const auto& entry : std::filesystem::directory_iterator(directory + "Profiles\\"))
     {
         std::string filename = entry.path().filename().string();
         size_t pos = filename.find("_profiles.txt");
@@ -225,7 +227,7 @@ std::string displayFileName(const std::string& directory) {
 
 // Option to delete existing profile
 bool deleteProfile(const std::string& directory, std::string& profileName) {
-    std::string filename = directory + profileName + "_profiles.txt";
+    std::string filename = directory + profileName;
 
     return std::filesystem::remove(filename);
 }
@@ -304,45 +306,7 @@ void showGenericExportWindow(bool* p_open) {
     //    ImVec2 center_window = ImGui::GetMainViewport()->GetCenter();
     //    ImGui::SetNextWindowPos(center_window, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     //    ImGui::SetNextWindowSize(ImVec2(display.x * .75, (display.y * .75)), ImGuiCond_Always);
-    //}
-
-
-    // Begin Generic Export Generator window
-    //if (!ImGui::Begin(("Generic Export Generator"), p_open, window_flags)) {
-    //    // Early out if window is collapsed
-    //    ImGui::End();
-    //    return;
-    //}
-        // Menu Bar
-        //if (ImGui::BeginMenuBar()) {
-        //    if (ImGui::BeginMenu("Menu")) {
-        //        if (ImGui::MenuItem("Fullscreen", NULL, &use_work_area));
-        //        ImGui::Separator();
-        //        if (ImGui::MenuItem("Close")) {
-        //            *p_open = false;
-        //        }
-        //        // End menu
-        //        ImGui::EndMenu();
-        //    }
-        //    if (ImGui::BeginMenu("Profiles")) {
-        //        // TODO: Add profile exports and imports for quicker generic export set up working with the same vendors
-        //        if (ImGui::MenuItem("Import Profile", NULL, &show_import_profile_window)) {
-        //            // Open window to import profile settings from file
-        //        };
-        //        ImGui::SetItemTooltip("Import saved settings from a local file");
-        //        // Open modal window to export profile settings
-        //        if (ImGui::MenuItem("Export Profile", NULL, &show_export_profile_window));
-        //        ImGui::SetItemTooltip("Writes current settings to a file for reuse later");
-
-        //        // End Profile menu
-        //        ImGui::EndMenu();
-        //    } 
-
-        //    // End menu bar
-        //    ImGui::EndMenuBar();
-        //}
-
-        
+    //}        
 
         // Open Import profile Window
         if (show_import_profile_window)
@@ -435,8 +399,10 @@ void showGenericExportWindow(bool* p_open) {
             }
             if (ImGui::BeginPopupModal("Confirm Delete")) {
                 ImGui::Text("Are you sure you want to delete %s", selected_profile.c_str());
-                if (ImGui::Button("Yes"))
-                    deleteProfile("C:\\ImplementationToolbox\\", selected_profile);
+                if (ImGui::Button("Yes")) {
+                    deleteProfile("C:\\ImplementationToolbox\\Profiles\\", selected_profile);
+                    ImGui::CloseCurrentPopup();
+                }
                 ImGui::SameLine();
                 if (ImGui::Button("No"))
                     ImGui::CloseCurrentPopup();
@@ -717,7 +683,6 @@ void showGenericExportWindow(bool* p_open) {
                         ImGui::EndGroup();
                     }
 
-
                     // End TreeNode
                     ImGui::EndTabItem();
                 }
@@ -848,8 +813,6 @@ void showGenericExportWindow(bool* p_open) {
                         // End Field table
                         ImGui::EndTable();
                     }
-
-                    // TODO: revist sorting list as updates are made.
                     // TODO: fix ordering fields
                     ImGui::BeginGroup();
                     // Leaving as is for now
@@ -1068,19 +1031,8 @@ void showGenericExportWindow(bool* p_open) {
             ImGui::SetNextWindowSize(ImVec2(ImGui::GetContentRegionMax().x * .8, ImGui::GetContentRegionMax().y * .8));
             // Begin the field list and order SQL Script output
             if (ImGui::BeginPopupModal("SQL Script Output", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
-                if (ImGui::BeginMenuBar()) {
-                    if (ImGui::BeginMenu("File")) {
-                        ImGui::BeginDisabled();
-                        ImGui::MenuItem("Save to file");
-                        ImGui::EndDisabled();
-                        // TODO add method to save output to file.
-                        ImGui::EndMenu();
-                    }
-                    // End the menu bar for SQL Script modal window
-                    ImGui::EndMenuBar();
-                }
-                
-                ImGui::BeginChild("SQL Output", ImVec2(ImGui::GetContentRegionMax().x, ImGui::GetContentRegionMax().y - 50), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+                // Begin child window to display sql script
+                ImGui::BeginChild("SQL Output", ImVec2(ImGui::GetContentRegionMax().x, ImGui::GetContentRegionMax().y - 55), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
                 // Begin the Generic Export option SQL Script output
                 ImGui::Text("--Updating the genexprt database with all provided information");
                 ImGui::Text("Use %s", rmsDb);
@@ -1180,113 +1132,28 @@ void showGenericExportWindow(bool* p_open) {
                 // End the sql output child window
                 ImGui::EndChild();
 
-                // Close button to exit the modal
-                if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
-                ImGui::SameLine();
-                // Button to copy text to clipboard for easy pasting
-                static int counter = 0;
-                if (ImGui::Button("Copy to clipboard", ImVec2(140, 0))) {
-                    // Begin the Generic Export option SQL Script output to clipboard
-                    ImGui::LogToClipboard();
-                    ImGui::LogText("--Updating the genexprt database with all provided information\n");
-                    ImGui::LogText("Use %s\n", rmsDb);
-                    ImGui::LogText("BEGIN TRANSACTION\n");
-                    ImGui::LogText("UPDATE genexprt SET filename = '%s' WHERE genexprtid = %i\n", exportName, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET username = '%s' WHERE genexprtid = %i\n", sftpUser, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET password = '%s' WHERE genexprtid = %i\n", sftpPass, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET ipaddress = '%s' WHERE genexprtid = %i\n", sftpIp, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET targetdir = '%s' WHERE genexprtid = %i\n", sftpTargetDir, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET agency = '%s' WHERE genexprtid = %i\n", agency, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET issftp = '%i' WHERE genexprtid = %i\n", isSftp, genexptid);
-                    switch (isPinReq) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET ispinreq = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET ispinreq = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
+                if (ImGui::BeginTable("ButtonBar", 4, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoHostExtendX /*| ImGuiTableFlags_Borders*/, ImVec2(ImGui::GetWindowSize().x, 0))) {
+                    ImGui::TableNextColumn();
+                    // Button to copy text to clipboard for easy pasting
+                    if (ImGui::Button("Copy to clipboard", ImVec2(140, 0))) { saveGenericExport(1); }
+                    ImGui::TableNextColumn();
+                    if (ImGui::Button("Save to file", ImVec2(140, 0))) { 
+                        saveGenericExport(0); 
+                        static bool saved = false;
+                        saved = true;
+                        if (saved) {
+                            ImGui::Text("File saved at: C:\\ImplementationToolbox\\SQL Output\\ % s_GenExprtScript.sql", exportName);
+                        }
                     }
-                    ImGui::LogText("UPDATE genexprt SET pintype = '%i' WHERE genexprtid = %i\n", pinType, genexptid);
-                    switch (includeHousing) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET inclhousng = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET inclhousng = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    }
-                    switch (combineHousing) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET combhousng = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET combhousng = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    }
-                    switch (combineStApt) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET combstrapt = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET combstrapt = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    }
-                    ImGui::LogText("UPDATE genexprt SET actcodetyp = '2' WHERE genexprtid = %i\n", genexptid);
-                    ImGui::LogText("UPDATE genexprt SET recordoptn = '%i' WHERE genexprtid = %i\n", recordOptn, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET filetype = '%i' WHERE genexprtid = %i\n", fileType, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET fileoptn = '%i' WHERE genexprtid = %i\n", fileOptn, genexptid);
-                    switch (exportNow) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET exprtnow = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET exprtnow = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    }
-                    ImGui::LogText("UPDATE genexprt SET createoptn = '%i' WHERE genexprtid = %i\n", createOptn, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET cashbalfmt = '0' WHERE genexprtid = %i\n", genexptid);
-                    ImGui::LogText("UPDATE genexprt SET dateformat = '%i' WHERE genexprtid = %i\n", dateFormat, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET writedelay = '%i' WHERE genexprtid = %i\n", writeDelay, genexptid);
-                    switch (retainHistory) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET retainhist = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET retainhist = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    }
-                    switch (noQuotes) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET noquotes = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET noquotes = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    }
-                    switch (secureSSN) {
-                    case true:
-                        ImGui::LogText("UPDATE genexprt SET securessn = '1' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    case false:
-                        ImGui::LogText("UPDATE genexprt SET securessn = '0' WHERE genexprtid = %i\n", genexptid);
-                        break;
-                    }
-                    ImGui::LogText("UPDATE genexprt SET inactive = '0' WHERE genexprtid = %i\n", genexptid);
-                    ImGui::LogText("UPDATE genexprt SET expchar1 = '%c' WHERE genexprtid = %i\n", activeField, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET expchar2 = '%c' WHERE genexprtid = %i\n", inActiveField, genexptid);
-                    ImGui::LogText("UPDATE genexprt SET delimiter = '%s' WHERE genexprtid = %i\n", delimiter, genexptid);
-                    ImGui::LogText("--If anything looks incorrect, use rollback to undo insert, or commit to apply changes\n");
-                    ImGui::LogText("SELECT * FROM genexprt WHERE genexprtid = %i\n", genexptid);
-                    ImGui::LogText("--COMMIT\n");
-                    ImGui::LogText("--ROLLBACK");
-                    ImGui::LogFinish();
-                    counter++;
-                }
-                if (counter & 1)
-                {
-                    ImGui::SameLine();
-                    ImGui::Text("Copied to clipboard!");
-                }
+                    ImGui::TableNextColumn();
+                    ImGui::Dummy(ImVec2(ImGui::GetWindowContentRegionMax().x - 453, 0));
+                    ImGui::TableNextColumn();
+                    // Close button to exit the modal
+                    if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
+                    
+                    // End button bar table
+                    ImGui::EndTable();
+                }                
 
                 // End Generic Export SQL window
                 ImGui::EndPopup();
@@ -1297,16 +1164,8 @@ void showGenericExportWindow(bool* p_open) {
             ImGui::SetNextWindowPos(center2, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
             ImGui::SetNextWindowSize(ImVec2(ImGui::GetContentRegionMax().x * .8, ImGui::GetContentRegionMax().y * .8));
             if (ImGui::BeginPopupModal("SQL Fields", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
-                if (ImGui::BeginMenuBar()) {
-                    if (ImGui::BeginMenu("Menu")) {
-                        ImGui::MenuItem("Save to file");
-                        // Eventually add method to save output to file.
-                        ImGui::EndMenu();
-                    }
-                    ImGui::EndMenuBar();
-                }
                 // Begin SQL Script generation
-                ImGui::BeginChild("SqlScriptGeneration", ImVec2(ImGui::GetContentRegionMax().x, ImGui::GetContentRegionMax().y - 50), NULL, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+                ImGui::BeginChild("SqlScriptGeneration", ImVec2(ImGui::GetContentRegionMax().x, ImGui::GetContentRegionMax().y - 55), NULL, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
                 ImGui::Text("--Make sure you're modifying the correct export before running the rest of the script ");
                 if (rmsDb == "")
                     ImGui::Text("USE <enter database name>;");
@@ -1348,62 +1207,31 @@ void showGenericExportWindow(bool* p_open) {
                 // End the script generator child window
                 ImGui::EndChild();
 
-                // Close button to exit the modal
-                if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
-                ImGui::SameLine();
-                static int clicked = 0;
-                if (ImGui::Button("Copy to clipboard", ImVec2(140, 0))) {
-                    ImGui::LogToClipboard();
-                    // Begin SQL Script generation logging to clipboard
-                    ImGui::LogText("--Make sure you're modifying the correct export before running the rest of the script \n");
-                    if (profile.getRmsDb() == " ")
-                        ImGui::LogText("USE <enter database name>;\n");
-                    else
-                        ImGui::LogText("USE %s;\n", rmsDb);
-
-                    ImGui::LogText("SELECT * FROM genexprt WHERE genexprtid = %i\n", genexptid);
-                    ImGui::LogText("BEGIN TRANSACTION\n");
-                    ImGui::LogText("UPDATE genflds SET altfldname = 'x' WHERE fldname NOT IN (");
-                    // Get the list of fields from selected list
-                    // Get the list of fields from selected list
-                    for (int i = 0; i < selectedId.size(); i++)
-                    {
-                        ImGui::SameLine();
-                        if (i > 0) {
-                            ImGui::Text(",'%s'", selectedFieldName[i].c_str());
-                        }
-                        // Don't include a comma on the first one
-                        else {
-                            ImGui::Text("'%s'", selectedFieldName[i].c_str());
+                if (ImGui::BeginTable("ButtonBar2", 4, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoHostExtendX /*| ImGuiTableFlags_Borders*/, ImVec2(ImGui::GetWindowSize().x, 0))) {
+                    ImGui::TableNextColumn();
+                    // Button to copy text to clipboard for easy pasting
+                    if (ImGui::Button("Copy to clipboard", ImVec2(140, 0))) { saveGenericFields(1); }
+                    ImGui::TableNextColumn();
+                    if (ImGui::Button("Save to file", ImVec2(140, 0))) { 
+                        saveGenericFields(0); 
+                        static bool saved = false;
+                        saved = true;
+                        if (saved) {
+                            ImGui::Text("File saved at: C:\\ImplementationToolbox\\SQL Output\\ % s_GenFldsScript.sql", exportName);
                         }
                     }
-                    ImGui::SameLine();
-                    ImGui::LogText(")\n");
-                    ImGui::LogText("AND genexprtid = %i\n", genexptid);
-                    ImGui::LogText("GO\n");
-                    ImGui::LogText("--The following script segment will set the field order of each field based on the order you selected them in initially\n");
-                    // Write out all the field names, the order they are presented in, and which ID they belong to
-                    for (int i = 0; i < selectedId.size(); i++)
-                    {
-                        ImGui::Text("UPDATE genflds SET fieldorder = %i WHERE fldname = '%s' AND genexprtid = %i", i, selectedFieldName[i].c_str(), genexptid);
-                    }
-                    ImGui::LogText("--Run the select to make sure your update was correct before committing\n");
-                    ImGui::LogText("SELECT * FROM genflds WHERE genexprtid = %i AND altfldname != 'x' ORDER BY fieldorder ASC\n", genexptid);
-                    ImGui::LogText("--If update was correct run commit, otherwise run a ROLLBACK to undo it\n");
-                    ImGui::LogText("--ROLLBACK\n");
-                    ImGui::LogText("--COMMIT");
-                    ImGui::LogFinish();
-                    clicked++;
-                }
-                if (clicked & 1)
-                {
-                    ImGui::SameLine();
-                    ImGui::Text("Copied to clipboard!");
-                }
+                    ImGui::TableNextColumn();
+                    ImGui::Dummy(ImVec2(ImGui::GetWindowContentRegionMax().x - 453, 0));
+                    ImGui::TableNextColumn();
+                    // Close button to exit the modal
+                    if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
 
+                    // End button bar table
+                    ImGui::EndTable();
+                }
                 // End Popup Modal
                 ImGui::EndPopup();
-        }
+            }
     // End Generic Export Window
     //ImGui::End();
 }
@@ -1447,4 +1275,160 @@ void reset() {
     genexptid = 0;
 
     ImGui::OpenPopup("Profile Reset");
+}
+
+/// <summary>
+/// Send an int through to tell it if you're logging to clipboard or the file.
+/// </summary>
+/// <param name="option"> 0 represents logging sql to a file, 1 represents logging to clipboard</param>
+void saveGenericExport(int option) {
+    char fileNameBuffer[1024];
+    sprintf(fileNameBuffer, "C:\\ImplementationToolbox\\SQL Output\\%s_GenExprtScript.sql", exportName);
+    if (option == 0)
+        ImGui::LogToFile(0, fileNameBuffer);
+    // Begin the Generic Export option SQL Script output to clipboard
+    else if (option == 1)
+        ImGui::LogToClipboard();
+
+    ImGui::LogText("--Updating the genexprt database with all provided information\n");
+    ImGui::LogText("Use %s\n", rmsDb);
+    ImGui::LogText("BEGIN TRANSACTION\n");
+    ImGui::LogText("UPDATE genexprt SET filename = '%s' WHERE genexprtid = %i\n", exportName, genexptid);
+    ImGui::LogText("UPDATE genexprt SET username = '%s' WHERE genexprtid = %i\n", sftpUser, genexptid);
+    ImGui::LogText("UPDATE genexprt SET password = '%s' WHERE genexprtid = %i\n", sftpPass, genexptid);
+    ImGui::LogText("UPDATE genexprt SET ipaddress = '%s' WHERE genexprtid = %i\n", sftpIp, genexptid);
+    ImGui::LogText("UPDATE genexprt SET targetdir = '%s' WHERE genexprtid = %i\n", sftpTargetDir, genexptid);
+    ImGui::LogText("UPDATE genexprt SET agency = '%s' WHERE genexprtid = %i\n", agency, genexptid);
+    ImGui::LogText("UPDATE genexprt SET issftp = '%i' WHERE genexprtid = %i\n", isSftp, genexptid);
+    switch (isPinReq) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET ispinreq = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET ispinreq = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    ImGui::LogText("UPDATE genexprt SET pintype = '%i' WHERE genexprtid = %i\n", pinType, genexptid);
+    switch (includeHousing) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET inclhousng = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET inclhousng = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    switch (combineHousing) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET combhousng = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET combhousng = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    switch (combineStApt) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET combstrapt = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET combstrapt = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    ImGui::LogText("UPDATE genexprt SET actcodetyp = '2' WHERE genexprtid = %i\n", genexptid);
+    ImGui::LogText("UPDATE genexprt SET recordoptn = '%i' WHERE genexprtid = %i\n", recordOptn, genexptid);
+    ImGui::LogText("UPDATE genexprt SET filetype = '%i' WHERE genexprtid = %i\n", fileType, genexptid);
+    ImGui::LogText("UPDATE genexprt SET fileoptn = '%i' WHERE genexprtid = %i\n", fileOptn, genexptid);
+    switch (exportNow) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET exprtnow = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET exprtnow = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    ImGui::LogText("UPDATE genexprt SET createoptn = '%i' WHERE genexprtid = %i\n", createOptn, genexptid);
+    ImGui::LogText("UPDATE genexprt SET cashbalfmt = '0' WHERE genexprtid = %i\n", genexptid);
+    ImGui::LogText("UPDATE genexprt SET dateformat = '%i' WHERE genexprtid = %i\n", dateFormat, genexptid);
+    ImGui::LogText("UPDATE genexprt SET writedelay = '%i' WHERE genexprtid = %i\n", writeDelay, genexptid);
+    switch (retainHistory) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET retainhist = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET retainhist = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    switch (noQuotes) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET noquotes = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET noquotes = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    switch (secureSSN) {
+    case true:
+        ImGui::LogText("UPDATE genexprt SET securessn = '1' WHERE genexprtid = %i\n", genexptid);
+        break;
+    case false:
+        ImGui::LogText("UPDATE genexprt SET securessn = '0' WHERE genexprtid = %i\n", genexptid);
+        break;
+    }
+    ImGui::LogText("UPDATE genexprt SET inactive = '0' WHERE genexprtid = %i\n", genexptid);
+    ImGui::LogText("UPDATE genexprt SET expchar1 = '%c' WHERE genexprtid = %i\n", activeField, genexptid);
+    ImGui::LogText("UPDATE genexprt SET expchar2 = '%c' WHERE genexprtid = %i\n", inActiveField, genexptid);
+    ImGui::LogText("UPDATE genexprt SET delimiter = '%s' WHERE genexprtid = %i\n", delimiter, genexptid);
+    ImGui::LogText("--If anything looks incorrect, use rollback to undo insert, or commit to apply changes\n");
+    ImGui::LogText("SELECT * FROM genexprt WHERE genexprtid = %i\n", genexptid);
+    ImGui::LogText("--COMMIT\n");
+    ImGui::LogText("--ROLLBACK");
+    ImGui::LogFinish();
+
+    
+}
+void saveGenericFields(int option) {
+    char fileNameBuffer[1024];
+    sprintf(fileNameBuffer, "C:\\ImplementationToolbox\\SQL output\\%s_GenFldsScript.sql", exportName);
+    if (option == 0)
+        ImGui::LogToFile(0, fileNameBuffer);
+    else if(option == 1)
+        ImGui::LogToClipboard();
+    // Begin SQL Script generation logging to clipboard
+    ImGui::LogText("--Make sure you're modifying the correct export before running the rest of the script \n");
+    if (profile.getRmsDb() == " ")
+        ImGui::LogText("USE <enter database name>;\n");
+    else
+        ImGui::LogText("USE %s;\n", rmsDb);
+
+    ImGui::LogText("SELECT * FROM genexprt WHERE genexprtid = %i\n", genexptid);
+    ImGui::LogText("BEGIN TRANSACTION\n");
+    ImGui::LogText("UPDATE genflds SET altfldname = 'x' WHERE fldname NOT IN (");
+    // Get the list of fields from selected list
+    // Get the list of fields from selected list
+    for (int i = 0; i < selectedId.size(); i++)
+    {
+        ImGui::SameLine();
+        if (i > 0) {
+            ImGui::Text(",'%s'", selectedFieldName[i].c_str());
+        }
+        // Don't include a comma on the first one
+        else {
+            ImGui::Text("'%s'", selectedFieldName[i].c_str());
+        }
+    }
+    ImGui::SameLine();
+    ImGui::LogText(")\n");
+    ImGui::LogText("AND genexprtid = %i\n", genexptid);
+    ImGui::LogText("GO\n");
+    ImGui::LogText("--The following script segment will set the field order of each field based on the order you selected them in initially\n");
+    // Write out all the field names, the order they are presented in, and which ID they belong to
+    for (int i = 0; i < selectedId.size(); i++)
+    {
+        ImGui::Text("UPDATE genflds SET fieldorder = %i WHERE fldname = '%s' AND genexprtid = %i", i, selectedFieldName[i].c_str(), genexptid);
+    }
+    ImGui::LogText("--Run the select to make sure your update was correct before committing\n");
+    ImGui::LogText("SELECT * FROM genflds WHERE genexprtid = %i AND altfldname != 'x' ORDER BY fieldorder ASC\n", genexptid);
+    ImGui::LogText("--If update was correct run commit, otherwise run a ROLLBACK to undo it\n");
+    ImGui::LogText("--ROLLBACK\n");
+    ImGui::LogText("--COMMIT");
+    ImGui::LogFinish();
 }
