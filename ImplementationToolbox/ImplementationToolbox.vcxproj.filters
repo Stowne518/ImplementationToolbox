@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="genericexport_window.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="fieldOrderTable.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="readFieldList.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlConnection.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlQueryBuilder.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="xmlParser.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_demo.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\backends\imgui_impl_dx9.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\backends\imgui_impl_win32.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_tables.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_widgets.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="oneButtonRefresh_window.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fieldOrderTable.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="genericexport_window.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="oneButtonRefresh_window.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="readFieldList.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlConnection.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlQueryBuilder.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="systemFunctions.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="xmlParser.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\imconfig.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\imgui.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\backends\imgui_impl_dx9.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\backends\imgui_impl_win32.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\imgui_internal.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.txt" />
+    <None Include="..\..\misc\debuggers\imgui.natstepfilter">
+      <Filter>imgui</Filter>
+    </None>
+    <None Include="..\..\misc\debuggers\imgui.natvis">
+      <Filter>imgui</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{c6619c97-c9ea-4f45-97a2-335b7a5b09cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{aa956be9-5e47-4649-9177-45bd4152769c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{e0af5dc3-6998-4a39-893c-265a4600dd88}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
