@@ -302,29 +302,23 @@ int main(int, char**)
             sqlUsername = std::string(usernameBuffer);
             sqlPassword = std::string(passwordBuffer);
 
-            // std::string connectionString = "DRIVER={SQL SERVER};SERVER=" + sqlServerName + ";DATABASE=" + databaseName + ";UID=" + sqlUsername + ";PWD=" + sqlPassword + ";";
             std::string connectionString = "Driver={ODBC Driver 17 for SQL Server};Server=" + sqlServerName + ";Database=" + databaseName + ";UID=" + sqlUsername + ";PWD=" + sqlPassword + ";";
 
             if (connection_attempted == false || connection_success == false && sqlServerName != "" && sqlPassword != "" && sqlUsername != "" && databaseName != "") {
                 if (ImGui::Button("Test SQL Connection", ImVec2(120, 60))) {
                     connection_attempted = true;
-                    if (!testSQLConnection(databaseNameBuffer, serverNameBuffer, usernameBuffer, passwordBuffer))
+                    if (!sqlConnection(sqlServerName, databaseName, sqlUsername, sqlPassword))
                         connection_success = false;
-                    else
+                    else {
                         connection_success = true;
+                    }
                 }
             }
             else {
                 ImGui::BeginDisabled();
-                ImGui::Button("SQL Connected!");
+                ImGui::Button("SQL Connected!", ImVec2(120, 60));
                 ImGui::EndDisabled();
             }
-            ImGui::SameLine();
-            ImGui::BeginDisabled();
-            if (ImGui::Button("Use ODBC Connection")) {
-                // sqlODBCConnection(1, );
-            }
-            ImGui::EndDisabled();
             ImGui::SameLine();
             if (ImGui::Button("Close", ImVec2(120, 60))) {
                 show_sql_conn_window = false;

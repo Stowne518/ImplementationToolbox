@@ -150,7 +150,7 @@ public:
     bool importProfiles(Profile* p, std::string profile_name) {
         std::ifstream importProfile;
 
-        importProfile.open("C:\\ImplementationToolbox\\" + profile_name);
+        importProfile.open("C:\\ImplementationToolbox\\Profiles\\" + profile_name);
 
         if (!importProfile)
             return false;

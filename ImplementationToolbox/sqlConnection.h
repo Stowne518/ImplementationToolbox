@@ -1,4 +1,3 @@
 #include <string>
 #pragma once
-bool testSQLConnection(char* dataBase, char* serverName, char* userName, char* password);
-
+bool sqlConnection(std::string& source, std::string& database, std::string& user, std::string& pass);
