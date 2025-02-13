@@ -17,15 +17,29 @@
 /// <param name="path">= the directory path that we check to save profiles to</param>
 /// <returns></returns>
 bool createDirectory(std::string& path) {
+    std::string sqlOutputSubDir = path + "SQL Output\\";
+    std::string profileOutputDir = path + "Profiles\\";
     // Check for the primary directory we will use for program if not there we try to create it
     if (!std::filesystem::exists(path)) {
         // Try and create it
         if (std::filesystem::create_directory(path)) {
+            // Create sql output sub directory so we can save out output files there.
+            std::filesystem::create_directory(sqlOutputSubDir);
+            // Create profile sub directories
+            std::filesystem::create_directory(profileOutputDir);
+
             return true;
         }
         else {
             return false;
         }
+    }
+    // Create subdirectories if they don't exists in the working dir
+    else if (!std::filesystem::exists(sqlOutputSubDir)) {
+        std::filesystem::create_directory(sqlOutputSubDir);
+    }
+    else if (!std::filesystem::exists(profileOutputDir)) {
+        std::filesystem::create_directory(profileOutputDir);
     }
     // If it already exists we also return true
     else {

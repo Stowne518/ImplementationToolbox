@@ -249,7 +249,7 @@ public:
             // Build file path using profile names which will be changeable in the future. Also will allow custom file paths in the future
             const char *profile_name = { getProfileName() };
             std::string fileName = profile_name;
-            std::string save_path = "C:\\ImplementationToolbox\\";       // Hard coded...for now
+            std::string save_path = "C:\\ImplementationToolbox\\Profiles\\";       // Hard coded...for now
             std::string full_filepath = save_path + fileName + "_profiles.txt";
             exportProfile.open(full_filepath);
         }
