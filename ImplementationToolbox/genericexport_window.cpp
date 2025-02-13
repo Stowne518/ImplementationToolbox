@@ -356,7 +356,7 @@ void showGenericExportWindow(bool* p_open) {
         if (ImGui::BeginPopupModal("Load Profile Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::Text("Load a saved profile");
             // ImGui::Text("Files are saved to C:\\ImplementationToolkit\\ for now due to permission issues with OneDrive");
-            std::string selected_profile = displayFileName("C:\\ImplementationToolbox\\") + "_profiles.txt";
+            std::string selected_profile = displayFileName("C:\\ImplementationToolbox\\Profiles\\") + "_profiles.txt";
             // Currently we only save one profile, may adjust to save profiles to multiple files
             if (ImGui::Button("Load profile")) {
                 // Clear any selected fields before loading new profile
