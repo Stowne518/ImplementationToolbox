@@ -288,13 +288,23 @@ int main(int, char**)
             ImGui::OpenPopup("SQL Connection Settings");
 
         // Create window to configure connection string with
-        ImGui::SetNextWindowSize(ImVec2(450, 250));
+        static float fieldLen = 101;
+        //ImGui::SetNextWindowSize(ImVec2(260, 210));
         ImGui::SetNextWindowPos(ImVec2(window_center.x - (450 / 2), window_center.y - (250 / 2)));
         if (ImGui::BeginPopupModal("SQL Connection Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Enter SQL Server name:"); ImGui::SameLine(); ImGui::SetNextItemWidth(100); ImGui::InputText("##server", serverNameBuffer, IM_ARRAYSIZE(serverNameBuffer));
-            ImGui::Text("Enter SQL Server database name:"); ImGui::SameLine(); ImGui::SetNextItemWidth(100); ImGui::InputText("##database", databaseNameBuffer, IM_ARRAYSIZE(databaseNameBuffer));
-            ImGui::Text("Enter SQL Username:"); ImGui::SameLine(); ImGui::SetNextItemWidth(100); ImGui::InputText("##user", usernameBuffer, IM_ARRAYSIZE(usernameBuffer));
-            ImGui::Text("Enter SQL Password:"); ImGui::SameLine(); ImGui::SetNextItemWidth(100); ImGui::InputText("##password", passwordBuffer, IM_ARRAYSIZE(passwordBuffer));
+            if (ImGui::BeginTable("SQL Connection String", 2, ImGuiTableFlags_SizingFixedFit)) {
+                ImGui::TableNextColumn();
+                ImGui::Text("Enter SQL Server name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##server", serverNameBuffer, IM_ARRAYSIZE(serverNameBuffer));
+                ImGui::TableNextColumn();
+                ImGui::Text("Enter database name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##database", databaseNameBuffer, IM_ARRAYSIZE(databaseNameBuffer));
+                ImGui::TableNextColumn();
+                ImGui::Text("Enter SQL Username:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##user", usernameBuffer, IM_ARRAYSIZE(usernameBuffer));
+                ImGui::TableNextColumn();
+                ImGui::Text("Enter SQL Password:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##password", passwordBuffer, IM_ARRAYSIZE(passwordBuffer));
+
+                // End SQL entry table
+                ImGui::EndTable();
+            }
 
             // Copy char array buffers to strings
             sqlServerName = std::string(serverNameBuffer);
@@ -305,7 +315,7 @@ int main(int, char**)
             std::string connectionString = "Driver={ODBC Driver 17 for SQL Server};Server=" + sqlServerName + ";Database=" + databaseName + ";UID=" + sqlUsername + ";PWD=" + sqlPassword + ";";
 
             if (connection_attempted == false || connection_success == false && sqlServerName != "" && sqlPassword != "" && sqlUsername != "" && databaseName != "") {
-                if (ImGui::Button("Test SQL Connection", ImVec2(120, 60))) {
+                if (ImGui::Button("Test Connection", ImVec2(120, 60))) {
                     connection_attempted = true;
                     if (!sqlConnection(sqlServerName, databaseName, sqlUsername, sqlPassword))
                         connection_success = false;
