@@ -26,7 +26,6 @@
 #include <cstdio>
 #endif
 
-
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4127)     // condition expression is constant
@@ -180,13 +179,65 @@ static std::vector<std::string> selectedFieldName;
 static std::vector<int> selectedId;
 static bool profileLoaded = false;     // Check if incoming data was from a profile that was loaded from a file
 
+namespace items
+{
+    // Build enums and struct for field ordering table sorting
+    enum MyItemColumnID
+    {
+        MyItemColumnID_ID,
+        MyItemColumnID_Name,
+        MyItemColumnID_Order
+    };
+
+    struct MyItem
+    {
+        int ID;
+        const char* Name;
+        int Order;
+        static const ImGuiTableSortSpecs* current_sort_specs;
+
+        // Table sorting functions
+        static void SortWithSortSpecs(ImGuiTableSortSpecs* sort_specs, MyItem* items, int items_count) {
+            current_sort_specs = sort_specs;    // Store in variable that is accessible
+            if (items_count > 1)
+                qsort(items, (size_t)items_count, sizeof(items[0]), MyItem::CompareWithSortSpecs);
+            current_sort_specs = NULL;
+        }
+
+        // Compare function for items
+        static int IMGUI_CDECL CompareWithSortSpecs(const void* lhs, const void* rhs) {
+            const MyItem* a = (const MyItem*)lhs;
+            const MyItem* b = (const MyItem*)rhs;
+            for (int n = 0; n < current_sort_specs->SpecsCount; n++)
+            {
+                // Identify columns using defined Column user IDs in TableSetupColumn()
+                const ImGuiTableColumnSortSpecs* sort_spec = &current_sort_specs->Specs[n];
+                int delta = 0;
+                switch (sort_spec->ColumnUserID)
+                {
+                case MyItemColumnID_ID:             delta = (a->ID - b->ID);                    break;
+                case MyItemColumnID_Name:           delta = (strcmp(a->Name, b->Name));         break;
+                case MyItemColumnID_Order:          delta = (a->Order - b->Order);              break;
+                default: IM_ASSERT(0);  break;
+                }
+                if (delta > 0)
+                    return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? +1 : -1;
+                if (delta < 0)
+                    return (sort_spec->SortDirection == ImGuiSortDirection_Descending) ? -1 : +1;
+            }
+            return (a->ID - b->ID);
+        }
+    };
+    const ImGuiTableSortSpecs* MyItem::current_sort_specs = NULL;
+}
+
 /*
     Function used to get a list of profile files in the temp directory and display them in a Combo box that we then pass to import and bring the data in.
 */
 std::string displayFileName(const std::string& directory) {
     static std::string chosenName;
     std::vector<std::string> fileNames;
-    for (const auto& entry : std::filesystem::directory_iterator(directory + "Profiles\\"))
+    for (const auto& entry : std::filesystem::directory_iterator(directory + "\\Profiles\\"))
     {
         std::string filename = entry.path().filename().string();
         size_t pos = filename.find("_profiles.txt");
@@ -320,7 +371,7 @@ void showGenericExportWindow(bool* p_open) {
         if (ImGui::BeginPopupModal("Load Profile Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::Text("Load a saved profile");
             // ImGui::Text("Files are saved to C:\\ImplementationToolkit\\ for now due to permission issues with OneDrive");
-            std::string selected_profile = displayFileName("C:\\ImplementationToolbox\\Profiles\\") + "_profiles.txt";
+            std::string selected_profile = displayFileName("C:\\ImplementationToolbox") + "_profiles.txt";
             // Currently we only save one profile, may adjust to save profiles to multiple files
             if (ImGui::Button("Load profile")) {
                 // Clear any selected fields before loading new profile
@@ -760,10 +811,27 @@ void showGenericExportWindow(bool* p_open) {
                     // Sizing for table to fit in window
                     ImVec2 windowSize = ImVec2(ImGui::GetMainViewport()->Size.x, 0);
 
+                    
+                    //if (items.Size == 0 && selectedId.size() == 1) {
+                    //    items.resize(1, items::MyItem());
+                    //    items::MyItem& item = items[0];
+                    //    item.ID = 0;
+                    //    item.Name = selectedFieldName[0].c_str();
+                    //    item.Order = 0;
+                    //}
+                    ///*for (int i = 0; i < items.Size; i++)
+                    //{
+                    //    items::MyItem& item = items[i];
+                    //    item.ID = i;
+                    //    item.Name = selectedFieldName[i].c_str();
+                    //    item.Order = ImGui::InputInt(("##order" + std::to_string(i)).c_str(), &order[i], 0, 0);
+                    //}*/
+
                     // Begin table for selectable field items
                     if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame, windowSize)) {
                         for (int i = 0; i < fields.size(); i++)
                         {
+
                             ImGui::TableNextColumn();
                             if (!includeHousing && fields[i] == "LocFac" || !includeHousing && fields[i] == "LocSec" || !includeHousing && fields[i] == "LocUnit" || !includeHousing && fields[i] == "LocBed") {
                                 ImGui::BeginDisabled();
@@ -785,7 +853,7 @@ void showGenericExportWindow(bool* p_open) {
                                 if (std::find(selectedId.begin(), selectedId.end(), i) == selectedId.end()) {
                                     selectedId.push_back(i);
                                     selectedFieldName.push_back(label[i]);
-                                    profile.setSelected(i, selected[i]);
+                                    profile.setSelected(i, selected[i]);                                    
                                 }
                             }
                             else if(!profileLoaded) {
@@ -813,29 +881,60 @@ void showGenericExportWindow(bool* p_open) {
                         // End Field table
                         ImGui::EndTable();
                     }
+
+                    // Create field list
+                    static ImVector<items::MyItem> items;
+                    if (items.Size != selectedId.size())
+                        items.resize(selectedId.size(), items::MyItem());
+                    for (int j = 0; j < selectedId.size(); j++)
+                    {
+                        items::MyItem& item = items[j];
+                        item.ID = j;
+                        item.Name = selectedFieldName[j].c_str();
+                        item.Order = j;
+                    }
+                    
                     // TODO: fix ordering fields
                     ImGui::BeginGroup();
                     // Leaving as is for now
                     ImGui::SeparatorText("Set field order:");
                     ImGui::SetItemTooltip("Sort functionality not available yet. The order will update as field order is changed in the future");
-                    if (ImGui::BeginTable("fieldOrder", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_NoHostExtendX /* | ImGuiTableFlags_Sortable */ )) {
-                        ImGui::TableSetupColumn("Field");
-                        ImGui::TableSetupColumn("Order");
+                    if (ImGui::BeginTable("fieldOrder", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_NoHostExtendX  | ImGuiTableFlags_Sortable  )) {
+                        ImGui::TableSetupColumn("Field",ImGuiTableColumnFlags_PreferSortAscending, 0.0f, items::MyItemColumnID_Name);
+                        ImGui::TableSetupColumn("Order", ImGuiTableColumnFlags_DefaultSort, 0.0f, items::MyItemColumnID_Order);
                         ImGui::TableSetupScrollFreeze(0, 1);
                         ImGui::TableHeadersRow();
-                        for (int i = 0; i < selectedId.size(); i++)
-                        {
-                            ImGui::TableNextColumn();
-                            ImGui::Text(selectedFieldName[i].c_str());
-                            ImGui::TableNextColumn();
-                            // If there isn't already an order value we set it equal to the next available value
-                            if (order[i] == 0)
-                                order[i] = i;
-                            // Disable the custom order input for now until sorting works. Currently, it will order based on the order the fields are clicked in.
-                            ImGui::BeginDisabled();
-                            ImGui::InputInt(("##order" + std::to_string(i)).c_str(), &order[i], 0, 0);
-                            ImGui::EndDisabled();
+
+                        // Sort the data if specs change
+                        ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
+                        if (sort_specs && sort_specs->SpecsDirty) {                            
+                            items::MyItem::SortWithSortSpecs(sort_specs, items.Data, items.Size);
+                            sort_specs->SpecsDirty = false;
                         }
+
+                        const bool sorts_specs_using_order = (ImGui::TableGetColumnFlags(2) & ImGuiTableColumnFlags_IsSorted) != 0;
+                        // Try clipper for large verticle list of fields
+                        ImGuiListClipper clipper;
+                        clipper.Begin(items.size());
+                        while (clipper.Step()) {
+                            for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++)
+                            {
+                                items::MyItem* item = &items[row_n];
+                                ImGui::PushID(item->ID);
+                                ImGui::TableNextRow(ImGuiTableRowFlags_None, 25);
+                                ImGui::TableNextColumn();
+                                ImGui::Text(item->Name);
+                                ImGui::TableNextColumn();
+                                // If there isn't already an order value we set it equal to the next available value
+                                if (order[row_n] == 0)
+                                    order[row_n] = row_n;
+                                // Disable the custom order input for now until sorting works. Currently, it will order based on the order the fields are clicked in.
+                                //ImGui::InputInt(("##order" + std::to_string(row_n)).c_str(), &order[row_n], 0, 0);
+                                //ImGui::InputInt(("##order" + std::to_string(row_n)).c_str(), &item->Order, 0, 0);
+                                ImGui::Text("%i", item->Order);
+                                ImGui::PopID();
+                            }
+                        }                        
 
                         // End field order table
                         ImGui::EndTable();
@@ -1432,3 +1531,7 @@ void saveGenericFields(int option) {
     ImGui::LogText("--COMMIT");
     ImGui::LogFinish();
 }
+
+//void updateGenExprtSQL() {
+//    if(SqlConnectionHandler::connectionTest())
+//}

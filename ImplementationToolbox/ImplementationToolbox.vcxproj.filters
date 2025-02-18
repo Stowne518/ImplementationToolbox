@@ -16,9 +16,6 @@
     <ClCompile Include="readFieldList.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="sqlConnection.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="sqlQueryBuilder.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -66,9 +63,6 @@
     <ClInclude Include="readFieldList.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="sqlConnection.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="sqlQueryBuilder.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -92,6 +86,9 @@
     </ClInclude>
     <ClInclude Include="..\imgui_internal.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Sql.h">
+      <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

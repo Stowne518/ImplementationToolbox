@@ -29,7 +29,7 @@
 #include <iostream>
 #include <string>
 #include "xmlParser.h"
-#include "sqlConnection.h"
+#include "Sql.h"
 
 // Data
 static LPDIRECT3D9              g_pD3D = nullptr;
@@ -84,7 +84,7 @@ int main(int, char**)
 
     // Darken the input text boxes
     ImGuiStyle& style = ImGui::GetStyle();
-    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.8f, 0.8f, 0.8f, 1.0f); // Darker gray for input box background
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.7f); // Darker gray for input box background
     style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f); // Slightly darker gray when hovered
     style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); // Even darker gray when active
 
@@ -287,10 +287,13 @@ int main(int, char**)
         if (show_sql_conn_window)
             ImGui::OpenPopup("SQL Connection Settings");
 
+        // Create a static sql class to store connection info in so we can pass to different functions that may need the SQL connectivity
+        static Sql sql;
+
         // Create window to configure connection string with
         static float fieldLen = 101;
         //ImGui::SetNextWindowSize(ImVec2(260, 210));
-        ImGui::SetNextWindowPos(ImVec2(window_center.x - (450 / 2), window_center.y - (250 / 2)));
+        ImGui::SetNextWindowPos(ImVec2(window_center.x - (250 / 2), window_center.y - (200 / 2)));
         if (ImGui::BeginPopupModal("SQL Connection Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
             if (ImGui::BeginTable("SQL Connection String", 2, ImGuiTableFlags_SizingFixedFit)) {
                 ImGui::TableNextColumn();
@@ -307,22 +310,23 @@ int main(int, char**)
             }
 
             // Copy char array buffers to strings
-            sqlServerName = std::string(serverNameBuffer);
-            databaseName = std::string(databaseNameBuffer);
-            sqlUsername = std::string(usernameBuffer);
-            sqlPassword = std::string(passwordBuffer);
+            sql.SetSource(std::string(serverNameBuffer));
+            sql.SetDatabase(std::string(databaseNameBuffer));
+            sql.SetUsername(std::string(usernameBuffer));
+            sql.SetPassword(std::string(passwordBuffer));
 
-            std::string connectionString = "Driver={ODBC Driver 17 for SQL Server};Server=" + sqlServerName + ";Database=" + databaseName + ";UID=" + sqlUsername + ";PWD=" + sqlPassword + ";";
+            // Check that field have been filled out
+            bool requiredInfo = sql.requiredInfo(sql.GetSource(), sql.GetDatabase(), sql.GetUsername(), sql.GetPassword());
 
-            if (connection_attempted == false || connection_success == false && sqlServerName != "" && sqlPassword != "" && sqlUsername != "" && databaseName != "") {
+            if (!sql.GetConnected() && requiredInfo) {
                 if (ImGui::Button("Test Connection", ImVec2(120, 60))) {
-                    connection_attempted = true;
-                    if (!sqlConnection(sqlServerName, databaseName, sqlUsername, sqlPassword))
-                        connection_success = false;
-                    else {
-                        connection_success = true;
-                    }
+                    sql.connect();
                 }
+            }
+            else if (!sql.GetConnected() && !requiredInfo) {
+                ImGui::BeginDisabled();
+                ImGui::Button("Test Connection", ImVec2(120, 60));
+                ImGui::EndDisabled();
             }
             else {
                 ImGui::BeginDisabled();
@@ -348,34 +352,43 @@ int main(int, char**)
 
             // Begin Health check window
             ImGui::Begin("Health Check", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove );
+            if (ImGui::BeginTable("HealthCheck", 2, ImGuiTableFlags_SizingFixedFit)) {
+                // Check for the directory and display it in green if found, red text if not
+                ImGui::TableNextColumn();
+                ImGui::Text("Main Directory:"); 
+                ImGui::TableNextColumn();
+                if (directoryFound) {
+                    DisplayColoredText(("\tDirectory exists at " + directory_path).c_str(), true);
+                }
+                else {
+                    ImGui::Text(("\tUnable to find/create directory at " + directory_path).c_str(), false);
+                }
+                ImGui::TableNextColumn();
+                // Check generic export field and display it in green text if loaded, red if not.
+                ImGui::Text("Files:"); 
+                ImGui::TableNextColumn();
+                if (fieldsLoaded) {
+                    DisplayColoredText("\tGeneric Export fields loaded successfully!", true);
+                }
+                else {
+                    DisplayColoredText("\tUnable to load genericfieldlist.txt! Check it is in the same folder as the exe.", false);
+                }
+                ImGui::TableNextColumn();
+                // Show SQL connection status
+                ImGui::Text("SQL Connection Status:"); 
+                ImGui::TableNextColumn();
+                if (!sql.GetConnectionAttempt()) {
+                    DisplayColoredText("\tNo SQL Connection attempted.", false);
+                }
+                else if (!sql.GetConnected()) {
+                    DisplayColoredText("\tSQL Connection failed!", false);
+                }
+                else {
+                    DisplayColoredText("\tSQL Connection Suceeded!", true);
+                }
 
-            // Check for the directory and display it in green if found, red text if not
-            ImGui::Text("Main Directory:"); ImGui::SameLine();
-            if (directoryFound) {
-                DisplayColoredText(("\tDirectory exists at " + directory_path).c_str(), true);
-            }
-            else {
-                ImGui::Text(("\tUnable to find/create directory at " + directory_path).c_str(), false);
-            }
-
-            // Check generic export field and display it in green text if loaded, red if not.
-            ImGui::Text("Files:"); ImGui::SameLine();
-            if (fieldsLoaded) {
-                DisplayColoredText("\tGeneric Export fields loaded successfully!", true);
-            }
-            else {
-                DisplayColoredText("\tUnable to load genericfieldlist.txt! Check it is in the same folder as the exe.", false);
-            }
-            // Show SQL connection status
-            ImGui::Text("SQL Connection Status:"); ImGui::SameLine();
-            if (!connection_attempted) {
-                DisplayColoredText("\tNo SQL Connection attempted.", false);
-            }
-            else if (!connection_success) {
-                DisplayColoredText("\tSQL Connection failed!", false);
-            }
-            else {
-                DisplayColoredText("\tSQL Connection Suceeded!", true);
+                // End health check table
+                ImGui::EndTable();
             }
                 
 
@@ -462,28 +475,28 @@ int main(int, char**)
         }
         else {
             if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) {
-                if (ImGui::BeginTabItem("Generic Export Generator", &show_generic_export_window, ImGuiTabItemFlags_Trailing)) {
+                if (ImGui::BeginTabItem("Generic Export Generator", &show_generic_export_window, ImGuiTabItemFlags_None)) {
                     showGenericExportWindow(&show_generic_export_window);
 
                     // End Generic export generator tab
                     ImGui::EndTabItem();
                 }
                 // Add tab for one button refresh window
-                if (ImGui::BeginTabItem("OneButton RMS Refresh", &show_one_button_refresh_window, ImGuiTabItemFlags_Trailing)) {
+                if (ImGui::BeginTabItem("OneButton RMS Refresh", &show_one_button_refresh_window, ImGuiTabItemFlags_None)) {
                     showOneButtonRefreshWindow(&show_one_button_refresh_window);
 
                     // End Refresh tab
                     ImGui::EndTabItem();
                 }
                 // Add tab for sql generator
-                if (ImGui::BeginTabItem("SQL Query Builder - WIP", &show_sql_query_builder_window, ImGuiTabItemFlags_Trailing)) {
+                if (ImGui::BeginTabItem("SQL Query Builder - WIP", &show_sql_query_builder_window, ImGuiTabItemFlags_None)) {
                     showSqlQueryBuilderWindow(&show_sql_query_builder_window);
 
                     // End sql query builder tab
                     ImGui::EndTabItem();
                 }
                 // Tab for XML parser module
-                if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_Trailing)) {
+                if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) {
                     xmlParser(directory_path);
 
                     // End XML Parser
