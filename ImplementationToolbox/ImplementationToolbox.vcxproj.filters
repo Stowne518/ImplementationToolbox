@@ -46,6 +46,9 @@
     <ClCompile Include="oneButtonRefresh_window.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="Sql.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fieldOrderTable.h">

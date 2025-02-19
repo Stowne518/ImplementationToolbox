@@ -45,6 +45,7 @@ void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
+
 // Main code
 int main(int, char**)
 {
@@ -310,20 +311,21 @@ int main(int, char**)
             }
 
             // Copy char array buffers to strings
-            sql.SetSource(std::string(serverNameBuffer));
-            sql.SetDatabase(std::string(databaseNameBuffer));
-            sql.SetUsername(std::string(usernameBuffer));
-            sql.SetPassword(std::string(passwordBuffer));
+            sql._SetSource(std::string(serverNameBuffer));
+            sql._SetDatabase(std::string(databaseNameBuffer));
+            sql._SetUsername(std::string(usernameBuffer));
+            sql._SetPassword(std::string(passwordBuffer));
 
             // Check that field have been filled out
-            bool requiredInfo = sql.requiredInfo(sql.GetSource(), sql.GetDatabase(), sql.GetUsername(), sql.GetPassword());
+            bool requiredInfo = sql.requiredInfo(sql._GetSource(), sql._GetDatabase(), sql._GetUsername(), sql._GetPassword());
 
-            if (!sql.GetConnected() && requiredInfo) {
+            if (!sql._GetConnected() && requiredInfo) {
                 if (ImGui::Button("Test Connection", ImVec2(120, 60))) {
-                    sql.connect();
+                    sql._SetConnected(sqlConnectionHandler(sql._GetSource(),sql._GetDatabase(),sql._GetUsername(), sql._GetPassword()));
+                    sql._SetConnectionAttempt();
                 }
             }
-            else if (!sql.GetConnected() && !requiredInfo) {
+            else if (!sql._GetConnected() && !requiredInfo) {
                 ImGui::BeginDisabled();
                 ImGui::Button("Test Connection", ImVec2(120, 60));
                 ImGui::EndDisabled();
@@ -377,10 +379,10 @@ int main(int, char**)
                 // Show SQL connection status
                 ImGui::Text("SQL Connection Status:"); 
                 ImGui::TableNextColumn();
-                if (!sql.GetConnectionAttempt()) {
+                if (!sql._GetConnectionAttempt()) {
                     DisplayColoredText("\tNo SQL Connection attempted.", false);
                 }
-                else if (!sql.GetConnected()) {
+                else if (!sql._GetConnected()) {
                     DisplayColoredText("\tSQL Connection failed!", false);
                 }
                 else {

@@ -171,6 +171,7 @@
     <ClCompile Include="oneButtonRefresh_window.cpp" />
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="readFieldList.cpp" />
+    <ClCompile Include="Sql.cpp" />
     <ClCompile Include="sqlQueryBuilder.cpp" />
     <ClCompile Include="xmlParser.cpp" />
   </ItemGroup>

@@ -1,14 +1,16 @@
-#pragma once
 #include "imgui.h"
 #include <iostream>
 #include <windows.h>
 #include <sqlext.h>
 #include <sql.h>
 #include <string>
-#include <sqlConnectionHandler.h>
-#include <sqlConnectionHandler.cpp>
+#include "sqlConnectionHandler.h"
 
-#using <SqlConnectionHandler.dll>
+using namespace SqlConnectionHandler;
+
+
+#ifndef SQL_H
+#define SQL_H
 
 class Sql
 {
@@ -16,49 +18,56 @@ private:
 	std::string source,
 		database,
 		username,
-		password;
+		password,
+		connectionString;
 	bool 
 		connectionAttempt,
 		connected;
 
 public:
 	// Setters
-	void SetSource(std::string s) {
+	void _SetSource(std::string s) {
 		source = s;
 	}
-	void SetDatabase(std::string db) {
+	void _SetDatabase(std::string db) {
 		database = db;
 	}
-	void SetUsername(std::string un) {
+	void _SetUsername(std::string un) {
 		username = un;
 	}
-	void SetPassword(std::string pw) {
+	void _SetPassword(std::string pw) {
 		password = pw;
 	}
-	void SetConnectionAttempt() {
+	void _SetConnectionAttempt() {
 		connectionAttempt = true;
 	}
-	void SetConnected(bool c) {
+	void _SetConnected(bool c) {
 		connected = c;
 	}
+	void _SetConnectionString() {
+		connectionString = "Data Source=" + source + ";Initial Catalog=" + database + ";User ID=" + username + ";Password=" + password + ";";
+	}
 	// Getters
-	std::string GetSource() {
+	std::string _GetSource() {
 		return source;
 	}
-	std::string GetDatabase() {
+	std::string _GetDatabase() {
 		return database;
 	}
-	std::string GetUsername() {
+	std::string _GetUsername() {
 		return username;
 	}
-	std::string GetPassword() {
+	std::string _GetPassword() {
 		return password;
 	}
-	bool GetConnectionAttempt() {
+	bool _GetConnectionAttempt() {
 		return connectionAttempt;
 	}
-	bool GetConnected() const {
+	bool _GetConnected() const {
 		return connected;
+	}
+	std::string _GetConnectionString() {
+		return connectionString;
 	}
 
 	bool requiredInfo(std::string s, std::string db, std::string u, std::string p) {
@@ -68,17 +77,12 @@ public:
 
 		return true;
 	}
-
-	// Convert C++ to C# strings for connection handler
-	String^ convertString(std::string s) {
-		String^ cs = marshal_as<String^>(s);
-		return cs;
-	}
-
-	void connect() {
-		connectionAttempt = true;
-		String^ connectionString = SqlConnectionHandler::sqlConnectionHandler(convertString(GetSource()), convertString(GetDatabase()), convertString(GetUsername()), convertString(GetPassword()));
-		SetConnected(SqlConnectionHandler::connectionTest(connectionString));
-	}
 };
 
+
+//
+//void connect(Sql&);
+//
+//void runSQLQuery(Sql&/*std::string*/);
+
+#endif // SQL_H

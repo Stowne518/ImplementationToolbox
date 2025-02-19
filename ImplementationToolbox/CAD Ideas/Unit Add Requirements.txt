@@ -1,0 +1,5 @@
+Required unit fields:
+Unit code unit.unitcode
+Agency (Agency Code Lookup) unit.agency
+Icon (Icon Code Lookup) unit.kind (code_key = 'UNKD' and code_agcy = <code to add>)
+Service (Service code lookup) unit.type

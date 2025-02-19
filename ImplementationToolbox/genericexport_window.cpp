@@ -6,6 +6,7 @@
 #include "readFieldList.h"
 #include "Profile.h"
 #include "fieldOrderTable.h"
+#include "genericexport_window.h"
 
 // System Includes
 #include <ctype.h>          // toupper
@@ -325,7 +326,7 @@ void showGenericExportWindow(bool* p_open) {
 
     static bool show_export_profile_window = false;
     static bool show_import_profile_window = false;
-
+    
     ImGuiWindowFlags window_flags = 0;
     if (no_titlebar)        window_flags |= ImGuiWindowFlags_NoTitleBar;
     if (no_scrollbar)       window_flags |= ImGuiWindowFlags_NoScrollbar;
@@ -1238,6 +1239,7 @@ void showGenericExportWindow(bool* p_open) {
                     ImGui::TableNextColumn();
                     if (ImGui::Button("Save to file", ImVec2(140, 0))) { 
                         saveGenericExport(0); 
+                        // runSQLQuery(sql);
                         static bool saved = false;
                         saved = true;
                         if (saved) {
@@ -1531,7 +1533,3 @@ void saveGenericFields(int option) {
     ImGui::LogText("--COMMIT");
     ImGui::LogFinish();
 }
-
-//void updateGenExprtSQL() {
-//    if(SqlConnectionHandler::connectionTest())
-//}
