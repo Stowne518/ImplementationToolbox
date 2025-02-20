@@ -44,8 +44,6 @@ void CleanupDeviceD3D();
 void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-
-
 // Main code
 int main(int, char**)
 {
@@ -277,73 +275,11 @@ int main(int, char**)
         // End orange color
         ImGui::PopStyleColor();
 
-        // SQL Connection string variables for connection test
-        static char serverNameBuffer[256] = { }, databaseNameBuffer[256] = { }, usernameBuffer[256] = { }, passwordBuffer[256] = { };
-        static std::string sqlServerName, databaseName, sqlUsername, sqlPassword;
-        static bool integratedSecurity = false;
-        static bool connection_attempted = false;   // Have we tried to connect yet? - Use this to determine what to display in the health check window
-        static bool connection_success = false;     // Did we succeed in our attempt to connect to SQL?
-
-        // Open the SQL configuration window if the menu item is selected
-        if (show_sql_conn_window)
-            ImGui::OpenPopup("SQL Connection Settings");
-
         // Create a static sql class to store connection info in so we can pass to different functions that may need the SQL connectivity
         static Sql sql;
-
-        // Create window to configure connection string with
-        static float fieldLen = 101;
-        //ImGui::SetNextWindowSize(ImVec2(260, 210));
-        ImGui::SetNextWindowPos(ImVec2(window_center.x - (250 / 2), window_center.y - (200 / 2)));
-        if (ImGui::BeginPopupModal("SQL Connection Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-            if (ImGui::BeginTable("SQL Connection String", 2, ImGuiTableFlags_SizingFixedFit)) {
-                ImGui::TableNextColumn();
-                ImGui::Text("Enter SQL Server name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##server", serverNameBuffer, IM_ARRAYSIZE(serverNameBuffer));
-                ImGui::TableNextColumn();
-                ImGui::Text("Enter database name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##database", databaseNameBuffer, IM_ARRAYSIZE(databaseNameBuffer));
-                ImGui::TableNextColumn();
-                ImGui::Text("Enter SQL Username:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##user", usernameBuffer, IM_ARRAYSIZE(usernameBuffer));
-                ImGui::TableNextColumn();
-                ImGui::Text("Enter SQL Password:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##password", passwordBuffer, IM_ARRAYSIZE(passwordBuffer));
-
-                // End SQL entry table
-                ImGui::EndTable();
-            }
-
-            // Copy char array buffers to strings
-            sql._SetSource(std::string(serverNameBuffer));
-            sql._SetDatabase(std::string(databaseNameBuffer));
-            sql._SetUsername(std::string(usernameBuffer));
-            sql._SetPassword(std::string(passwordBuffer));
-
-            // Check that field have been filled out
-            bool requiredInfo = sql.requiredInfo(sql._GetSource(), sql._GetDatabase(), sql._GetUsername(), sql._GetPassword());
-
-            if (!sql._GetConnected() && requiredInfo) {
-                if (ImGui::Button("Test Connection", ImVec2(120, 60))) {
-                    sql._SetConnected(sqlConnectionHandler(sql._GetSource(),sql._GetDatabase(),sql._GetUsername(), sql._GetPassword()));
-                    sql._SetConnectionAttempt();
-                }
-            }
-            else if (!sql._GetConnected() && !requiredInfo) {
-                ImGui::BeginDisabled();
-                ImGui::Button("Test Connection", ImVec2(120, 60));
-                ImGui::EndDisabled();
-            }
-            else {
-                ImGui::BeginDisabled();
-                ImGui::Button("SQL Connected!", ImVec2(120, 60));
-                ImGui::EndDisabled();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Close", ImVec2(120, 60))) {
-                show_sql_conn_window = false;
-                ImGui::CloseCurrentPopup();
-            }
-
-            // End SQL Connection popup modal window
-            ImGui::EndPopup();
-        }
+        // Open the SQL configuration window if the menu item is selected
+        if (show_sql_conn_window)
+            sql.DisplaySqlConfigWindow(&show_sql_conn_window);            
 
         // Create a program health window to check for required setup at the start.
         static bool directoryFound = createDirectory(directory_path);
@@ -478,7 +414,7 @@ int main(int, char**)
         else {
             if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) {
                 if (ImGui::BeginTabItem("Generic Export Generator", &show_generic_export_window, ImGuiTabItemFlags_None)) {
-                    showGenericExportWindow(&show_generic_export_window);
+                    showGenericExportWindow(&show_generic_export_window, sql);
 
                     // End Generic export generator tab
                     ImGui::EndTabItem();

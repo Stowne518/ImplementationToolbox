@@ -1,13 +1,6 @@
-#include "imgui.h"
-#include <iostream>
-#include <windows.h>
-#include <sqlext.h>
-#include <sql.h>
+#pragma once
 #include <string>
-#include "sqlConnectionHandler.h"
-
-using namespace SqlConnectionHandler;
-
+#include "imgui.h"
 
 #ifndef SQL_H
 #define SQL_H
@@ -70,19 +63,9 @@ public:
 		return connectionString;
 	}
 
-	bool requiredInfo(std::string s, std::string db, std::string u, std::string p) {
-		// Should check if any field is blank on the SQL Connection form and if so not allow the connection attempt
-		if (s == "" || db == "" || u == "" || p == "")
-			return false;
-
-		return true;
-	}
+	bool requiredInfo(std::string, std::string, std::string, std::string);
+	void executeQuery(std::string);
+	void DisplaySqlConfigWindow(bool*);
 };
-
-
-//
-//void connect(Sql&);
-//
-//void runSQLQuery(Sql&/*std::string*/);
 
 #endif // SQL_H

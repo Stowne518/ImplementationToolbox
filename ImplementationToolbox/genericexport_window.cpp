@@ -6,8 +6,7 @@
 #include "readFieldList.h"
 #include "Profile.h"
 #include "fieldOrderTable.h"
-#include "genericexport_window.h"
-
+#include "Sql.h"
 // System Includes
 #include <ctype.h>          // toupper
 #include <limits.h>         // INT_MIN, INT_MAX
@@ -104,9 +103,11 @@
 
 // Function prototypes
 std::vector<std::string> readFieldList();
-void reset();
-void saveGenericExport(int);
-void saveGenericFields(int);
+void reset();                           // resets all currently selected options in the export
+void saveGenericExport(int);            // Saves generic export sql script to a file
+void saveGenericFields(int);            // Saves generic field sql script to a file
+void updateGenericExportSql(Sql&);      // Function to update generic export options directly in SQL
+void GenFldsUpdateSql(Sql& sql);        // Function to update generic field options directly in SQL
 
 //Globals
 
@@ -307,7 +308,7 @@ void clearSelectedFields() {
 Code to display generic export generator and options
 Use this to get around application and perform all functions
 */
-void showGenericExportWindow(bool* p_open) {
+void showGenericExportWindow(bool* p_open, Sql& sql) {
     static bool no_titlebar = false;
     static bool no_scrollbar = false;
     static bool no_menu = false;
@@ -519,6 +520,11 @@ void showGenericExportWindow(bool* p_open) {
         if (ImGui::Button("Reset Profile")) {
             reset();
         }
+        //ImGui::SameLine();
+        //if (ImGui::Button("Test SQL Connection")) {
+        //    // Test SQL connection with select statement -- IT WORKS!!!!!!
+        //    sql.executeQuery("UPDATE genexprt SET filename = 'testing' WHERE genexprtid = 2");
+        //}
 
         // Start popup for confirmation that profile values reset successfully
         if (ImGui::BeginPopup("Profile Reset")) {
@@ -941,20 +947,6 @@ void showGenericExportWindow(bool* p_open) {
                         ImGui::EndTable();
                     }
 
-                    // Attempting to figure out table sorting
-                    // It's one of the most complex aspects of this framework so I'll need to keep tinkering periodically until it clicks
-                    //ImGui::SameLine();
-
-                    //std::vector<TableItem> items;
-                    //// Populate the sorted table order with order from selected fields
-                    //for (int i = 0; i < selectedId.size(); i++)
-                    //{
-                    //        items.push_back({ selectedFieldName[i], i });
-                    //}
-
-                    //// Display sorted re-ordering table
-                    //showTable(items);
-
                     ImGui::EndGroup();
 
                     // End Field selection tab node
@@ -1232,7 +1224,7 @@ void showGenericExportWindow(bool* p_open) {
                 // End the sql output child window
                 ImGui::EndChild();
 
-                if (ImGui::BeginTable("ButtonBar", 4, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoHostExtendX /*| ImGuiTableFlags_Borders*/, ImVec2(ImGui::GetWindowSize().x, 0))) {
+                if (ImGui::BeginTable("ButtonBar", 5, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoHostExtendX /*| ImGuiTableFlags_Borders*/, ImVec2(ImGui::GetWindowSize().x, 0))) {
                     ImGui::TableNextColumn();
                     // Button to copy text to clipboard for easy pasting
                     if (ImGui::Button("Copy to clipboard", ImVec2(140, 0))) { saveGenericExport(1); }
@@ -1247,7 +1239,18 @@ void showGenericExportWindow(bool* p_open) {
                         }
                     }
                     ImGui::TableNextColumn();
-                    ImGui::Dummy(ImVec2(ImGui::GetWindowContentRegionMax().x - 453, 0));
+                    if (sql._GetConnected()) {
+                        if (ImGui::Button("Update in SQL", ImVec2(140, 0))) {
+                            updateGenericExportSql(sql);
+                        }
+                    }
+                    else {
+                        ImGui::BeginDisabled();
+                        ImGui::Button("SQL not connected");
+                        ImGui::EndDisabled();
+                    }                                        
+                    ImGui::TableNextColumn();
+                    ImGui::Dummy(ImVec2(ImGui::GetWindowContentRegionMax().x - 593, 0));
                     ImGui::TableNextColumn();
                     // Close button to exit the modal
                     if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
@@ -1308,7 +1311,7 @@ void showGenericExportWindow(bool* p_open) {
                 // End the script generator child window
                 ImGui::EndChild();
 
-                if (ImGui::BeginTable("ButtonBar2", 4, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoHostExtendX /*| ImGuiTableFlags_Borders*/, ImVec2(ImGui::GetWindowSize().x, 0))) {
+                if (ImGui::BeginTable("ButtonBar2", 5, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoHostExtendX /*| ImGuiTableFlags_Borders*/, ImVec2(ImGui::GetWindowSize().x, 0))) {
                     ImGui::TableNextColumn();
                     // Button to copy text to clipboard for easy pasting
                     if (ImGui::Button("Copy to clipboard", ImVec2(140, 0))) { saveGenericFields(1); }
@@ -1322,6 +1325,16 @@ void showGenericExportWindow(bool* p_open) {
                         }
                     }
                     ImGui::TableNextColumn();
+                    if (sql._GetConnected()) {
+                        if (ImGui::Button("Update in SQL", ImVec2(140, 0))) {
+                            GenFldsUpdateSql(sql);
+                        }
+                    }
+                    else {
+                        ImGui::BeginDisabled();
+                        ImGui::Button("SQL Not connected", ImVec2(140, 0));
+                        ImGui::EndDisabled();
+                    }
                     ImGui::Dummy(ImVec2(ImGui::GetWindowContentRegionMax().x - 453, 0));
                     ImGui::TableNextColumn();
                     // Close button to exit the modal
@@ -1532,4 +1545,192 @@ void saveGenericFields(int option) {
     ImGui::LogText("--ROLLBACK\n");
     ImGui::LogText("--COMMIT");
     ImGui::LogFinish();
+}
+
+void updateGenericExportSql(Sql& sql) {
+    char query[256];        // Buffer array to hold char arrays in
+    sprintf(query, "UPDATE genexprt SET filename = '%s' WHERE genexprtid = %d", exportName, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET username = '%s' WHERE genexprtid = %d", sftpUser, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET password = '%s' WHERE genexprtid = %d", sftpPass, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET ipaddress = '%s' WHERE genexprtid = %d", sftpIp, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET targetdir = '%s' WHERE genexprtid = %d", sftpTargetDir, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET agency = '%s' WHERE genexprtid = %d", agency, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET issftp = '%d' WHERE genexprtid = %d", isSftp, genexptid);
+    sql.executeQuery(query);
+
+    switch (isPinReq) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET ispinreq = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET ispinreq = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    sprintf(query, "UPDATE genexprt SET pintype = '%d' WHERE genexprtid = %d", pinType, genexptid);
+    sql.executeQuery(query);
+
+    switch (includeHousing) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET inclhousng = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET inclhousng = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    switch (combineHousing) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET combhousng = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET combhousng = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    switch (combineStApt) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET combstrapt = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET combstrapt = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    sprintf(query, "UPDATE genexprt SET actcodetyp = '2' WHERE genexprtid = %d", genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET recordoptn = '%d' WHERE genexprtid = %d", recordOptn, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET filetype = '%d' WHERE genexprtid = %d", fileType, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET fileoptn = '%d' WHERE genexprtid = %d", fileOptn, genexptid);
+    sql.executeQuery(query);
+
+    switch (exportNow) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET exprtnow = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET exprtnow = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    sprintf(query, "UPDATE genexprt SET createoptn = '%d' WHERE genexprtid = %d", createOptn, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET cashbalfmt = '0' WHERE genexprtid = %d", genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET dateformat = '%d' WHERE genexprtid = %d", dateFormat, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET writedelay = '%d' WHERE genexprtid = %d", writeDelay, genexptid);
+    sql.executeQuery(query);
+
+    switch (retainHistory) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET retainhist = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET retainhist = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    switch (noQuotes) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET noquotes = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET noquotes = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    switch (secureSSN) {
+    case true:
+        sprintf(query, "UPDATE genexprt SET securessn = '1' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    case false:
+        sprintf(query, "UPDATE genexprt SET securessn = '0' WHERE genexprtid = %d", genexptid);
+        sql.executeQuery(query);
+        break;
+    }
+
+    sprintf(query, "UPDATE genexprt SET inactive = '0' WHERE genexprtid = %d", genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET expchar1 = '%c' WHERE genexprtid = %d", activeField, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET expchar2 = '%c' WHERE genexprtid = %d", inActiveField, genexptid);
+    sql.executeQuery(query);
+
+    sprintf(query, "UPDATE genexprt SET delimiter = '%s' WHERE genexprtid = %d", delimiter, genexptid);
+    sql.executeQuery(query);
+}
+
+void GenFldsUpdateSql(Sql& sql) {
+    char query[2048];
+
+    // Update statement with field names
+    // Start constructing the update statement
+    // Need to first make sure no fields are excluded before deciding which ones are included
+    // If updating preexisting fields this would leave out any previously excluded fields
+    sprintf(query, "UPDATE genflds SET altfldname = ''");
+    sql.executeQuery(query);
+
+    // Now we select which fields to exclude
+    std::string updateQuery = "UPDATE genflds SET altfldname = 'x' WHERE fldname NOT IN (";
+
+    // Get the list of fields from selected list
+    for (int i = 0; i < selectedId.size(); i++)
+    {
+        if (i > 0) {
+            updateQuery += ",";
+        }
+        updateQuery += "'" + selectedFieldName[i] + "'";
+    }
+
+    // Close the IN clause and add the condition
+    updateQuery += ") AND genexprtid = " + std::to_string(genexptid) + ";";
+
+    // Copy the constructed query to the char buffer
+    strncpy(query, updateQuery.c_str(), sizeof(query));
+    sql.executeQuery(query);
+
+    // Write out all the field names, the order they are presented in, and which ID they belong to
+    for (int i = 0; i < selectedId.size(); i++)
+    {
+        sprintf(query, "UPDATE genflds SET fieldorder = %i WHERE fldname = '%s' AND genexprtid = %i", i, selectedFieldName[i].c_str(), genexptid);
+        sql.executeQuery(query);
+    }
 }
