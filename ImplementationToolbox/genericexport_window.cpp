@@ -835,7 +835,8 @@ void showGenericExportWindow(bool* p_open, Sql& sql) {
                     //}*/
 
                     // Begin table for selectable field items
-                    if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame, windowSize)) {
+                    ImGui::BeginChild("FieldSelectionTable", ImVec2(544, 360),ImGuiChildFlags_AutoResizeX);
+                    if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_Borders, windowSize)) {
                         for (int i = 0; i < fields.size(); i++)
                         {
 
@@ -889,6 +890,11 @@ void showGenericExportWindow(bool* p_open, Sql& sql) {
                         ImGui::EndTable();
                     }
 
+                    // End field selection child window
+                    ImGui::EndChild();
+                    ImGui::SameLine();
+                    ImGui::BeginChild("FieldOrderTableChildWindow",ImVec2(0, 360), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+
                     // Create field list
                     static ImVector<items::MyItem> items;
                     if (items.Size != selectedId.size())
@@ -904,9 +910,8 @@ void showGenericExportWindow(bool* p_open, Sql& sql) {
                     // TODO: fix ordering fields
                     ImGui::BeginGroup();
                     // Leaving as is for now
-                    ImGui::SeparatorText("Set field order:");
-                    ImGui::SetItemTooltip("Sort functionality not available yet. The order will update as field order is changed in the future");
-                    if (ImGui::BeginTable("fieldOrder", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_NoHostExtendX  | ImGuiTableFlags_Sortable  )) {
+                    
+                    if (ImGui::BeginTable("fieldOrder", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_NoHostExtendX  | ImGuiTableFlags_Sortable | ImGuiTableFlags_Borders | ImGuiTableFlags_NoKeepColumnsVisible  )) {
                         ImGui::TableSetupColumn("Field",ImGuiTableColumnFlags_PreferSortAscending, 0.0f, items::MyItemColumnID_Name);
                         ImGui::TableSetupColumn("Order", ImGuiTableColumnFlags_DefaultSort, 0.0f, items::MyItemColumnID_Order);
                         ImGui::TableSetupScrollFreeze(0, 1);
@@ -946,8 +951,11 @@ void showGenericExportWindow(bool* p_open, Sql& sql) {
                         // End field order table
                         ImGui::EndTable();
                     }
-
+                    // End field order group
                     ImGui::EndGroup();
+
+                    // End Field order table child window
+                    ImGui::EndChild();
 
                     // End Field selection tab node
                     ImGui::EndTabItem();
