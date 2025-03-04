@@ -1,6 +1,7 @@
 #include <string>
 #include "Sql.h"
 #include "sqlConnectionHandler.h"
+
 bool Sql::requiredInfo(std::string s, std::string db, std::string u, std::string p) {
 	// Should check if any field is blank on the SQL Connection form and if so not allow the connection attempt
 	if (s == "" || db == "" || u == "" || p == "")
@@ -9,8 +10,12 @@ bool Sql::requiredInfo(std::string s, std::string db, std::string u, std::string
 	return true;
 }
 
-void Sql::executeQuery(std::string query) {
-	SqlConnectionHandler::executeUpdateQuery(_GetConnectionString(), query);
+bool Sql::executeQuery(std::string query) {
+    if (!SqlConnectionHandler::executeUpdateQuery(_GetConnectionString(), query)) {
+        return false;
+    }
+    else
+        return true;
 }
 
 void Sql::DisplaySqlConfigWindow(bool* p_open) {
@@ -74,4 +79,14 @@ void Sql::DisplaySqlConfigWindow(bool* p_open) {
         // End SQL Connection popup modal window
         ImGui::EndPopup();
     }
+}
+
+int Sql::returnRecordCount(std::string table, std::string column) {
+    int count;
+    return count = SqlConnectionHandler::getRecordCount(_GetConnectionString(), _GetDatabase(), table, column);
+}
+// Overload to count records for one specific value intead of just all records in one column
+int Sql::returnRecordCount(std::string table, std::string column, std::string value) {
+    int count;
+    return count = SqlConnectionHandler::getRecordCount(_GetConnectionString(), _GetDatabase(), table, column, value);
 }

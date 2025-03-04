@@ -49,6 +49,13 @@
     <ClCompile Include="Sql.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="unitImport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Agency.cpp" />
+    <ClCompile Include="Unit.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fieldOrderTable.h">
@@ -93,6 +100,16 @@
     <ClInclude Include="Sql.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="unitImport.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Units.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Unit.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Agency.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />

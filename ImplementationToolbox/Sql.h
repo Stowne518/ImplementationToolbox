@@ -64,8 +64,10 @@ public:
 	}
 
 	bool requiredInfo(std::string, std::string, std::string, std::string);
-	void executeQuery(std::string);
+	bool executeQuery(std::string);
 	void DisplaySqlConfigWindow(bool*);
+	int returnRecordCount(std::string, std::string);
+	int returnRecordCount(std::string, std::string, std::string);
 };
 
 #endif // SQL_H

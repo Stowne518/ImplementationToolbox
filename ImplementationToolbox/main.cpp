@@ -30,7 +30,8 @@
 #include <string>
 #include "xmlParser.h"
 #include "Sql.h"
-
+#include "Units.h"
+#include "unitImport.h"
 // Data
 static LPDIRECT3D9              g_pD3D = nullptr;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = nullptr;
@@ -125,6 +126,7 @@ int main(int, char**)
     bool show_one_button_refresh_window = false;
     bool show_sql_query_builder_window = false;
     bool show_xml_parser_window = false;
+    bool show_unit_import_window = false;
     bool show_sql_conn_window = false;                  // Is SQL connection configuration window open or closed
     bool show_modules = true;
     
@@ -239,7 +241,7 @@ int main(int, char**)
 
             // Module Button size
             module_button_size_x = module_buttons_x,
-            module_button_size_y = module_buttons_y / 3.3333;        // Divide by 3 for 3 buttons so they should take up the whole window for each button        
+            module_button_size_y = 50;        // Divide by 3 for 3 buttons so they should take up the whole window for each button        
 
         // Containers for ImGui window sizes
         ImVec2
@@ -274,6 +276,10 @@ int main(int, char**)
 
         // End orange color
         ImGui::PopStyleColor();
+
+        // Initialize static Unit class to pass to unitInsert
+        static Units units;
+        units.setDir(directory_path + "Units\\");
 
         // Create a static sql class to store connection info in so we can pass to different functions that may need the SQL connectivity
         static Sql sql;
@@ -349,36 +355,47 @@ int main(int, char**)
         ImGui::SetNextWindowPos(moduleButtonPos);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, (ImVec2(0, 4.5)));
         ImGui::Begin("Module Selection", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-
+        // Button labels
+        static char genExprtLabel[] = "Generic Export Generator";
+        static char oneBttnLabel[] = "One Button Database Refresh";
+        static char sqlQryLabel[] = "SQL Query Builder";
+        static char unitImportLabel[] = "Unit Import";
         // Show generic export generator button 
-        if(!show_generic_export_window)
-            if (ImGui::Button("Generic Export Generator", moduleSelectionSize)) {
+        ImGui::SeparatorText("RMS/JMS");
+        if (!show_generic_export_window)
+            if (ImGui::Button(genExprtLabel, moduleSelectionSize)) {
                 show_generic_export_window = true;
             }
         if (show_generic_export_window) {
-            ImGui::BeginDisabled();
-            if(ImGui::Button("Generic Export Generator", moduleSelectionSize));
-            ImGui::EndDisabled();
+            showDisabledButton(genExprtLabel, moduleSelectionSize);
         }
         // Show one button refresh button 
         if (!show_one_button_refresh_window)
-            if (ImGui::Button("One Button Database Refresh", moduleSelectionSize)) {
+            if (ImGui::Button(oneBttnLabel, moduleSelectionSize)) {
                 show_one_button_refresh_window = true;
             }
         if (show_one_button_refresh_window) {
-            ImGui::BeginDisabled();
-            if (ImGui::Button("One Button Database Refresh", moduleSelectionSize));
-            ImGui::EndDisabled();
+            showDisabledButton(oneBttnLabel, moduleSelectionSize);
+        }            
+        
+        ImGui::SeparatorText("CAD");
+        if (!show_unit_import_window) {
+            if (ImGui::Button(unitImportLabel, moduleSelectionSize)) {
+                show_unit_import_window = true;
+            }
         }
+        if (show_unit_import_window) {
+            showDisabledButton(unitImportLabel, moduleSelectionSize);
+        }
+        
+        ImGui::SeparatorText("SQL");
         // Show sql query builder button 
         if (!show_sql_query_builder_window)
-            if (ImGui::Button("SQL Query Builder", moduleSelectionSize)) {
+            if (ImGui::Button(sqlQryLabel, moduleSelectionSize)) {
                 show_sql_query_builder_window = true;
             }
         if (show_sql_query_builder_window) {
-            ImGui::BeginDisabled();
-            if (ImGui::Button("SQL Query Builder", moduleSelectionSize));
-            ImGui::EndDisabled();
+            showDisabledButton(sqlQryLabel, moduleSelectionSize);
         }
 
         // End Module Selection window
@@ -408,7 +425,7 @@ int main(int, char**)
         ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
         ImGui::SetNextWindowSize(moduleSize);
         ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window) {
+        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_unit_import_window) {
             ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
         }
         else {
@@ -438,6 +455,13 @@ int main(int, char**)
                     xmlParser(directory_path);
 
                     // End XML Parser
+                    ImGui::EndTabItem();
+                }
+                // Unit Import for CAD
+                if (ImGui::BeginTabItem("Unit Import", &show_unit_import_window, ImGuiTabItemFlags_None)) {
+                    unitInsert(&show_unit_import_window, sql, units);
+
+                    // End Unit Import Window
                     ImGui::EndTabItem();
                 }
 

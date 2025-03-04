@@ -19,6 +19,7 @@
 bool createDirectory(std::string& path) {
     std::string sqlOutputSubDir = path + "SQL Output\\";
     std::string profileOutputDir = path + "Profiles\\";
+    std::string unitCSVDir = path + "Units\\";
     // Check for the primary directory we will use for program if not there we try to create it
     if (!std::filesystem::exists(path)) {
         // Try and create it
@@ -27,6 +28,8 @@ bool createDirectory(std::string& path) {
             std::filesystem::create_directory(sqlOutputSubDir);
             // Create profile sub directories
             std::filesystem::create_directory(profileOutputDir);
+            // Create unit directory to store unit csv files
+            std::filesystem::create_directory(unitCSVDir);
 
             return true;
         }
@@ -40,6 +43,9 @@ bool createDirectory(std::string& path) {
     }
     else if (!std::filesystem::exists(profileOutputDir)) {
         std::filesystem::create_directory(profileOutputDir);
+    }
+    else if (!std::filesystem::exists(unitCSVDir)) {
+        std::filesystem::create_directory(unitCSVDir);
     }
     // If it already exists we also return true
     else {
@@ -143,3 +149,19 @@ bool displayCentralSquareLogo(LPDIRECT3DDEVICE9 g_pd3dDevice, const char* filena
     *out_height = (int)my_image_desc.Height;
     return true;
 }
+
+void showDisabledButton(static char label[], ImVec2 size) {
+    ImGui::BeginDisabled();
+    ImGui::Button(label, size);
+    ImGui::EndDisabled();
+}
+
+//void DrawGreenCheckMark(ImDrawList* draw_list, ImVec2 pos, float size) {
+//    float thickness = size / 5.0f;
+//    ImVec2 p1 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.55f);
+//    ImVec2 p2 = ImVec2(pos.x + size * 0.45f, pos.y + size * 0.85f);
+//    ImVec2 p3 = ImVec2(pos.x + size * 0.85f, pos.y + size * 0.15f);
+//
+//    draw_list->AddLine(p1, p2, IM_COL32(0, 255, 0, 255), thickness);
+//    draw_list->AddLine(p2, p3, IM_COL32(0, 255, 0, 255), thickness);
+//}
