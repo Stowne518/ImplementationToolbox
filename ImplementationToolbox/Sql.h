@@ -65,9 +65,11 @@ public:
 
 	bool requiredInfo(std::string, std::string, std::string, std::string);
 	bool executeQuery(std::string);
-	void DisplaySqlConfigWindow(bool*);
+	void DisplaySqlConfigWindow(bool*, std::string);
+	void saveConnString(std::string, std::string name);
 	int returnRecordCount(std::string, std::string);
 	int returnRecordCount(std::string, std::string, std::string);
+	std::string displayConnectionName(const std::string& directory);
 };
 
 #endif // SQL_H

@@ -1,6 +1,8 @@
 #include <string>
+#include <fstream>
 #include "Sql.h"
 #include "sqlConnectionHandler.h"
+#include <filesystem>
 
 bool Sql::requiredInfo(std::string s, std::string db, std::string u, std::string p) {
 	// Should check if any field is blank on the SQL Connection form and if so not allow the connection attempt
@@ -18,7 +20,7 @@ bool Sql::executeQuery(std::string query) {
         return true;
 }
 
-void Sql::DisplaySqlConfigWindow(bool* p_open) {
+void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
     // SQL Connection string variables for connection test
     static char serverNameBuffer[256] = { }, databaseNameBuffer[256] = { }, usernameBuffer[256] = { }, passwordBuffer[256] = { };
     static std::string sqlServerName, databaseName, sqlUsername, sqlPassword;
@@ -79,6 +81,70 @@ void Sql::DisplaySqlConfigWindow(bool* p_open) {
         // End SQL Connection popup modal window
         ImGui::EndPopup();
     }
+}
+
+void Sql::saveConnString(std::string dir, std::string name) {
+    std::ofstream connStr;
+    connStr.open(dir + name + ".str");
+
+    if (!connStr) {
+        return;
+    }
+    else {
+        connStr << _GetSource() << std::endl;
+        connStr << _GetDatabase() << std::endl;
+        connStr << _GetUsername() << std::endl;
+        connStr << _GetPassword();
+    }
+}
+
+std::string Sql::displayConnectionName(const std::string& directory) {
+    static std::string chosenName;
+    std::vector<std::string> fileNames;
+    for (const auto& entry : std::filesystem::directory_iterator(directory))
+    {
+        std::string filename = entry.path().filename().string();
+        size_t pos = filename.find(".str");
+        if (pos != std::string::npos) {
+            std::string displayName = filename.substr(0, pos);
+            fileNames.push_back(displayName);
+        }
+    }
+
+    // Convert std::vector<std::string> to array of const char* for ImGui display
+    std::vector<const char*> fileNameCStr;
+    for (const auto& name : fileNames) {
+        fileNameCStr.push_back(name.c_str());
+    }
+
+    // Display the Combo box if we find a profile has been created otherwise we show text instead
+    static int currentItem = 0;
+    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select a connetion", fileNameCStr[currentItem])) {
+        for (int n = 0; n < fileNameCStr.size(); n++) {
+            bool isSelected = (currentItem == n);
+            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
+                currentItem = n;
+                chosenName = fileNameCStr[n];
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        // End Combo Box for profile drop down
+        ImGui::EndCombo();
+    }
+    else if (fileNameCStr.empty())
+        ImGui::TextWrapped("No connection string files found. Use Save Connection first to generate a connection string file.");
+
+    // Return the currently selected name in the combo box
+    return chosenName;
+}
+
+void Sql::readConnString(const std::string dir) {
+    ImGui::Text("Select a saved connection string"); ImGui::SameLine(); 
+    std::string seleted_file = Sql::displayConnectionName(dir);
+    std::ifstream connStr;
+    
 }
 
 int Sql::returnRecordCount(std::string table, std::string column) {

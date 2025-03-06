@@ -285,7 +285,7 @@ int main(int, char**)
         static Sql sql;
         // Open the SQL configuration window if the menu item is selected
         if (show_sql_conn_window)
-            sql.DisplaySqlConfigWindow(&show_sql_conn_window);            
+            sql.DisplaySqlConfigWindow(&show_sql_conn_window, directory_path + "\\ConnectionStrings\\");
 
         // Create a program health window to check for required setup at the start.
         static bool directoryFound = createDirectory(directory_path);

@@ -74,6 +74,11 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
                 ImGui::InputText(("##type%i" + std::to_string(i)).c_str(), type[i], IM_ARRAYSIZE(type[i]));
                 ImGui::TableSetColumnIndex(2);
                 ImGui::InputText(("##agency%i" + std::to_string(i)).c_str(), agency[i], sizeof(agency[i]));
+
+                // If any update is made to values update the respective object
+                unit[i].setUnitCode(unitcode[i]);
+                unit[i].setType(type[i]);
+                unit[i].setAgency(agency[i]);
             }
             // End imported units table
             ImGui::EndTable();
@@ -83,8 +88,8 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
         bool sqlConnected = sql._GetConnected();
         static char username[20], buffer[1000];
         static int user_count;
-        std::string results, userqry;
-        // TODO: Write sql query to return int count of record results
+        static std::vector<std::string> results;
+        // DONE: Write sql query to return int count of record results
         ImGui::Text("Enter the username to add these units with: "); ImGui::SameLine(); 
         ImGui::SetNextItemWidth(150);
         if (!sqlConnected) {
@@ -105,10 +110,10 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
 
         }
         text_box_pos.x += 5.0f; // Adjust the position to place the check mark next to the text box
-        text_box_pos.y -= 12.0f;
+        text_box_pos.y -= 20.0f;
         if (validOSUsername) {  
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            float size = 15.0f; // Adjust size as needed
+            float size = 20.0f; // Adjust size as needed
             DrawGreenCheckMark(draw_list, text_box_pos, size);
         }
         if (!validOSUsername && sqlConnected) { 
@@ -141,9 +146,9 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             ImGui::SetNextWindowPos(validate_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
             ImGui::SetNextWindowSize(ImVec2(ImGui::GetContentRegionMax().x * .3, ImGui::GetContentRegionMax().y * .17));
             if (ImGui::BeginPopupModal("Verify Duplicates", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-                ImGui::TextWrapped("CAD does not allow duplicated units. Until we have a way to automatically verify units before inserting please manually confirm you have not duplicated any pre-existing records.");
-                if (ImGui::Button("Continue")) {
-                    insertSql(sql, unit, &results);
+                ImGui::TextWrapped("CAD does not allow duplicated units. Any attempt to import duplicate units here will return a fail and no insertion will be made for that unit.");
+                if (ImGui::Button("Acknowledge")) {
+                    insertSql(sql, unit, &results, username);
                     ImGui::CloseCurrentPopup();
                 } ImGui::SameLine();
                 if (ImGui::Button("Cancel")) {
@@ -156,10 +161,10 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             if (ImGui::BeginTable("SqlResults", 1, ImGuiTableFlags_SizingStretchProp)) {
                 ImGui::TableSetupColumn("Results");
                 ImGui::TableHeadersRow();
-                for (int i = 0; i < unit.size(); i++) {
+                for (int i = 0; i < results.size(); i++) {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%s", results.c_str());
+                    ImGui::Text("%s", results[i].c_str());
                 }
                 // End query results table
                 ImGui::EndTable();
@@ -221,18 +226,23 @@ std::string displayFiles(std::string dir) {
 /// </summary>
 /// <param name="sql">is a SQL Class with conneciton string info and query function</param>
 /// <param name="units">is a vector container of all units built in our unitImport functions with all their information</param>
-void insertSql(Sql& sql, std::vector<Unit> units, std::string* result) {
+void insertSql(Sql& sql, std::vector<Unit> units, std::vector<std::string>* result, std::string username) {
     // Write query into buffer var since we store it with C style strings then convert to string and pass along to SQL        
     for (int i = 0; i < units.size(); i++) {
         char buffer[1000];
         std::string query;
-        sprintf(buffer, "INSERT INTO %s..unit (unitcode, type, agency) VALUES ('%s','%s','%s')", sql._GetDatabase().c_str(), units[i].getUnitCode(), units[i].getType(), units[i].getAgency());
+        sprintf_s(buffer, "INSERT INTO %s..unit (unitcode, type, agency, adduser, addtime) VALUES ('%s','%s','%s','%s',GETDATE())", sql._GetDatabase().c_str(), units[i].getUnitCode(), units[i].getType(), units[i].getAgency(), username.c_str());
         query = buffer;
-        if (!sql.executeQuery(query)) {
+        // Check if there is already a unit with the same unit code in the system
+        int unitCount = sql.returnRecordCount("unit", "unitcode", units[i].getUnitCode());
+        if (unitCount > 0) {
             ImGui::Text("Query Failed: %s", query.c_str());
+            result->push_back("Unit " + (std::string)units[i].getUnitCode() + " not added - detected duplicate!");
         }
-        else
-            ImGui::Text("Query Success: %s", query.c_str());
+        else {
+            sql.executeQuery(query);
+            result->push_back("Unit " + (std::string)units[i].getUnitCode() + " added successfully!");
+        }
     }
 }
 
@@ -293,7 +303,6 @@ void DrawGreenCheckMark(ImDrawList* draw_list, ImVec2 pos, float size) {
     ImVec2 p1 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.55f);
     ImVec2 p2 = ImVec2(pos.x + size * 0.45f, pos.y + size * 0.85f);
     ImVec2 p3 = ImVec2(pos.x + size * 0.85f, pos.y + size * 0.15f);
-
-    draw_list->AddLine(p1, p2, IM_COL32(0, 255, 0, 255), thickness);
-    draw_list->AddLine(p2, p3, IM_COL32(0, 255, 0, 255), thickness);
+    draw_list->AddLine(p1, p2, IM_COL32(0, 200, 0, 255), thickness);
+    draw_list->AddLine(p2, p3, IM_COL32(0, 200, 0, 255), thickness);
 }
