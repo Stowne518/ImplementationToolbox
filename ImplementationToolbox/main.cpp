@@ -49,9 +49,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int main(int, char**)
 {
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.5.0";
-    const char* currVersion = "Implementation Toolbox v0.5.0";
-    const char* lastUpdate = "2/10/25";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.0";
+    const char* currVersion = "Implementation Toolbox v0.6.0";
+    const char* lastUpdate = "3/12/25";
 
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();

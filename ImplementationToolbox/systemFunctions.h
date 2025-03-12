@@ -84,22 +84,25 @@ void DisplayColoredText(const char* text, bool isGreen) {
 void displayUpdates() {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, (ImVec2(0, 5)));
     if (ImGui::CollapsingHeader("General")) {
-        ImGui::TextWrapped("- began work on direct SQL connectivity within the app. Much work to be done yet, but the plan is to have that available so we can place the tool on site and have it integrate directly with SQL and the fileshare.");
-        ImGui::TextWrapped("- Updated the health check window to track SQL connectivity.");
+        ImGui::TextWrapped("- Added new directories for SQL connection strings and unit csv files in the working directory.");
     }
+    ImGui::SeparatorText("RMS/JMS");
     if (ImGui::CollapsingHeader("Generic Export Generator")) {
         ImGui::Spacing();
-        ImGui::TextWrapped("- Completed significant work on bug fixes for the field ordering when  loading/saving profiles. There was a known bug when profiles were loaded the order reset to match the order the fields appear in for the list, not the order they were selected in. This is FIXED.");
-        ImGui::TextWrapped("- Changed the formatting of some options  in the file options and field options tabs, tried to make it more clear what options go with what items. Also stopped hiding options, and show them always but they will be disabled until the correct option is selected.");
-        ImGui::TextWrapped("- Moved field options and field selection to the same window for easier configuring when including additional fields.");
-        ImGui::TextWrapped("- Modified the SQL output window so it's smaller and the text itself is only visible for part of the window. This keeps the copy to clipboard and close buttons visible at all times.");
-        ImGui::TextWrapped("- Added a check to see if field options have been added before allowing them to be selected in the field list for locations and pin fields.");
+        ImGui::TextWrapped("- Began work on sorting table and editing field order values. Not functional yet.");
         ImGui::SeparatorText("Known Bugs");
+        ImGui::TextWrapped("- Sorting on field list and editing field order is still not functional for generic exports.");
     }
     if (ImGui::CollapsingHeader("One Button Database Refresh")) {
         ImGui::Spacing();
         ImGui::TextWrapped("- Modified the SQL output window so it's smaller and the text itself is only visible for part of the window. This keeps the copy to clipboard and close buttons visible at all times.");
     }
+    ImGui::SeparatorText("CAD");
+    if (ImGui::CollapsingHeader("Unit Import"))
+    {
+        ImGui::TextWrapped("- New functionality: Added module for CAD units where a CSV can be read and data can be inserted directly into a SQL database in bulk to avoid hand entering. NOTE: SQL connectivity must be connected before this will work.");
+    }
+    ImGui::SeparatorText("SQL");
     if (ImGui::CollapsingHeader("SQL Query Builder")) {
         ImGui::Spacing();
         ImGui::TextWrapped("No updates this version.");
