@@ -31,7 +31,10 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
     ImGui::OpenPopup("SQL Connection Settings");
 
     if (ImGui::BeginPopupModal("SQL Connection Settings", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+        readConnString(dir, serverNameBuffer, databaseNameBuffer, usernameBuffer, passwordBuffer);
         if (ImGui::BeginTable("SQL Connection String", 2, ImGuiTableFlags_SizingFixedFit)) {
+            ImGui::TableNextColumn();
+            ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Server name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##server", serverNameBuffer, IM_ARRAYSIZE(serverNameBuffer));
             ImGui::TableNextColumn();
@@ -45,7 +48,7 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
             ImGui::EndTable();
         }
 
-        // Copy char array buffers to strings
+        // Set all obj variables to buffer values
         _SetSource(std::string(serverNameBuffer));
         _SetDatabase(std::string(databaseNameBuffer));
         _SetUsername(std::string(usernameBuffer));
@@ -76,6 +79,10 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
         if (ImGui::Button("Close", ImVec2(120, 60))) {
             *p_open = false;
             ImGui::CloseCurrentPopup();
+        }
+
+        if (ImGui::Button("Save Connection String", ImVec2(248, 30))) {
+            saveConnString(dir, _GetSource());
         }
 
         // End SQL Connection popup modal window
@@ -119,7 +126,7 @@ std::string Sql::displayConnectionName(const std::string& directory) {
 
     // Display the Combo box if we find a profile has been created otherwise we show text instead
     static int currentItem = 0;
-    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select a connetion", fileNameCStr[currentItem])) {
+    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select a connetion", fileNameCStr[currentItem], ImGuiComboFlags_None)) {
         for (int n = 0; n < fileNameCStr.size(); n++) {
             bool isSelected = (currentItem == n);
             if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
@@ -134,25 +141,61 @@ std::string Sql::displayConnectionName(const std::string& directory) {
         ImGui::EndCombo();
     }
     else if (fileNameCStr.empty())
-        ImGui::TextWrapped("No connection string files found. Use Save Connection first to generate a connection string file.");
+        ImGui::TextWrapped("No connection string files found. Use Save Connection first to generate a file.");
 
     // Return the currently selected name in the combo box
     return chosenName;
 }
 
-void Sql::readConnString(const std::string dir) {
-    ImGui::Text("Select a saved connection string"); ImGui::SameLine(); 
-    std::string seleted_file = Sql::displayConnectionName(dir);
+void Sql::readConnString(const std::string dir, char* source, char* db, char* un, char* pw) {
+    ImGui::SetNextItemWidth(204);
+    std::string selected_file = Sql::displayConnectionName(dir);
+    const int FIELD_LEN = 256;
+    char source_buff[FIELD_LEN], db_buff[FIELD_LEN], un_buff[FIELD_LEN], pw_buff[FIELD_LEN];
     std::ifstream connStr;
-    
+    ImGui::SameLine();
+    if (ImGui::Button("Load")) 
+    {
+        connStr.open(dir + selected_file + ".str");
+
+        // Make sure we opened the file
+        if (!connStr) 
+        {
+            return;
+        }
+        else
+        {
+            std::string line;
+            if (std::getline(connStr, line)) 
+            {
+                strncpy_s(source, FIELD_LEN, line.c_str(), FIELD_LEN);          // Read source value and copy to buffer
+            }
+            if (std::getline(connStr, line))
+            {
+                strncpy_s(db, FIELD_LEN, line.c_str(), FIELD_LEN);                    // Read database value and copy to buffer
+            }
+            if (std::getline(connStr, line))
+            {
+                strncpy_s(un, FIELD_LEN, line.c_str(), FIELD_LEN);                    // Read username value and copy to buffer
+            }
+            if (std::getline(connStr, line))
+            {
+                strncpy_s(pw, FIELD_LEN, line.c_str(), FIELD_LEN);                    // Read password value
+            }
+            connStr.close();                    // Close file when done
+        }
+    }
 }
 
-int Sql::returnRecordCount(std::string table, std::string column) {
+int Sql::returnRecordCount(std::string table, std::string column) 
+{
     int count;
     return count = SqlConnectionHandler::getRecordCount(_GetConnectionString(), _GetDatabase(), table, column);
 }
+
 // Overload to count records for one specific value intead of just all records in one column
-int Sql::returnRecordCount(std::string table, std::string column, std::string value) {
+int Sql::returnRecordCount(std::string table, std::string column, std::string value) 
+{
     int count;
     return count = SqlConnectionHandler::getRecordCount(_GetConnectionString(), _GetDatabase(), table, column, value);
 }

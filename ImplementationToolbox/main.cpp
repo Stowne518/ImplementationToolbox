@@ -506,26 +506,9 @@ int main(int, char**)
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Settings")) {
-                // Wasn't as simple as I hoped, need to look into this in the future
-                ImGui::BeginDisabled();
-                if (ImGui::BeginMenu("Font Size")) {
-                    if (ImGui::MenuItem("12 pt"))
-                        font_size = 12.0f;
-                    if (ImGui::MenuItem("14 pt"), NULL, true)
-                        font_size = 14.0f;
-                    if (ImGui::MenuItem("16 pt"))
-                        font_size = 16.0f;
-                    // End Font Size menu
-                    ImGui::EndMenu();
-                }
-                ImGui::EndDisabled();
 
-                if (ImGui::BeginMenu("SQL Connection Settings")) {
-                    if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
-
-                    //End SQL Settings menu
-                    ImGui::EndMenu();
-                }
+                // Open popup for SQL settings
+                if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
 
                 if (ImGui::BeginMenu("Display")) {
                     if (ImGui::BeginMenu("Style")) {

@@ -70,6 +70,7 @@ public:
 	int returnRecordCount(std::string, std::string);
 	int returnRecordCount(std::string, std::string, std::string);
 	std::string displayConnectionName(const std::string& directory);
+	void readConnString(const std::string dir, char source[], char* db, char* un, char* pw);
 };
 
 #endif // SQL_H
