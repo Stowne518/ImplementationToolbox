@@ -28,21 +28,27 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
     static bool connection_attempted = false;   // Have we tried to connect yet? - Use this to determine what to display in the health check window
     static bool connection_success = false;     // Did we succeed in our attempt to connect to SQL?
     static float fieldLen = 101;                // Length to display connection string boxes
+    bool checkrequiredInfo = false;             // Check that we have all info filled out
+    static bool changed = false;
     ImGui::OpenPopup("SQL Connection Settings");
 
     if (ImGui::BeginPopupModal("SQL Connection Settings", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
-        readConnString(dir, serverNameBuffer, databaseNameBuffer, usernameBuffer, passwordBuffer);
+        readConnString(dir, serverNameBuffer, databaseNameBuffer, usernameBuffer, passwordBuffer, checkrequiredInfo);
         if (ImGui::BeginTable("SQL Connection String", 2, ImGuiTableFlags_SizingFixedFit)) {
             ImGui::TableNextColumn();
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Server name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##server", serverNameBuffer, IM_ARRAYSIZE(serverNameBuffer));
+            if (serverNameBuffer != _GetSource()) { changed = true; }               // Did we change server name
             ImGui::TableNextColumn();
             ImGui::Text("Enter database name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##database", databaseNameBuffer, IM_ARRAYSIZE(databaseNameBuffer));
+            if (databaseNameBuffer != _GetDatabase()) { changed = true; }           // Did we change database name
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Username:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##user", usernameBuffer, IM_ARRAYSIZE(usernameBuffer));
+            if (usernameBuffer != _GetUsername()) { changed = true; }               // Did we change username
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Password:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##password", passwordBuffer, IM_ARRAYSIZE(passwordBuffer));
+            if (passwordBuffer != _GetPassword()) { changed = true; }               // Did we change database name
 
             // End SQL entry table
             ImGui::EndTable();
@@ -55,14 +61,16 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
         _SetPassword(std::string(passwordBuffer));
 
         // Check that field have been filled out
-        bool checkrequiredInfo = requiredInfo(_GetSource(), _GetDatabase(), _GetUsername(), _GetPassword());
+        if(!checkrequiredInfo)
+            checkrequiredInfo = requiredInfo(_GetSource(), _GetDatabase(), _GetUsername(), _GetPassword());
 
-        if (!_GetConnected() && checkrequiredInfo) {
+        if (!_GetConnected() && checkrequiredInfo || changed) {
             if (ImGui::Button("Test Connection", ImVec2(120, 60))) {
                 _SetConnected(SqlConnectionHandler::sqlConnectionHandler(_GetSource(), _GetDatabase(), _GetUsername(), _GetPassword()));
                 if(_GetConnected())
                     _SetConnectionString();
                 _SetConnectionAttempt();
+                changed = false;
             }
         }
         else if (!_GetConnected() && !checkrequiredInfo) {
@@ -80,9 +88,18 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
             *p_open = false;
             ImGui::CloseCurrentPopup();
         }
-
-        if (ImGui::Button("Save Connection String", ImVec2(248, 30))) {
-            saveConnString(dir, _GetSource());
+        if(checkrequiredInfo && _GetConnected())
+        {
+            if (ImGui::Button("Save Connection String", ImVec2(248, 30))) {
+                saveConnString(dir, _GetSource());
+            }
+        }
+        if (!checkrequiredInfo || !_GetConnected())
+        {
+            ImGui::BeginDisabled();
+            ImGui::Button("Save Connection String", ImVec2(248, 30));
+            ImGui::SetItemTooltip("Fill out all fields and test connection to enable saving.");
+            ImGui::EndDisabled();
         }
 
         // End SQL Connection popup modal window
@@ -141,48 +158,51 @@ std::string Sql::displayConnectionName(const std::string& directory) {
         ImGui::EndCombo();
     }
     else if (fileNameCStr.empty())
-        ImGui::TextWrapped("No connection string files found. Use Save Connection first to generate a file.");
+    {
+        ImGui::SetNextItemWidth(203);
+        ImGui::TextWrapped("No saved connetion strings.");
+    }
 
     // Return the currently selected name in the combo box
     return chosenName;
 }
 
-void Sql::readConnString(const std::string dir, char* source, char* db, char* un, char* pw) {
-    ImGui::SetNextItemWidth(204);
+void Sql::readConnString(const std::string dir, char* source, char* db, char* un, char* pw, bool req) {
+    ImGui::SetNextItemWidth(203);
     std::string selected_file = Sql::displayConnectionName(dir);
     const int FIELD_LEN = 256;
     char source_buff[FIELD_LEN], db_buff[FIELD_LEN], un_buff[FIELD_LEN], pw_buff[FIELD_LEN];
     std::ifstream connStr;
     ImGui::SameLine();
-    if (ImGui::Button("Load")) 
+    if (ImGui::Button("Load"))
     {
         connStr.open(dir + selected_file + ".str");
 
         // Make sure we opened the file
-        if (!connStr) 
+        if (!connStr)
         {
             return;
         }
         else
         {
             std::string line;
-            if (std::getline(connStr, line)) 
+            if (std::getline(connStr, line))
             {
-                strncpy_s(source, FIELD_LEN, line.c_str(), FIELD_LEN);          // Read source value and copy to buffer
+                strncpy_s(source, FIELD_LEN, line.c_str(), FIELD_LEN);                  // Read source value and copy to buffer
             }
             if (std::getline(connStr, line))
             {
-                strncpy_s(db, FIELD_LEN, line.c_str(), FIELD_LEN);                    // Read database value and copy to buffer
+                strncpy_s(db, FIELD_LEN, line.c_str(), FIELD_LEN);                      // Read database value and copy to buffer
             }
             if (std::getline(connStr, line))
             {
-                strncpy_s(un, FIELD_LEN, line.c_str(), FIELD_LEN);                    // Read username value and copy to buffer
+                strncpy_s(un, FIELD_LEN, line.c_str(), FIELD_LEN);                      // Read username value and copy to buffer
             }
             if (std::getline(connStr, line))
             {
-                strncpy_s(pw, FIELD_LEN, line.c_str(), FIELD_LEN);                    // Read password value
+                strncpy_s(pw, FIELD_LEN, line.c_str(), FIELD_LEN);                      // Read password value
             }
-            connStr.close();                    // Close file when done
+            connStr.close();                                                            // Close file when done
         }
     }
 }
