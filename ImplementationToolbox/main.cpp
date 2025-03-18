@@ -49,8 +49,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int main(int, char**)
 {
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.6.0";
-    const char* currVersion = "Implementation Toolbox v0.6.0";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.1";
+    const char* currVersion = "Implementation Toolbox v0.6.1";
     const char* lastUpdate = "3/12/25";
 
     // Create application window
@@ -328,7 +328,7 @@ int main(int, char**)
                     DisplayColoredText("\tSQL Connection failed!", false);
                 }
                 else {
-                    DisplayColoredText("\tSQL Connection Suceeded!", true);
+                    DisplayColoredText("\tSQL Connection Succeeded!", true);
                 }
 
                 // End health check table

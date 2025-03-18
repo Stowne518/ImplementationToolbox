@@ -84,7 +84,7 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             ImGui::EndTable();
         }
         static ImVec2 text_box_pos;
-        static bool validOSUsername = false;
+        bool validOSUsername = false;
         bool sqlConnected = sql._GetConnected();
         static char username[20], buffer[1000];
         static int user_count;
@@ -94,7 +94,7 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
         ImGui::SetNextItemWidth(150);
         if (!sqlConnected && sql._GetDatabase() != "cad" || sqlConnected && sql._GetDatabase() != "cad") {
             ImGui::BeginDisabled();
-            ImGui::InputText("##OSUser", username, sizeof(username));
+            ImGui::InputText("##OSUser", username, sizeof(username), ImGuiInputTextFlags_CharsUppercase);
             ImGui::SetItemTooltip("Connect to the cad database to proceed.");
             ImGui::SameLine(); ImGui::Button("Check Username in CAD");
             ImGui::SetItemTooltip("Connect to the cad database to proceed.");
@@ -104,22 +104,14 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             ImGui::EndDisabled();
         }
         if (sqlConnected && sql._GetDatabase() == "cad") {
-            ImGui::InputText("##OSUser", username, IM_ARRAYSIZE(username));
+            ImGui::InputText("##OSUser", username, IM_ARRAYSIZE(username), ImGuiInputTextFlags_CharsUppercase);
             ImGui::SameLine();
             if (ImGui::Button("Check Username in CAD")) {
                 user_count = sql.returnRecordCount("system1", "userid", username);
             }
             text_box_pos = ImGui::GetItemRectMax(); // Get the position of the text box
-
         }
-        text_box_pos.x += 5.0f; // Adjust the position to place the check mark next to the text box
-        text_box_pos.y -= 20.0f;
-        if (validOSUsername) {  
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            float size = 20.0f; // Adjust size as needed
-            DrawGreenCheckMark(draw_list, text_box_pos, size);
-        }
-        if (!validOSUsername && sqlConnected) { 
+        if (!validOSUsername && sqlConnected) {
             // Get count of users when checking for user existence
             // If it's more than one we found 2 or more users with the same name (shouldn't be possible, but who knows).
             if (user_count > 1) {
@@ -134,6 +126,24 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
                 validOSUsername = true;
             }
         }
+        
+        if (validOSUsername) {  
+            text_box_pos.x += 5.0f; // Adjust the position to place the check mark next to the text box
+            text_box_pos.y -= 20.0f;
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            float size = 20.0f; // Adjust size as needed            
+            DrawGreenCheckMark(draw_list, text_box_pos, size);
+        }
+        // If we're connected and that database is cad but the user isn't found
+        if (sql._GetConnected() && sql._GetDatabase() == "cad" && !validOSUsername) {
+            text_box_pos.x += 10.0f; // Adjust the position to place the check mark next to the text box
+            text_box_pos.y -= 10.0f;
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            float size = 20.0f; // Adjust size as needed
+            DrawRedXMark(draw_list, text_box_pos, size);
+            ImGui::SetItemTooltip("Not a valid username in CAD");
+        }
+        
         if (!sql._GetConnected() || !validOSUsername) {
             ImGui::BeginDisabled();
             ImGui::Button("SQL Insert");
@@ -146,7 +156,7 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             ImGui::Button("SQL Insert");
             ImGui::SetItemTooltip("Connect to the cad database.");
             ImGui::EndDisabled();
-        }
+        }        
         if (sql._GetConnected() && validOSUsername && sql._GetDatabase() == "cad") {
             if (ImGui::Button("SQL Insert")) {
                 ImGui::OpenPopup("Verify Duplicates");
@@ -310,10 +320,20 @@ std::vector<Unit> buildUnits(Units& units) {
 }
 
 void DrawGreenCheckMark(ImDrawList* draw_list, ImVec2 pos, float size) {
-    float thickness = size / 5.0f;
+    float thickness = size / 6.0f;
     ImVec2 p1 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.55f);
     ImVec2 p2 = ImVec2(pos.x + size * 0.45f, pos.y + size * 0.85f);
     ImVec2 p3 = ImVec2(pos.x + size * 0.85f, pos.y + size * 0.15f);
     draw_list->AddLine(p1, p2, IM_COL32(0, 200, 0, 255), thickness);
     draw_list->AddLine(p2, p3, IM_COL32(0, 200, 0, 255), thickness);
+}
+
+void DrawRedXMark(ImDrawList* draw_list, ImVec2 pos, float size) {
+    float thickness = size / 6.0f;
+    ImVec2 p1 = ImVec2(pos.x - size * 0.30f, pos.y + size * 0.45f);
+    ImVec2 p2 = ImVec2(pos.x + size * 0.15f, pos.y - size * 0.45f);
+    ImVec2 p3 = ImVec2(pos.x - size * 0.30f, pos.y - size * 0.45f);
+    ImVec2 p4 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.45f);
+    draw_list->AddLine(p1, p2, IM_COL32(200, 0, 0, 255), thickness);
+    draw_list->AddLine(p3, p4, IM_COL32(200, 0, 0, 255), thickness);
 }

@@ -16,4 +16,5 @@ void insertSql(Sql&, std::vector<Unit>, std::vector<std::string>*, std::string);
 void readColumns(Units&);
 void readRows(Units&);
 std::vector<Unit> buildUnits(Units&);
+void DrawRedXMark(ImDrawList* draw_list, ImVec2 pos, float size);
 void DrawGreenCheckMark(ImDrawList*, ImVec2, float);
