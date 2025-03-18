@@ -92,15 +92,18 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
         // DONE: Write sql query to return int count of record results
         ImGui::Text("Enter the username to add these units with: "); ImGui::SameLine(); 
         ImGui::SetNextItemWidth(150);
-        if (!sqlConnected) {
+        if (!sqlConnected && sql._GetDatabase() != "cad" || sqlConnected && sql._GetDatabase() != "cad") {
             ImGui::BeginDisabled();
             ImGui::InputText("##OSUser", username, sizeof(username));
+            ImGui::SetItemTooltip("Connect to the cad database to proceed.");
             ImGui::SameLine(); ImGui::Button("Check Username in CAD");
+            ImGui::SetItemTooltip("Connect to the cad database to proceed.");
+
             text_box_pos = ImGui::GetItemRectMax(); // Get the position of the button
 
             ImGui::EndDisabled();
         }
-        if (sqlConnected) {
+        if (sqlConnected && sql._GetDatabase() == "cad") {
             ImGui::InputText("##OSUser", username, IM_ARRAYSIZE(username));
             ImGui::SameLine();
             if (ImGui::Button("Check Username in CAD")) {
@@ -134,9 +137,17 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
         if (!sql._GetConnected() || !validOSUsername) {
             ImGui::BeginDisabled();
             ImGui::Button("SQL Insert");
+            ImGui::SetItemTooltip("Make sure your username is valid.");
             ImGui::EndDisabled();
         }
-        if (sql._GetConnected() && validOSUsername) {
+        // If we've connected to SQL make sure we're connected to the CAD database
+        if (sql._GetConnected() && sql._GetDatabase() != "cad" && validOSUsername) {
+            ImGui::BeginDisabled();
+            ImGui::Button("SQL Insert");
+            ImGui::SetItemTooltip("Connect to the cad database.");
+            ImGui::EndDisabled();
+        }
+        if (sql._GetConnected() && validOSUsername && sql._GetDatabase() == "cad") {
             if (ImGui::Button("SQL Insert")) {
                 ImGui::OpenPopup("Verify Duplicates");
             }

@@ -95,12 +95,15 @@ void displayUpdates() {
     }
     if (ImGui::CollapsingHeader("One Button Database Refresh")) {
         ImGui::Spacing();
-        ImGui::TextWrapped("- Modified the SQL output window so it's smaller and the text itself is only visible for part of the window. This keeps the copy to clipboard and close buttons visible at all times.");
+        ImGui::TextWrapped("- Added QOL improvements by adding check box for using the same file path in training as live.");
+        ImGui::TextWrapped("- Now check that all data is filled out before allowing a script to be generated to avoid errors when running SQL.");
+        ImGui::TextWrapped("- Recently tested script on a client site and it did work without error, reducing refresh time to about 10 minutes in total.");
     }
     ImGui::SeparatorText("CAD");
     if (ImGui::CollapsingHeader("Unit Import"))
     {
         ImGui::TextWrapped("- New functionality: Added module for CAD units where a CSV can be read and data can be inserted directly into a SQL database in bulk to avoid hand entering. NOTE: SQL connectivity must be connected before this will work.");
+        ImGui::TextWrapped("- Hotfix: Added verification that you are connected to the cad database before allowing the insert to proceed.");
     }
     ImGui::SeparatorText("SQL");
     if (ImGui::CollapsingHeader("SQL Query Builder")) {

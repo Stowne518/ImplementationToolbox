@@ -143,6 +143,7 @@ void showOneButtonRefreshWindow(bool* p_open) {
     const int FILEPATH_LENGTH = 210;
 
     static bool use_work_area = false;
+    static bool samePath = false;
 
     const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     ImVec2 display = ImGui::GetIO().DisplaySize;
@@ -185,6 +186,7 @@ void showOneButtonRefreshWindow(bool* p_open) {
     }
 
     ImGui::TextWrapped("NOT FULLY TESTED, NEEDS FURTHER WORK. HAS BEEN TESTED ON INTERNAL LAB SUCCESSFULLY.");
+    ImGui::TextWrapped("Successful test at: Southwest Central Dispatch, IL!");
     ImGui::TextWrapped("Enter the relevant file paths for the local SQL server to complete a one-button refresh for RMS to RMSTRN. Make sure to include a trailing slash on the file path.");
     ImGui::TextWrapped("Currently we don't check that there is enough space before refreshing, so please check that first. When it is determined there is enough space, you can generate the script here and then run the generated SQL script.");
     if (ImGui::CollapsingHeader("Script explanation")) {
@@ -250,13 +252,30 @@ void showOneButtonRefreshWindow(bool* p_open) {
         // Begin rmstrn file path group
         ImGui::BeginGroup();
         {
-            ImGui::AlignTextToFramePadding();       // Line up text between groups
-            ImGui::Text("RMS Training database backup file path");
-            ImGui::SetNextItemWidth(FILEPATH_LENGTH);
-            ImGui::InputText("##rmstrnfilepath", trnFilePath, IM_ARRAYSIZE(trnFilePath));
-            // End rmstrn file path group
+            if (samePath) {
+                ImGui::AlignTextToFramePadding();       // Line up text between groups
+                ImGui::Text("RMS Training database backup file path");
+                ImGui::SetNextItemWidth(FILEPATH_LENGTH);
+                ImGui::BeginDisabled();
+                ImGui::InputText("##rmstrnfilepath", trnFilePath, IM_ARRAYSIZE(trnFilePath));
+                ImGui::EndDisabled();
+            }
+            if (!samePath) {
+                ImGui::AlignTextToFramePadding();       // Line up text between groups
+                ImGui::Text("RMS Training database backup file path");
+                ImGui::SetNextItemWidth(FILEPATH_LENGTH);
+                ImGui::InputText("##rmstrnfilepath", trnFilePath, IM_ARRAYSIZE(trnFilePath));
+                // End rmstrn file path group
+            }
+            ImGui::SameLine();
+
+            ImGui::Checkbox("Same path as live", &samePath);
+            // If box for same path locations is checked we disable the text input and copy the live path into training
+            if (samePath) {
+                strncpy_s(trnFilePath, liveFilePath, FILENAME_MAX);
+            }
             ImGui::EndGroup();
-        }       
+        }   
 
         // End Training data group
         ImGui::EndGroup();
@@ -274,8 +293,18 @@ void showOneButtonRefreshWindow(bool* p_open) {
     float centerButton = ((ImGui::GetWindowContentRegionMax().x / 2) - (button_x / 2));
     ImGui::Dummy(ImVec2(centerButton, 0));
     ImGui::SameLine();
-    if (ImGui::Button("Generate Script", button_size))
-        ImGui::OpenPopup("OneButtonRefreshScript");
+    // See if we have all data elements filled out before allowing the script to generate to avoid errors
+    bool data_check = dataCheck(rmsName, liveFilePath, rmstrnName, trnFilePath);
+    if (data_check) {
+        if (ImGui::Button("Generate Script", button_size))
+            ImGui::OpenPopup("OneButtonRefreshScript");
+    }
+    if (!data_check) {
+        ImGui::BeginDisabled();
+        ImGui::Button("Generate Script", button_size);
+        ImGui::SetItemTooltip("Please fill out all fields before generating script.");
+        ImGui::EndDisabled();
+    }
 
     // Center window when it opens
     ImVec2 center2 = ImGui::GetMainViewport()->GetCenter();
@@ -603,4 +632,11 @@ void showOneButtonRefreshWindow(bool* p_open) {
 
     // End Refresh window
     // ImGui::End();
+}
+
+bool dataCheck(char* rmsDb, char* rmsBkup, char* trnDb, char* trnBkup) {
+    if (rmsDb[0] == '\0' || rmsBkup[0] == '\0' || trnDb[0] == '\0' || trnBkup[0] == '\0')
+        return false;
+    else
+        return true;
 }

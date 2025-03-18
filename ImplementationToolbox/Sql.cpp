@@ -109,7 +109,7 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
 
 void Sql::saveConnString(std::string dir, std::string name) {
     std::ofstream connStr;
-    connStr.open(dir + name + ".str");
+    connStr.open(dir + name + "_" + _GetDatabase() + ".str");
 
     if (!connStr) {
         return;
