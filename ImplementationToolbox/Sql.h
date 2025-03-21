@@ -67,8 +67,8 @@ public:
 	bool executeQuery(std::string);
 	void DisplaySqlConfigWindow(bool*, std::string);
 	void saveConnString(std::string, std::string name);
-	int returnRecordCount(std::string, std::string);
-	int returnRecordCount(std::string, std::string, std::string);
+	int returnRecordCount(std::string table, std::string column);
+	int returnRecordCount(std::string table, std::string column, std::string value);
 	std::string displayConnectionName(const std::string& directory);
 	void readConnString(const std::string dir, char source[], char* db, char* un, char* pw, bool);
 };

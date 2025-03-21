@@ -6,11 +6,12 @@
 #include <filesystem>
 #include "imgui.h"
 
-class Sql;		// Declare SQL class for sql connections later
-class Units;	// Declare Units class
-class Unit;		// Declare Unit class
+class Sql;			// Declare SQL class for sql connections later
+class Units;		// Declare Units class
+class Unit;			// Declare Unit class
+class AgencyUnit;	// Declare AgencyUnit class
 
-void unitInsert(bool *, Sql&, Units&);
+void unitInsert(Sql&, Units&);
 std::string displayFiles(std::string);
 void insertSql(Sql&, std::vector<Unit>, std::vector<std::string>*, std::string);
 void readColumns(Units&);

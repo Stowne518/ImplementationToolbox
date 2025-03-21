@@ -3,17 +3,20 @@
 #include "unitImport.h"
 #include "Units.h"
 #include "Unit.h"
+#include "AgencyUnit.h"
+#include "unitbuilder.h"
 #include <iostream>
 
 // Forward declaration
 void DrawGreenCheckMark(ImDrawList* draw_list, ImVec2 pos, float size);
 
 // Send current SQL class in use, and file directory pointed directly to the unit_csv files
-void unitInsert(bool* p_open, Sql& sql, Units& units) {
+void unitInsert(Sql& sql, Units& units) {
     std::string dir = units.getDir();
     static std::vector<std::string> cols;
     static std::vector<std::string> rows;
     static std::vector<Unit> unit;
+    
     // buffers for reading unit data into
     static char unitcode[300][7];
     static char type[300][5];
@@ -23,15 +26,24 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
     static char district[300][5];
     static char beat[300][5];
     static char service[300][5];
+
+
     static bool imported = false;
 
-    ImGui::Text("Select a file to import: "); ImGui::SameLine(); 
-    std::string fileName = displayFiles(dir);
-    units.setFileName(fileName);
+    try
+    {
+        ImGui::Text("Select a file to import: "); ImGui::SameLine();
+        std::string fileName = displayFiles(dir);
+        units.setFileName(fileName);
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
     ImGui::SameLine();
 
-    if(!imported)
-        if (ImGui::Button("ImportCSV"))
+    if (!imported)
+        if (ImGui::Button("ImportCSV##units"))
             imported = true;
     if (imported) {
         ImGui::BeginDisabled();
@@ -39,16 +51,16 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
         ImGui::EndDisabled();
     }
 
-    if(imported){
+    if (imported) {
         static bool read = false;
         // Only read in imported data once
-        while (!read){
+        while (!read) {
             // Read in columns from CSV
-            readColumns(units);
+            // readColumns(units);
             // Read in row data from CSV
             readRows(units);
             // Read in column data to vector from Units class
-            cols = units.getCols();
+            // cols = units.getCols();
             // Read in row data to local vector from Units class
             rows = units.getRows();
             // Parse row data into data elements in Unit class
@@ -67,9 +79,9 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             // Only read fields once
             read = true;
         }
-        
+
         // Build table for each element found in Unit class and make it editable
-        if(ImGui::BeginTable("Imported Units", cols.size(), ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
+        if (ImGui::BeginTable("Imported Units", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
             // Start with header row
             ImGui::TableSetupColumn("Unitcode");
             ImGui::TableSetupColumn("Type");
@@ -114,7 +126,7 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
         static int user_count;
         static std::vector<std::string> results;
         // DONE: Write sql query to return int count of record results
-        ImGui::Text("Enter the username to add these units with: "); ImGui::SameLine(); 
+        ImGui::Text("Enter the username to add these units with: "); ImGui::SameLine();
         ImGui::SetNextItemWidth(150);
         if (!sqlConnected && sql._GetDatabase() != "cad" || sqlConnected && sql._GetDatabase() != "cad") {
             ImGui::BeginDisabled();
@@ -150,8 +162,8 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
                 validOSUsername = true;
             }
         }
-        
-        if (validOSUsername) {  
+
+        if (validOSUsername) {
             text_box_pos.x += 5.0f; // Adjust the position to place the check mark next to the text box
             text_box_pos.y -= 20.0f;
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -167,7 +179,7 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             DrawRedXMark(draw_list, text_box_pos, size);
             ImGui::SetItemTooltip("Not a valid username in CAD");
         }
-        
+
         if (!sql._GetConnected() || !validOSUsername) {
             ImGui::BeginDisabled();
             ImGui::Button("SQL Insert");
@@ -180,7 +192,7 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             ImGui::Button("SQL Insert");
             ImGui::SetItemTooltip("Connect to the cad database.");
             ImGui::EndDisabled();
-        }        
+        }
         if (sql._GetConnected() && validOSUsername && sql._GetDatabase() == "cad") {
             if (ImGui::Button("SQL Insert")) {
                 ImGui::OpenPopup("Verify Duplicates");
@@ -215,56 +227,60 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
                 ImGui::EndTable();
             }
         }
-    }    
+    }
 }
 
-/// <summary>
-/// Function to read in file names and display in an ImGui::ComboBox for selection
-/// </summary>
-/// <param name="dir">is the directory path to the unit_csv files</param>
-/// <returns>selected file name</returns>
-std::string displayFiles(std::string dir) {
-    static std::string chosenName;
-    std::vector<std::string> fileNames;
-    for (const auto& entry : std::filesystem::directory_iterator(dir))
-    {
-        std::string filename = entry.path().filename().string();
-        size_t pos = filename.find(".csv");
-        if (pos != std::string::npos) {
-            std::string displayName = filename;
-            fileNames.push_back(displayName);
-        }
-    }
+/*
+* MOVED TO unitbuilder
 
-    // Convert std::vector<std::string> to array of const char* for ImGui display
-    std::vector<const char*> fileNameCStr;
-    for (const auto& name : fileNames) {
-        fileNameCStr.push_back(name.c_str());
-    }
-
-    // Display the Combo box if we find a profile has been created otherwise we show text instead
-    static int currentItem = 0;
-    ImGui::SetNextItemWidth(250);
-    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select unit csv", fileNameCStr[currentItem])) {
-        for (int n = 0; n < fileNameCStr.size(); n++) {
-            bool isSelected = (currentItem == n);
-            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
-                currentItem = n;
-                chosenName = fileNameCStr[n];
-            }
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        // End Combo Box for profile drop down
-        ImGui::EndCombo();
-    }
-    else if (fileNameCStr.empty())
-        ImGui::TextWrapped("No unit files found. Place a .csv file in %s", dir.c_str());
-
-    // Return the currently selected name in the combo box
-    return chosenName;
-}
+///// <summary>
+///// Function to read in file names and display in an ImGui::ComboBox for selection
+///// </summary>
+///// <param name="dir">is the directory path to the unit_csv files</param>
+///// <returns>selected file name</returns>
+//std::string displayFiles(std::string dir) {
+//    static std::string chosenName;
+//    std::vector<std::string> fileNames;
+//    for (const auto& entry : std::filesystem::directory_iterator(dir))
+//    {
+//        std::string filename = entry.path().filename().string();
+//        size_t pos = filename.find(".csv");
+//        if (pos != std::string::npos) {
+//            std::string displayName = filename;
+//            fileNames.push_back(displayName);
+//        }
+//    }
+//
+//    // Convert std::vector<std::string> to array of const char* for ImGui display
+//    std::vector<const char*> fileNameCStr;
+//    for (const auto& name : fileNames) {
+//        fileNameCStr.push_back(name.c_str());
+//    }
+//
+//    // Display the Combo box if we find a profile has been created otherwise we show text instead
+//    static int currentItem = 0;
+//    ImGui::SetNextItemWidth(250);
+//    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select unit csv", fileNameCStr[currentItem])) {
+//        for (int n = 0; n < fileNameCStr.size(); n++) {
+//            bool isSelected = (currentItem == n);
+//            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
+//                currentItem = n;
+//                chosenName = fileNameCStr[n];
+//            }
+//            if (isSelected) {
+//                ImGui::SetItemDefaultFocus();
+//            }
+//        }
+//        // End Combo Box for profile drop down
+//        ImGui::EndCombo();
+//    }
+//    else if (fileNameCStr.empty())
+//        ImGui::TextWrapped("No CSV files found. Place a .csv file in %s", dir.c_str());
+//
+//    // Return the currently selected name in the combo box
+//    return chosenName;
+//}
+*/
 
 /// <summary>
 /// utilize SQL connetion to send insert statments for each unit added to the agency csv unit file
@@ -351,21 +367,3 @@ std::vector<Unit> buildUnits(Units& units) {
     return unit;
 }
 
-void DrawGreenCheckMark(ImDrawList* draw_list, ImVec2 pos, float size) {
-    float thickness = size / 6.0f;
-    ImVec2 p1 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.55f);
-    ImVec2 p2 = ImVec2(pos.x + size * 0.45f, pos.y + size * 0.85f);
-    ImVec2 p3 = ImVec2(pos.x + size * 0.85f, pos.y + size * 0.15f);
-    draw_list->AddLine(p1, p2, IM_COL32(0, 200, 0, 255), thickness);
-    draw_list->AddLine(p2, p3, IM_COL32(0, 200, 0, 255), thickness);
-}
-
-void DrawRedXMark(ImDrawList* draw_list, ImVec2 pos, float size) {
-    float thickness = size / 6.0f;
-    ImVec2 p1 = ImVec2(pos.x - size * 0.30f, pos.y + size * 0.45f);
-    ImVec2 p2 = ImVec2(pos.x + size * 0.15f, pos.y - size * 0.45f);
-    ImVec2 p3 = ImVec2(pos.x - size * 0.30f, pos.y - size * 0.45f);
-    ImVec2 p4 = ImVec2(pos.x + size * 0.15f, pos.y + size * 0.45f);
-    draw_list->AddLine(p1, p2, IM_COL32(200, 0, 0, 255), thickness);
-    draw_list->AddLine(p3, p4, IM_COL32(200, 0, 0, 255), thickness);
-}

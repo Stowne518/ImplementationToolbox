@@ -167,7 +167,9 @@
     <ClCompile Include="..\imgui_draw.cpp" />
     <ClCompile Include="..\imgui_tables.cpp" />
     <ClCompile Include="..\imgui_widgets.cpp" />
-    <ClCompile Include="Agency.cpp" />
+    <ClCompile Include="Agencies.cpp" />
+    <ClCompile Include="agencyImport.cpp" />
+    <ClCompile Include="AgencyUnit.cpp" />
     <ClCompile Include="fieldOrderTable.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="genericexport_window.cpp" />
@@ -178,6 +180,7 @@
     <ClCompile Include="Sql.cpp" />
     <ClCompile Include="sqlQueryBuilder.cpp" />
     <ClCompile Include="Unit.cpp" />
+    <ClCompile Include="unitbuilder.cpp" />
     <ClCompile Include="unitImport.cpp" />
     <ClCompile Include="xmlParser.cpp" />
   </ItemGroup>
@@ -187,7 +190,9 @@
     <ClInclude Include="..\imconfig.h" />
     <ClInclude Include="..\imgui.h" />
     <ClInclude Include="..\imgui_internal.h" />
-    <ClInclude Include="Agency.h" />
+    <ClInclude Include="Agencies.h" />
+    <ClInclude Include="agencyImport.h" />
+    <ClInclude Include="AgencyUnit.h" />
     <ClInclude Include="fieldOrderTable.h" />
     <ClInclude Include="genericexport_window.h" />
     <ClInclude Include="oneButtonRefresh_window.h" />
@@ -198,6 +203,7 @@
     <ClInclude Include="sqlQueryBuilder.h" />
     <ClInclude Include="systemFunctions.h" />
     <ClInclude Include="Unit.h" />
+    <ClInclude Include="unitbuilder.h" />
     <ClInclude Include="Units.h" />
     <ClInclude Include="unitImport.h" />
     <ClInclude Include="xmlParser.h" />

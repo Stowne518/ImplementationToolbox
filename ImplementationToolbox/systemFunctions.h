@@ -19,7 +19,11 @@
 bool createDirectory(std::string& path) {
     std::string sqlOutputSubDir = path + "SQL Output\\";
     std::string profileOutputDir = path + "Profiles\\";
-    std::string unitCSVDir = path + "Units\\";
+    std::string unitCSVDir = path + "Units\\Unit\\";
+    std::string agencyCSVDir = path + "Units\\Agencies\\";
+    std::string groupsCSVDir = path + "Units\\Groups\\";
+    std::string beatsCSVDir = path + "Units\\Beats\\";
+    std::string stationsCSVDir = path + "Units\\Stations\\";
     std::string connStrDir = path + "ConnectionStrings\\";
     // Check for the primary directory we will use for program if not there we try to create it
     if (!std::filesystem::exists(path)) {
@@ -33,6 +37,14 @@ bool createDirectory(std::string& path) {
             std::filesystem::create_directory(unitCSVDir);
             // Create connection string directory
             std::filesystem::create_directory(connStrDir);
+            // Create agency CSV directory
+            std::filesystem::create_directory(agencyCSVDir);
+            // Create Groups CSV directory
+            std::filesystem::create_directory(groupsCSVDir);
+            // Create Beats CSV directory
+            std::filesystem::create_directory(beatsCSVDir);
+            // Create Stations CSV directory
+            std::filesystem::create_directory(stationsCSVDir);
             return true;
         }
         else {
@@ -40,17 +52,29 @@ bool createDirectory(std::string& path) {
         }
     }
     // Create subdirectories if they don't exists in the working dir
-    else if (!std::filesystem::exists(sqlOutputSubDir)) {
+    if (!std::filesystem::exists(sqlOutputSubDir)) {
         std::filesystem::create_directory(sqlOutputSubDir);
     }
-    else if (!std::filesystem::exists(profileOutputDir)) {
+    if (!std::filesystem::exists(profileOutputDir)) {
         std::filesystem::create_directory(profileOutputDir);
     }
-    else if (!std::filesystem::exists(unitCSVDir)) {
+    if (!std::filesystem::exists(unitCSVDir)) {
         std::filesystem::create_directory(unitCSVDir);
     }
-    else if (!std::filesystem::exists(connStrDir)) {
+    if (!std::filesystem::exists(connStrDir)) {
         std::filesystem::create_directories(connStrDir);
+    }
+    if (!std::filesystem::exists(agencyCSVDir)) {
+        std::filesystem::create_directories(agencyCSVDir);
+    }
+    if (!std::filesystem::exists(groupsCSVDir)) {
+        std::filesystem::create_directories(groupsCSVDir);
+    }
+    if (!std::filesystem::exists(beatsCSVDir)) {
+        std::filesystem::create_directories(beatsCSVDir);
+    }
+    if (!std::filesystem::exists(stationsCSVDir)) {
+        std::filesystem::create_directories(stationsCSVDir);
     }
     // If they all already exists we also return true
     else {
@@ -83,30 +107,30 @@ void DisplayColoredText(const char* text, bool isGreen) {
 
 void displayUpdates() {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, (ImVec2(0, 5)));
-    if (ImGui::CollapsingHeader("General")) {
-        ImGui::TextWrapped("- Added new directories for SQL connection strings and unit csv files in the working directory.");
+    if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::TextWrapped("- Added new directories for Unit CSV files in the working directory.");
     }
     ImGui::SeparatorText("RMS/JMS");
-    if (ImGui::CollapsingHeader("Generic Export Generator")) {
+    if (ImGui::CollapsingHeader("Generic Export Generator", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Spacing();
-        ImGui::TextWrapped("- Began work on sorting table and editing field order values. Not functional yet.");
+        ImGui::TextWrapped("No updates this version.");
         ImGui::SeparatorText("Known Bugs");
         ImGui::TextWrapped("- Sorting on field list and editing field order is still not functional for generic exports.");
     }
-    if (ImGui::CollapsingHeader("One Button Database Refresh")) {
+    if (ImGui::CollapsingHeader("One Button Database Refresh", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Spacing();
-        ImGui::TextWrapped("- Added QOL improvements by adding check box for using the same file path in training as live.");
-        ImGui::TextWrapped("- Now check that all data is filled out before allowing a script to be generated to avoid errors when running SQL.");
-        ImGui::TextWrapped("- Recently tested script on a client site and it did work without error, reducing refresh time to about 10 minutes in total.");
+        ImGui::TextWrapped("No updates this version.");
+        ImGui::Spacing();
     }
     ImGui::SeparatorText("CAD");
-    if (ImGui::CollapsingHeader("Unit Import"))
+    if (ImGui::CollapsingHeader("Bulk Import", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::TextWrapped("- New functionality: Added module for CAD units where a CSV can be read and data can be inserted directly into a SQL database in bulk to avoid hand entering. NOTE: SQL connectivity must be connected before this will work.");
-        ImGui::TextWrapped("- Hotfix: Added verification that you are connected to the cad database before allowing the insert to proceed.");
+        ImGui::TextWrapped("- Unit Import is now renamed to Bulk Import to be more inclusive of all data we're importing.");
+        ImGui::TextWrapped("- Only Supporting Agency importing, and unit importing currently.");
+        ImGui::TextWrapped("- There are new directories added in C:\\ImplementationToolbox\\Units\\. Each CSV file should go in it's respective folder for importing.");
     }
     ImGui::SeparatorText("SQL");
-    if (ImGui::CollapsingHeader("SQL Query Builder")) {
+    if (ImGui::CollapsingHeader("SQL Query Builder", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Spacing();
         ImGui::TextWrapped("No updates this version.");
         ImGui::Spacing();

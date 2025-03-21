@@ -52,13 +52,22 @@
     <ClCompile Include="unitImport.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="Agency.cpp" />
     <ClCompile Include="Unit.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="popups.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="AgencyUnit.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="unitbuilder.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="agencyImport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Agencies.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fieldOrderTable.h">
@@ -112,10 +121,19 @@
     <ClInclude Include="Unit.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Agency.h" />
     <ClInclude Include="popups.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="AgencyUnit.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="unitbuilder.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="agencyImport.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Agencies.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />

@@ -33,6 +33,7 @@
 #include "Units.h"
 #include "unitImport.h"
 #include "popups.h"
+#include "unitbuilder.h"
 // Data
 static LPDIRECT3D9              g_pD3D = nullptr;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = nullptr;
@@ -50,9 +51,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 int main(int, char**)
 {
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.6.1";
-    const char* currVersion = "Implementation Toolbox v0.6.1";
-    const char* lastUpdate = "3/12/25";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.2";
+    const char* currVersion = "Implementation Toolbox v0.6.2";
+    const char* lastUpdate = "3/21/25";
 
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
@@ -267,6 +268,7 @@ int main(int, char**)
 
 
         static std::string directory_path = "C:\\ImplementationToolbox\\";
+        static std::string units_directory_path = directory_path + "Units\\";
 
         // Display the CST logo at the top of the screen
         ImGui::SetNextWindowPos(cstLogoPos);
@@ -280,10 +282,6 @@ int main(int, char**)
 
         // End orange color
         ImGui::PopStyleColor();
-
-        // Initialize static Unit class to pass to unitInsert
-        static Units units;
-        units.setDir(directory_path + "Units\\");
 
         // Create a static sql class to store connection info in so we can pass to different functions that may need the SQL connectivity
         static Sql sql;
@@ -363,7 +361,7 @@ int main(int, char**)
         static char genExprtLabel[] = "Generic Export Generator";
         static char oneBttnLabel[] = "One Button Database Refresh";
         static char sqlQryLabel[] = "SQL Query Builder";
-        static char unitImportLabel[] = "Unit Import";
+        static char unitImportLabel[] = "Bulk Import";
         // Show generic export generator button 
         ImGui::SeparatorText("RMS/JMS");
         if (!show_generic_export_window)
@@ -462,8 +460,8 @@ int main(int, char**)
                     ImGui::EndTabItem();
                 }
                 // Unit Import for CAD
-                if (ImGui::BeginTabItem("Unit Import", &show_unit_import_window, ImGuiTabItemFlags_None)) {
-                    unitInsert(&show_unit_import_window, sql, units);
+                if (ImGui::BeginTabItem("Bulk Import", &show_unit_import_window, ImGuiTabItemFlags_None)) {
+                    unitBuilder(&show_unit_import_window, sql, units_directory_path);
 
                     // End Unit Import Window
                     ImGui::EndTabItem();
