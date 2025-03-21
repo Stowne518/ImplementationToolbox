@@ -56,6 +56,9 @@
     <ClCompile Include="Unit.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="popups.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fieldOrderTable.h">
@@ -110,6 +113,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Agency.h" />
+    <ClInclude Include="popups.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />

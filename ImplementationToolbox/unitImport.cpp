@@ -18,6 +18,11 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
     static char unitcode[300][7];
     static char type[300][5];
     static char agency[300][5];
+    static char groupcode[300][7];
+    static char station[300][5];
+    static char district[300][5];
+    static char beat[300][5];
+    static char service[300][5];
     static bool imported = false;
 
     ImGui::Text("Select a file to import: "); ImGui::SameLine(); 
@@ -54,17 +59,25 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
                 strncpy_s(unitcode[i], unit[i].getUnitCode(), sizeof(unitcode[i]));
                 strncpy_s(type[i], unit[i].getType(), sizeof(type[i]));
                 strncpy_s(agency[i], unit[i].getAgency(), sizeof(agency[i]));
+                strncpy_s(groupcode[i], unit[i].getGroupcode(), sizeof(groupcode[i]));
+                strncpy_s(station[i], unit[i].getStation(), sizeof(station[i]));
+                strncpy_s(district[i], unit[i].getDistrict(), sizeof(district[i]));
+                strncpy_s(beat[i], unit[i].getBeat(), sizeof(beat[i]));
             }
             // Only read fields once
             read = true;
         }
         
         // Build table for each element found in Unit class and make it editable
-        if(ImGui::BeginTable("Imported Units", cols.size(), ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+        if(ImGui::BeginTable("Imported Units", cols.size(), ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
             // Start with header row
-            ImGui::TableSetupColumn("Unitcode", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("Agency", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Unitcode");
+            ImGui::TableSetupColumn("Type");
+            ImGui::TableSetupColumn("Agency");
+            ImGui::TableSetupColumn("Group Code");
+            ImGui::TableSetupColumn("Station");
+            ImGui::TableSetupColumn("District");
+            ImGui::TableSetupColumn("Beat");
             ImGui::TableHeadersRow();
             for (int i = 0; i < unit.size(); i++) {
                 ImGui::TableNextRow();
@@ -74,11 +87,22 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
                 ImGui::InputText(("##type%i" + std::to_string(i)).c_str(), type[i], IM_ARRAYSIZE(type[i]));
                 ImGui::TableSetColumnIndex(2);
                 ImGui::InputText(("##agency%i" + std::to_string(i)).c_str(), agency[i], sizeof(agency[i]));
-
+                ImGui::TableSetColumnIndex(3);
+                ImGui::InputText(("##groupcode%i" + std::to_string(i)).c_str(), groupcode[i], sizeof(groupcode[i]));
+                ImGui::TableSetColumnIndex(4);
+                ImGui::InputText(("##station%i" + std::to_string(i)).c_str(), station[i], sizeof(station[i]));
+                ImGui::TableSetColumnIndex(5);
+                ImGui::InputText(("##district" + std::to_string(i)).c_str(), district[i], sizeof(district[i]));
+                ImGui::TableSetColumnIndex(6);
+                ImGui::InputText(("##beat" + std::to_string(i)).c_str(), beat[i], sizeof(beat[i]));
                 // If any update is made to values update the respective object
                 unit[i].setUnitCode(unitcode[i]);
                 unit[i].setType(type[i]);
                 unit[i].setAgency(agency[i]);
+                unit[i].setGroupcode(groupcode[i]);
+                unit[i].setStation(station[i]);
+                unit[i].setDistrict(district[i]);
+                unit[i].setBeat(beat[i]);
             }
             // End imported units table
             ImGui::EndTable();
@@ -169,8 +193,8 @@ void unitInsert(bool* p_open, Sql& sql, Units& units) {
             if (ImGui::BeginPopupModal("Verify Duplicates", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
                 ImGui::TextWrapped("CAD does not allow duplicated units. Any attempt to import duplicate units here will return a fail and no insertion will be made for that unit.");
                 if (ImGui::Button("Acknowledge")) {
-                    insertSql(sql, unit, &results, username);
                     ImGui::CloseCurrentPopup();
+                    insertSql(sql, unit, &results, username);
                 } ImGui::SameLine();
                 if (ImGui::Button("Cancel")) {
                     ImGui::CloseCurrentPopup();
@@ -252,7 +276,7 @@ void insertSql(Sql& sql, std::vector<Unit> units, std::vector<std::string>* resu
     for (int i = 0; i < units.size(); i++) {
         char buffer[1000];
         std::string query;
-        sprintf_s(buffer, "INSERT INTO %s..unit (unitcode, type, agency, adduser, addtime) VALUES ('%s','%s','%s','%s',GETDATE())", sql._GetDatabase().c_str(), units[i].getUnitCode(), units[i].getType(), units[i].getAgency(), username.c_str());
+        sprintf_s(buffer, "INSERT INTO %s..unit (unitcode, type, agency, groupcode, station, district, beat, status, adduser, addtime) VALUES ('%s','%s','%s','%s','%s','%s','%s','A','%s',GETDATE())", sql._GetDatabase().c_str(), units[i].getUnitCode(), units[i].getType(), units[i].getAgency(), units[i].getGroupcode(), units[i].getStation(), units[i].getDistrict(), units[i].getBeat(), username.c_str());
         query = buffer;
         // Check if there is already a unit with the same unit code in the system
         int unitCount = sql.returnRecordCount("unit", "unitcode", units[i].getUnitCode());
@@ -302,7 +326,11 @@ std::vector<Unit> buildUnits(Units& units) {
     // Buffer char arrays
     char unitcode[7],
         type[5],
-        agency[5];
+        agency[5],
+        groupcode[7],
+        station[5],
+        district[5],
+        beat[5];
 
     for (int i = 0; i < rows.size(); i++) {
         std::vector<std::string> values;
@@ -313,7 +341,11 @@ std::vector<Unit> buildUnits(Units& units) {
         strncpy_s(unitcode, values[0].c_str(), IM_ARRAYSIZE(unitcode));
         strncpy_s(type, values[1].c_str(), IM_ARRAYSIZE(type));
         strncpy_s(agency, values[2].c_str(), IM_ARRAYSIZE(agency));
-        unit.push_back(Unit(unitcode, type, agency));
+        strncpy_s(groupcode, values[3].c_str(), IM_ARRAYSIZE(groupcode));
+        strncpy_s(station, values[4].c_str(), IM_ARRAYSIZE(station));
+        strncpy_s(district, values[5].c_str(), IM_ARRAYSIZE(district));
+        strncpy_s(beat, values[6].c_str(), IM_ARRAYSIZE(beat));
+        unit.push_back(Unit(unitcode, type, agency, groupcode, station, district, beat));
     }
 
     return unit;

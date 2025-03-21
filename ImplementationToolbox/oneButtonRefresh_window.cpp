@@ -321,7 +321,7 @@ void showOneButtonRefreshWindow(bool* p_open) {
         ImGui::Text("DECLARE @BackupPathForDB1 NVARCHAR(256) = N'%s'			--Leave blank to use default backup path on the database.Enter the backup path for the training DB, including trailing slash.", trnFilePath);
         ImGui::Text("DECLARE @BackupPathForDB2 NVARCHAR(256) = N'%s'			--Leave blank to use default backup path on the database.Enter the backup path for the live DB, including trailing slash.Leave blank to use default backup path in SQL", liveFilePath);
         ImGui::Text("\n-- When the variables are correct, click execute and then select the messages tab to see the progress on the refresh in real - time");
-        ImGui::Text("\n\n\n\n         -- - DO NOT EDIT BEYOND THIS POINT-- -");    
+        ImGui::Text("\n\n\n\n         -- - DO NOT EDIT BEYOND THIS POINT-- -");
         ImGui::Text("DECLARE @TRNConfigTable sysname = @DB1 + '.dbo.sys_cfg';");
         ImGui::Text("DECLARE @PRDConfigTable sysname = @DB2 + '.dbo.sys_cfg';");
         ImGui::Text("DECLARE @InsertQuery NVARCHAR(MAX) = '");

@@ -109,6 +109,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalUsingDirectories>C:\Users\samuel.towne\source\repos\SqlConnectionHandler;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -147,6 +148,7 @@
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalUsingDirectories>C:\Users\samuel.towne\source\repos\SqlConnectionHandler;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -170,6 +172,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="genericexport_window.cpp" />
     <ClCompile Include="oneButtonRefresh_window.cpp" />
+    <ClCompile Include="popups.cpp" />
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="readFieldList.cpp" />
     <ClCompile Include="Sql.cpp" />
@@ -188,6 +191,7 @@
     <ClInclude Include="fieldOrderTable.h" />
     <ClInclude Include="genericexport_window.h" />
     <ClInclude Include="oneButtonRefresh_window.h" />
+    <ClInclude Include="popups.h" />
     <ClInclude Include="Profile.h" />
     <ClInclude Include="readFieldList.h" />
     <ClInclude Include="Sql.h" />

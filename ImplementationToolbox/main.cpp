@@ -32,6 +32,7 @@
 #include "Sql.h"
 #include "Units.h"
 #include "unitImport.h"
+#include "popups.h"
 // Data
 static LPDIRECT3D9              g_pD3D = nullptr;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = nullptr;
@@ -129,6 +130,9 @@ int main(int, char**)
     bool show_unit_import_window = false;
     bool show_sql_conn_window = false;                  // Is SQL connection configuration window open or closed
     bool show_modules = true;
+
+    // Popup window states
+    bool gen_export_info = false;
     
     // Window open state
     static bool open_getting_started = true;
@@ -481,20 +485,6 @@ int main(int, char**)
                 // End File menu
                 ImGui::EndMenu();
             }
-            // Old method of display - replaced with tab view
-            //if (ImGui::BeginMenu("Modules")) {
-            //    ImGui::SeparatorText("RMS/JMS");
-            //    if (ImGui::MenuItem("Generic Export Generator", NULL, false, (fieldsLoaded || directoryFound)))             // Disable module if the field list isn't found or directory isn't created.
-            //        show_generic_export_window = true;
-            //    if (ImGui::MenuItem("One Button RMS->RMSTRN refresh", NULL, false, directoryFound))                         // Disable module if directory can't be created
-            //        show_one_button_refresh_window = true;
-            //    ImGui::SeparatorText("SQL Query Wizard");
-            //    if (ImGui::MenuItem("SQL Query Builder", NULL, false))
-            //        show_sql_query_builder_window = true;
-
-            //    // End Module menu
-            //    ImGui::EndMenu();
-            //    }
             if (ImGui::BeginMenu("View")) {
                 if (ImGui::MenuItem("Getting Started",NULL, &open_getting_started));
                 if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
@@ -529,29 +519,22 @@ int main(int, char**)
                 // End settings menu
                 ImGui::EndMenu();
             }
+            if (show_generic_export_window) {
+                if (ImGui::BeginMenu("Generic Export Generator Options")) {
+                    // Center window when it opens
+                    ImVec2 screen_center = ImGui::GetMainViewport()->GetCenter();
+                    ImGui::SetNextWindowPos(screen_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+                    if (ImGui::MenuItem("Information", NULL, &gen_export_info));
+                    if (ImGui::MenuItem("Help"));
+
+                    // End Gen Exprt Gen menu options
+                    ImGui::EndMenu();
+                }                
+            }
             ImGui::EndMainMenuBar();
         }
 
-        
-        // Legacy way of showing each module in it's own window. Have since moved to tabs in a fixed area
-        // Begin GenericExport Window
-        /*if(show_generic_export_window)            
-            showGenericExportWindow(&show_generic_export_window);*/
-        // Begin One Button Refresh Window
-        //if (show_one_button_refresh_window)
-        //    showOneButtonRefreshWindow(&show_one_button_refresh_window);
-        //// Begin SQL Query Builder window
-        //if (show_sql_query_builder_window) {
-        //    ImGui::SetNextWindowSize(ImVec2(350, 200));
-        //    showSqlQueryBuilderWindow(&show_sql_query_builder_window);
-        //}
-
-        // Set the background color
-        // ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = bg_color;
-
-        /*if (open_bgcolor_picker) {
-            colorPickerWithBackgroundChange(bg_color);
-        }*/
+        if (gen_export_info) { genExportInfoModPop(&gen_export_info); }
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)

@@ -535,436 +535,427 @@ void showGenericExportWindow(bool* p_open, Sql& sql) {
         }
 
         ImGui::SeparatorText("Generic Export Generator");
-        if (ImGui::CollapsingHeader("Generic Export Generator Tool Information")) {
-            ImGui::TextWrapped("This tool is designed to help generate and edit generic exports in ONESolution JMS easily, quickly, and correctly every time using SQL scripts.");
-            ImGui::TextWrapped("Before any script from this tool can be run you MUST log in to JMS and add then saving a blank generic export."
-                "No infomration is required to be added to it, but the generic export ID MUST be generated, and the fields must also be populated before attempting to run these queries.");
-            ImGui::TextWrapped("To start, expand the generic export configuration header to begin configuring the generic export.");
-            ImGui::Text("* = required field");
-        }
-        if (ImGui::CollapsingHeader("Generic Export Configuration")) {
-            // 1. Generic export naming and vendor connectivity
-            if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None))
-            {
-                if (ImGui::BeginTabItem("Setup")) {
-                    ImGui::Text("*Export Name"); ImGui::SameLine();
-                    ImGui::SetNextItemWidth(300);
-                    ImGui::InputTextWithHint("##Export Name", "Only text, no symbols or special chars", exportName, IM_ARRAYSIZE(exportName), ImGuiInputTextFlags_CharsUppercase);
-                    profile.setExportName(exportName);
-                    ImGui::Text("*Agency Code"); ImGui::SameLine();
-                    ImGui::SetNextItemWidth(50);
-                    ImGui::InputText("##Agency Code", agency, IM_ARRAYSIZE(agency), ImGuiInputTextFlags_CharsUppercase | ImGuiColorEditFlags_NoLabel);
-                    profile.setAgency(agency);
-                    ImGui::SeparatorText("FTP/SFTP Options");
-                    ImGui::RadioButton("None", &isSftp, 2); ImGui::SameLine();
-                    ImGui::RadioButton("FTP", &isSftp, 0); ImGui::SameLine();
-                    ImGui::RadioButton("SFTP", &isSftp, 1);
-                    profile.setIsSftp(isSftp);
-                    if (isSftp == 0 || isSftp == 1) {
-                        ImGui::Text("*Username"); ImGui::SameLine();
-                        ImGui::SetNextItemWidth(100);
-                        ImGui::InputText("##Username", sftpUser, IM_ARRAYSIZE(sftpUser)); ImGui::SameLine();
-                        ImGui::Text("*Password"); ImGui::SameLine();
-                        ImGui::SetNextItemWidth(100);
-                        ImGui::InputText("##Password", sftpPass, IM_ARRAYSIZE(sftpPass));
-
-                        // SFTP/FTP site info
-                        ImGui::Text("*Host address"); ImGui::SameLine();
-                        ImGui::SetNextItemWidth(300);
-                        ImGui::InputText("##Host Address", sftpIp, IM_ARRAYSIZE(sftpIp));
-                        ImGui::Text("Target Directory"); ImGui::SameLine();
-                        ImGui::SetNextItemWidth(100);
-                        ImGui::InputText("##Target Directory", sftpTargetDir, IM_ARRAYSIZE(sftpTargetDir));
-                        // Update profile with sftp data
-                        profile.setSftpUser(sftpUser);
-                        profile.setSftpPass(sftpPass);
-                        profile.setSftpIp(sftpIp);
-                        profile.setSftpTargetDir(sftpTargetDir);
-                    }
-                    ImGui::Text("Enter client's RMS DB name*:"); ImGui::SameLine();
+        // 1. Generic export naming and vendor connectivity
+        if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None))
+        {
+            if (ImGui::BeginTabItem("Setup")) {
+                ImGui::Text("*Export Name"); ImGui::SameLine();
+                ImGui::SetNextItemWidth(300);
+                ImGui::InputTextWithHint("##Export Name", "Only text, no symbols or special chars", exportName, IM_ARRAYSIZE(exportName), ImGuiInputTextFlags_CharsUppercase);
+                profile.setExportName(exportName);
+                ImGui::Text("*Agency Code"); ImGui::SameLine();
+                ImGui::SetNextItemWidth(50);
+                ImGui::InputText("##Agency Code", agency, IM_ARRAYSIZE(agency), ImGuiInputTextFlags_CharsUppercase | ImGuiColorEditFlags_NoLabel);
+                profile.setAgency(agency);
+                ImGui::SeparatorText("FTP/SFTP Options");
+                ImGui::RadioButton("None", &isSftp, 2); ImGui::SameLine();
+                ImGui::RadioButton("FTP", &isSftp, 0); ImGui::SameLine();
+                ImGui::RadioButton("SFTP", &isSftp, 1);
+                profile.setIsSftp(isSftp);
+                if (isSftp == 0 || isSftp == 1) {
+                    ImGui::Text("*Username"); ImGui::SameLine();
                     ImGui::SetNextItemWidth(100);
-                    ImGui::InputText("##rmsdb", rmsDb, IM_ARRAYSIZE(rmsDb));
-                    profile.setRmsDb(rmsDb);
+                    ImGui::InputText("##Username", sftpUser, IM_ARRAYSIZE(sftpUser)); ImGui::SameLine();
+                    ImGui::Text("*Password"); ImGui::SameLine();
+                    ImGui::SetNextItemWidth(100);
+                    ImGui::InputText("##Password", sftpPass, IM_ARRAYSIZE(sftpPass));
 
-                    ImGui::Text("Enter Generic Export ID to update*:"); ImGui::SameLine();
-                    ImGui::SetNextItemWidth(75);
-                    ImGui::InputInt("##genexprtid", &genexptid, 1, 1);
-                    profile.setGenexptid(genexptid);
-
-                    // End Naming & Connectivity TreeNode
-                    ImGui::EndTabItem();
+                    // SFTP/FTP site info
+                    ImGui::Text("*Host address"); ImGui::SameLine();
+                    ImGui::SetNextItemWidth(300);
+                    ImGui::InputText("##Host Address", sftpIp, IM_ARRAYSIZE(sftpIp));
+                    ImGui::Text("Target Directory"); ImGui::SameLine();
+                    ImGui::SetNextItemWidth(100);
+                    ImGui::InputText("##Target Directory", sftpTargetDir, IM_ARRAYSIZE(sftpTargetDir));
+                    // Update profile with sftp data
+                    profile.setSftpUser(sftpUser);
+                    profile.setSftpPass(sftpPass);
+                    profile.setSftpIp(sftpIp);
+                    profile.setSftpTargetDir(sftpTargetDir);
                 }
+                ImGui::Text("Enter client's RMS DB name*:"); ImGui::SameLine();
+                ImGui::SetNextItemWidth(100);
+                ImGui::InputText("##rmsdb", rmsDb, IM_ARRAYSIZE(rmsDb));
+                profile.setRmsDb(rmsDb);
 
-                // 2. File Options
-                if (ImGui::BeginTabItem("File Options")) {
-                    ImGui::BeginGroup();
-                    {
-                        ImGui::SeparatorText("Generated File Type");
-                        ImGui::RadioButton("XML*", &fileType, 1); ImGui::SameLine();
-                        if (fileType == 1) {
-                            ImGui::Text("Collection Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##collectiontag", collectiontag, IM_ARRAYSIZE(collectiontag)); 
-                            ImGui::SetItemTooltip("Collection tag changes what the first tag is labeled as in the XML that contains the rest of the child elements. Default = Inmates"); ImGui::SameLine();
-                            ImGui::Text("Item Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##itemtag", itemtag, IM_ARRAYSIZE(itemtag));
-                            ImGui::SetItemTooltip("Item tag sets the label of each inmate tag. Default = Inmate");
-                        }
-                        else {
-                            ImGui::BeginDisabled();
-                            ImGui::Text("Collection Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##collectiontag", collectiontag, IM_ARRAYSIZE(collectiontag));
-                            ImGui::SetItemTooltip("Collection tag changes what the first tag is labeled as in the XML that contains the rest of the child elements. Default = Inmates"); ImGui::SameLine();
-                            ImGui::Text("Item Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##itemtag", itemtag, IM_ARRAYSIZE(itemtag));
-                            ImGui::SetItemTooltip("Item tag sets the label of each inmate tag. Default = Inmate");
-                            ImGui::EndDisabled();
-                        }
-                        // Delimted file options group
-                        ImGui::BeginGroup();
-                        ImGui::Text("Delimited");
-                        // Begin group for comma, tab, and other buttons
-                        ImGui::RadioButton("Comma*", &fileType, 2);
-                        ImGui::RadioButton("Tab*", &fileType, 3);
-                        // Begin other file type group
-                        ImGui::BeginGroup();
-                        ImGui::RadioButton("Other*", &fileType, 5);
-                        profile.setFileType(fileType);
-                        ImGui::SetItemTooltip("Other allows you to specify a custom delimeter character. Always exports as a .txt file");
-                        ImGui::SameLine();
-                        if (fileType == 5) {
-                            ImGui::SetNextItemWidth(25);
-                            ImGui::InputText("*Delimiter", delimiter, IM_ARRAYSIZE(delimiter) + 1, ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
-                            profile.setDelimiter(delimiter);
-                        }
-                        else {
-                            ImGui::SetNextItemWidth(25);
-                            ImGui::BeginDisabled();
-                            ImGui::InputText("*Delimeter", delimiter, IM_ARRAYSIZE(delimiter) + 1, ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
-                            ImGui::EndDisabled();
-                            delimiter[1] = {};
-                        }
-                        // End other file option group
-                        ImGui::EndGroup();
-                        ImGui::SameLine();
-                        // Begin group for disable quotes to put on same line as buttons
-                        ImGui::BeginGroup();
-                        if (fileType == 2 || fileType == 3 || fileType == 5) {
-                            ImGui::Checkbox("Disable Quotes?", &noQuotes);
-                            ImGui::SetItemTooltip("Available for Comma, Tab, and Other");
-                            profile.setNoQuotes(noQuotes);
-                        }
-                        else {
-                            ImGui::BeginDisabled();
-                            ImGui::Checkbox("Disable Quotes?", &noQuotes);
-                            ImGui::SetItemTooltip("Available for Comma, Tab, and Other");
-                            ImGui::EndDisabled();
-                        }
-                        // End disable quotes group
-                        ImGui::EndGroup();
+                ImGui::Text("Enter Generic Export ID to update*:"); ImGui::SameLine();
+                ImGui::SetNextItemWidth(75);
+                ImGui::InputInt("##genexprtid", &genexptid, 1, 1);
+                profile.setGenexptid(genexptid);
 
-                        ImGui::RadioButton("Fixed*", &fileType, 4);                        
+                // End Naming & Connectivity TreeNode
+                ImGui::EndTabItem();
+            }
 
-                        // End delimited file options group
-                        ImGui::EndGroup();
-
-                        // End main file options group
-                        ImGui::EndGroup();
+            // 2. File Options
+            if (ImGui::BeginTabItem("File Options")) {
+                ImGui::BeginGroup();
+                {
+                    ImGui::SeparatorText("Generated File Type");
+                    ImGui::RadioButton("XML*", &fileType, 1); ImGui::SameLine();
+                    if (fileType == 1) {
+                        ImGui::Text("Collection Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##collectiontag", collectiontag, IM_ARRAYSIZE(collectiontag)); 
+                        ImGui::SetItemTooltip("Collection tag changes what the first tag is labeled as in the XML that contains the rest of the child elements. Default = Inmates"); ImGui::SameLine();
+                        ImGui::Text("Item Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##itemtag", itemtag, IM_ARRAYSIZE(itemtag));
+                        ImGui::SetItemTooltip("Item tag sets the label of each inmate tag. Default = Inmate");
                     }
-                    // Put File options & file creation on one X-axis
+                    else {
+                        ImGui::BeginDisabled();
+                        ImGui::Text("Collection Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##collectiontag", collectiontag, IM_ARRAYSIZE(collectiontag));
+                        ImGui::SetItemTooltip("Collection tag changes what the first tag is labeled as in the XML that contains the rest of the child elements. Default = Inmates"); ImGui::SameLine();
+                        ImGui::Text("Item Tag"); ImGui::SameLine(); ImGui::SetNextItemWidth(70); ImGui::InputText("##itemtag", itemtag, IM_ARRAYSIZE(itemtag));
+                        ImGui::SetItemTooltip("Item tag sets the label of each inmate tag. Default = Inmate");
+                        ImGui::EndDisabled();
+                    }
+                    // Delimted file options group
+                    ImGui::BeginGroup();
+                    ImGui::Text("Delimited");
+                    // Begin group for comma, tab, and other buttons
+                    ImGui::RadioButton("Comma*", &fileType, 2);
+                    ImGui::RadioButton("Tab*", &fileType, 3);
+                    // Begin other file type group
+                    ImGui::BeginGroup();
+                    ImGui::RadioButton("Other*", &fileType, 5);
+                    profile.setFileType(fileType);
+                    ImGui::SetItemTooltip("Other allows you to specify a custom delimeter character. Always exports as a .txt file");
                     ImGui::SameLine();
-
-                    // Begin file creation options group
-                    ImGui::BeginGroup();
-                    {
-                        // File creation options
-                        ImGui::Text("\n\nFile Creation Options");
-                        ImGui::RadioButton("Single file for All Inmates*", &createOptn, 1);
-                        ImGui::RadioButton("Single file for each inmate*", &createOptn, 2);
-                        if (createOptn == 2) {
-                            ImGui::SameLine();
-                            ImGui::Text("File Prefix"); ImGui::SameLine(); ImGui::SetNextItemWidth(75); ImGui::InputText("##Prefix", filePrefix, 2);
-                            ImGui::SetItemTooltip("Optional prefix available for individual files*");
-                            profile.setFilePrefix(filePrefix);
-                        }
-                        ImGui::RadioButton("Separate file for booked and released*", &createOptn, 3);
-                        profile.setCreateOptn(createOptn);
-                        ImGui::Text("File Write Delay"); ImGui::SameLine(); ImGui::SetNextItemWidth(75); ImGui::InputInt("##WriteDelay", &writeDelay, 1);
-                        profile.setWriteDelay(writeDelay);
-
-                        // End File creation group
-                        ImGui::EndGroup();
+                    if (fileType == 5) {
+                        ImGui::SetNextItemWidth(25);
+                        ImGui::InputText("*Delimiter", delimiter, IM_ARRAYSIZE(delimiter) + 1, ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+                        profile.setDelimiter(delimiter);
                     }
-                    ImGui::BeginGroup();
-                    {
-                        // Record option
-                        ImGui::SeparatorText("Records Options");
-                        ImGui::RadioButton("All Records*", &recordOptn, 1); ImGui::SameLine();
-                        ImGui::BeginGroup();
-                        {
-                            ImGui::RadioButton("Changed Records Only*", &recordOptn, 2);
-                            if (recordOptn == 2) {
-                                ImGui::Text("Export immediately"); ImGui::SameLine(); ImGui::Checkbox("##ExportImmediately", &exportNow);
-                                ImGui::SetItemTooltip("This will export records as soon as a change is detected\ninstead of writing on a timed interval only.");
-                                // Update export now on profile
-                                profile.setExportNow(exportNow);
-                            }
-
-                            // End export immediately group
-                            ImGui::EndGroup();
-                        }
-                        ImGui::SameLine();
-                        ImGui::RadioButton("All active records", &recordOptn, 3);
-
-                        // Update profile with record option
-                        profile.setRecordOptn(recordOptn);
-
-                        // File naming convention
-                        ImGui::SeparatorText("File naming convention");
-                        ImGui::RadioButton("Continuous overwrite*", &fileOptn, 1); ImGui::SameLine();
-                        ImGui::SetItemTooltip("Writes to one file with the same name");
-                        ImGui::RadioButton("Unique file name*", &fileOptn, 2);
-                        profile.setFileOptn(fileOptn);
-                        ImGui::SetItemTooltip("Writes a unique file each time with time stamp");
-                        if (fileOptn == 2) {
-                            ImGui::Text("*Choose date/time format");
-                            ImGui::RadioButton("01/01/2001*", &dateFormat, 1); ImGui::SameLine();
-                            ImGui::RadioButton("20010101*", &dateFormat, 2); ImGui::SameLine();
-                            ImGui::RadioButton("2001-01-01*", &dateFormat, 3);
-                            profile.setDateFormat(dateFormat);
-                        }
-                        else {
-                            ImGui::BeginDisabled();
-                            ImGui::Text("*Choose date/time format");
-                            ImGui::RadioButton("01/01/2001*", &dateFormat, 1); ImGui::SameLine();
-                            ImGui::RadioButton("20010101*", &dateFormat, 2); ImGui::SameLine();
-                            ImGui::RadioButton("2001-01-01*", &dateFormat, 3);
-                            ImGui::EndDisabled();
-                        }
-
-                        // End Record option group
-                        ImGui::EndGroup();
+                    else {
+                        ImGui::SetNextItemWidth(25);
+                        ImGui::BeginDisabled();
+                        ImGui::InputText("*Delimeter", delimiter, IM_ARRAYSIZE(delimiter) + 1, ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs);
+                        ImGui::EndDisabled();
+                        delimiter[1] = {};
                     }
-
-                    // End TreeNode
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Field Selection")) {
-                    ImGui::BeginGroup();
-                    {
-                        ImGui::SeparatorText("Field Options");
-                        ImGui::Checkbox("Extra PIN", &isPinReq);
-                        profile.setIsPinReq(isPinReq);
-                        if (isPinReq) {
-                            ImGui::SameLine();
-                            ImGui::RadioButton("SSN*", &pinType, 1); ImGui::SameLine();
-                            ImGui::RadioButton("Name ID*", &pinType, 2); ImGui::SameLine();
-                            ImGui::RadioButton("Booking ID*", &pinType, 3);
-                            profile.setPinType(pinType);
-                        }
-                        // Clear pinType if extra pin isn't required
-                        else {
-                            ImGui::SameLine();
-                            ImGui::BeginDisabled();
-                            ImGui::RadioButton("SSN*", &pinType, 1); ImGui::SameLine();
-                            ImGui::RadioButton("Name ID*", &pinType, 2); ImGui::SameLine();
-                            ImGui::RadioButton("Booking ID*", &pinType, 3);
-                            ImGui::EndDisabled();
-                            pinType = 0;
-                        }
-                        ImGui::Checkbox("Combine Street and Apt #", &combineStApt);
-                        profile.setCombineStApt(combineStApt);
-                        ImGui::BeginGroup();
-                        {
-                            ImGui::Checkbox("Include housing options?", &includeHousing);
-                            profile.setIncludeHousing(includeHousing);
-                            if (includeHousing) {
-                                ImGui::SameLine();
-                                ImGui::Checkbox("Combine housing fields?", &combineHousing);
-                                profile.setCombineHousing(combineHousing);
-                            }
-                            // Clear combined housing option if include housing isn't true
-                            else {
-                                ImGui::BeginDisabled();
-                                ImGui::SameLine();
-                                ImGui::Checkbox("Combine housing fields?", &combineHousing);
-                                profile.setCombineHousing(combineHousing);
-                                ImGui::EndDisabled();
-                                combineHousing = false;
-                            }
-                            ImGui::EndGroup();
-                        }
-
-                        // End field options group
-                        ImGui::EndGroup();
-                    }
-
-                    ImGui::Spacing();
-
-                    ImGui::SeparatorText("Field Selection");
-                    
-                    /* Had to use a different method to get unique label names in the list
-                    *  We are receiving a list of vector strings from the field list function
-                    *  Then we created our 2D array of chars
-                    *  This is what we use to case the strings onto, since Selectable() needs a char array for the strings
-                    *  Then use strcpy to copy the string into the char array so we can pass it to Selectable() and it will be happy
-                    */
-                    for (int i = 0; i < fields.size(); i++)
-                    {
-                        strcpy(label[i], fields[i].c_str());
-                        profile.setLabel(i, fields[i].c_str());
-                    }
-
-                    // When button is clicked we loop over all array options and reset the selected value to false, clearing the board
-                    if (ImGui::Button("Clear Selections")) {
-                        clearSelectedFields();
-                    }
-
-                    // Sizing for table to fit in window
-                    ImVec2 windowSize = ImVec2(ImGui::GetMainViewport()->Size.x, 0);
-
-                    
-                    //if (items.Size == 0 && selectedId.size() == 1) {
-                    //    items.resize(1, items::MyItem());
-                    //    items::MyItem& item = items[0];
-                    //    item.ID = 0;
-                    //    item.Name = selectedFieldName[0].c_str();
-                    //    item.Order = 0;
-                    //}
-                    ///*for (int i = 0; i < items.Size; i++)
-                    //{
-                    //    items::MyItem& item = items[i];
-                    //    item.ID = i;
-                    //    item.Name = selectedFieldName[i].c_str();
-                    //    item.Order = ImGui::InputInt(("##order" + std::to_string(i)).c_str(), &order[i], 0, 0);
-                    //}*/
-
-                    // Begin table for selectable field items
-                    ImGui::BeginChild("FieldSelectionTable", ImVec2(544, 360),ImGuiChildFlags_AutoResizeX);
-                    if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_Borders, windowSize)) {
-                        for (int i = 0; i < fields.size(); i++)
-                        {
-
-                            ImGui::TableNextColumn();
-                            if (!includeHousing && fields[i] == "LocFac" || !includeHousing && fields[i] == "LocSec" || !includeHousing && fields[i] == "LocUnit" || !includeHousing && fields[i] == "LocBed") {
-                                ImGui::BeginDisabled();
-                                ImGui::Text(label[i]);
-                                ImGui::SetItemTooltip("Enable include housing options to select field");
-                                ImGui::EndDisabled();
-                            }
-                            else if (!isPinReq && fields[i] == "Pin") {
-                                ImGui::BeginDisabled();
-                                ImGui::Text("Pin");
-                                ImGui::SetItemTooltip("Enable Extra PIN option to select field");
-                                ImGui::EndDisabled();
-                            }
-                            else {
-                                ImGui::Selectable(label[i], &selected[i]);
-                            }
-                            // If data was loaded from a profile we don't want to insert it into selectedIds or selectedFieldName twice.
-                            if (selected[i] && !profileLoaded) {
-                                if (std::find(selectedId.begin(), selectedId.end(), i) == selectedId.end()) {
-                                    selectedId.push_back(i);
-                                    selectedFieldName.push_back(label[i]);
-                                    profile.setSelected(i, selected[i]);                                    
-                                }
-                            }
-                            else if(!profileLoaded) {
-                                // Find the index of i in selectedId
-                                auto it = std::find(selectedId.begin(), selectedId.end(), i);
-                                if (it != selectedId.end()) {
-                                    // Calculate the index position
-                                    int index = std::distance(selectedId.begin(), it);
-                                    // Remove the element from selectedId
-                                    selectedId.erase(it);
-                                    // Remove the corresponding element from selectedFieldName
-                                    selectedFieldName.erase(selectedFieldName.begin() + index);
-                                }
-                                selected[i] = false;
-                                profile.setSelected(i, false);
-                                profile.setOrder(i, 0);
-                            }
-                            // After adding fields from a profile we break this loop and set it back to normal functionality by resetting profileLoaded
-                            else {
-                                profileLoaded = false;
-                                break;
-                            }
-                        }
-
-                        // End Field table
-                        ImGui::EndTable();
-                    }
-
-                    // End field selection child window
-                    ImGui::EndChild();
+                    // End other file option group
+                    ImGui::EndGroup();
                     ImGui::SameLine();
-                    ImGui::BeginChild("FieldOrderTableChildWindow",ImVec2(0, 360), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
-
-                    // Create field list
-                    static ImVector<items::MyItem> items;
-                    if (items.Size != selectedId.size())
-                        items.resize(selectedId.size(), items::MyItem());
-                    for (int j = 0; j < selectedId.size(); j++)
-                    {
-                        items::MyItem& item = items[j];
-                        item.ID = j;
-                        item.Name = selectedFieldName[j].c_str();
-                        item.Order = j;
-                    }
-                    
-                    // TODO: fix ordering fields
+                    // Begin group for disable quotes to put on same line as buttons
                     ImGui::BeginGroup();
-                    // Leaving as is for now
-                    
-                    if (ImGui::BeginTable("fieldOrder", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_NoHostExtendX  | ImGuiTableFlags_Sortable | ImGuiTableFlags_Borders | ImGuiTableFlags_NoKeepColumnsVisible  )) {
-                        ImGui::TableSetupColumn("Field",ImGuiTableColumnFlags_PreferSortAscending, 0.0f, items::MyItemColumnID_Name);
-                        ImGui::TableSetupColumn("Order", ImGuiTableColumnFlags_DefaultSort, 0.0f, items::MyItemColumnID_Order);
-                        ImGui::TableSetupScrollFreeze(0, 1);
-                        ImGui::TableHeadersRow();
-
-                        // Sort the data if specs change
-                        ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
-                        if (sort_specs && sort_specs->SpecsDirty) {                            
-                            items::MyItem::SortWithSortSpecs(sort_specs, items.Data, items.Size);
-                            sort_specs->SpecsDirty = false;
-                        }
-
-                        const bool sorts_specs_using_order = (ImGui::TableGetColumnFlags(2) & ImGuiTableColumnFlags_IsSorted) != 0;
-                        // Try clipper for large verticle list of fields
-                        ImGuiListClipper clipper;
-                        clipper.Begin(items.size());
-                        while (clipper.Step()) {
-                            for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++)
-                            {
-                                items::MyItem* item = &items[row_n];
-                                ImGui::PushID(item->ID);
-                                ImGui::TableNextRow(ImGuiTableRowFlags_None, 25);
-                                ImGui::TableNextColumn();
-                                ImGui::Text(item->Name);
-                                ImGui::TableNextColumn();
-                                // If there isn't already an order value we set it equal to the next available value
-                                if (order[row_n] == 0)
-                                    order[row_n] = row_n;
-                                // Disable the custom order input for now until sorting works. Currently, it will order based on the order the fields are clicked in.
-                                //ImGui::InputInt(("##order" + std::to_string(row_n)).c_str(), &order[row_n], 0, 0);
-                                //ImGui::InputInt(("##order" + std::to_string(row_n)).c_str(), &item->Order, 0, 0);
-                                ImGui::Text("%i", item->Order);
-                                ImGui::PopID();
-                            }
-                        }                        
-
-                        // End field order table
-                        ImGui::EndTable();
+                    if (fileType == 2 || fileType == 3 || fileType == 5) {
+                        ImGui::Checkbox("Disable Quotes?", &noQuotes);
+                        ImGui::SetItemTooltip("Available for Comma, Tab, and Other");
+                        profile.setNoQuotes(noQuotes);
                     }
-                    // End field order group
+                    else {
+                        ImGui::BeginDisabled();
+                        ImGui::Checkbox("Disable Quotes?", &noQuotes);
+                        ImGui::SetItemTooltip("Available for Comma, Tab, and Other");
+                        ImGui::EndDisabled();
+                    }
+                    // End disable quotes group
                     ImGui::EndGroup();
 
-                    // End Field order table child window
-                    ImGui::EndChild();
+                    ImGui::RadioButton("Fixed*", &fileType, 4);                        
 
-                    // End Field selection tab node
-                    ImGui::EndTabItem();
+                    // End delimited file options group
+                    ImGui::EndGroup();
+
+                    // End main file options group
+                    ImGui::EndGroup();
                 }
+                // Put File options & file creation on one X-axis
+                ImGui::SameLine();
+
+                // Begin file creation options group
+                ImGui::BeginGroup();
+                {
+                    // File creation options
+                    ImGui::Text("\n\nFile Creation Options");
+                    ImGui::RadioButton("Single file for All Inmates*", &createOptn, 1);
+                    ImGui::RadioButton("Single file for each inmate*", &createOptn, 2);
+                    if (createOptn == 2) {
+                        ImGui::SameLine();
+                        ImGui::Text("File Prefix"); ImGui::SameLine(); ImGui::SetNextItemWidth(75); ImGui::InputText("##Prefix", filePrefix, 2);
+                        ImGui::SetItemTooltip("Optional prefix available for individual files*");
+                        profile.setFilePrefix(filePrefix);
+                    }
+                    ImGui::RadioButton("Separate file for booked and released*", &createOptn, 3);
+                    profile.setCreateOptn(createOptn);
+                    ImGui::Text("File Write Delay"); ImGui::SameLine(); ImGui::SetNextItemWidth(75); ImGui::InputInt("##WriteDelay", &writeDelay, 1);
+                    profile.setWriteDelay(writeDelay);
+
+                    // End File creation group
+                    ImGui::EndGroup();
+                }
+                ImGui::BeginGroup();
+                {
+                    // Record option
+                    ImGui::SeparatorText("Records Options");
+                    ImGui::RadioButton("All Records*", &recordOptn, 1); ImGui::SameLine();
+                    ImGui::BeginGroup();
+                    {
+                        ImGui::RadioButton("Changed Records Only*", &recordOptn, 2);
+                        if (recordOptn == 2) {
+                            ImGui::Text("Export immediately"); ImGui::SameLine(); ImGui::Checkbox("##ExportImmediately", &exportNow);
+                            ImGui::SetItemTooltip("This will export records as soon as a change is detected\ninstead of writing on a timed interval only.");
+                            // Update export now on profile
+                            profile.setExportNow(exportNow);
+                        }
+
+                        // End export immediately group
+                        ImGui::EndGroup();
+                    }
+                    ImGui::SameLine();
+                    ImGui::RadioButton("All active records", &recordOptn, 3);
+
+                    // Update profile with record option
+                    profile.setRecordOptn(recordOptn);
+
+                    // File naming convention
+                    ImGui::SeparatorText("File naming convention");
+                    ImGui::RadioButton("Continuous overwrite*", &fileOptn, 1); ImGui::SameLine();
+                    ImGui::SetItemTooltip("Writes to one file with the same name");
+                    ImGui::RadioButton("Unique file name*", &fileOptn, 2);
+                    profile.setFileOptn(fileOptn);
+                    ImGui::SetItemTooltip("Writes a unique file each time with time stamp");
+                    if (fileOptn == 2) {
+                        ImGui::Text("*Choose date/time format");
+                        ImGui::RadioButton("01/01/2001*", &dateFormat, 1); ImGui::SameLine();
+                        ImGui::RadioButton("20010101*", &dateFormat, 2); ImGui::SameLine();
+                        ImGui::RadioButton("2001-01-01*", &dateFormat, 3);
+                        profile.setDateFormat(dateFormat);
+                    }
+                    else {
+                        ImGui::BeginDisabled();
+                        ImGui::Text("*Choose date/time format");
+                        ImGui::RadioButton("01/01/2001*", &dateFormat, 1); ImGui::SameLine();
+                        ImGui::RadioButton("20010101*", &dateFormat, 2); ImGui::SameLine();
+                        ImGui::RadioButton("2001-01-01*", &dateFormat, 3);
+                        ImGui::EndDisabled();
+                    }
+
+                    // End Record option group
+                    ImGui::EndGroup();
+                }
+
+                // End TreeNode
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Field Selection")) {
+                ImGui::BeginGroup();
+                {
+                    ImGui::SeparatorText("Field Options");
+                    ImGui::Checkbox("Extra PIN", &isPinReq);
+                    profile.setIsPinReq(isPinReq);
+                    if (isPinReq) {
+                        ImGui::SameLine();
+                        ImGui::RadioButton("SSN*", &pinType, 1); ImGui::SameLine();
+                        ImGui::RadioButton("Name ID*", &pinType, 2); ImGui::SameLine();
+                        ImGui::RadioButton("Booking ID*", &pinType, 3);
+                        profile.setPinType(pinType);
+                    }
+                    // Clear pinType if extra pin isn't required
+                    else {
+                        ImGui::SameLine();
+                        ImGui::BeginDisabled();
+                        ImGui::RadioButton("SSN*", &pinType, 1); ImGui::SameLine();
+                        ImGui::RadioButton("Name ID*", &pinType, 2); ImGui::SameLine();
+                        ImGui::RadioButton("Booking ID*", &pinType, 3);
+                        ImGui::EndDisabled();
+                        pinType = 0;
+                    }
+                    ImGui::Checkbox("Combine Street and Apt #", &combineStApt);
+                    profile.setCombineStApt(combineStApt);
+                    ImGui::BeginGroup();
+                    {
+                        ImGui::Checkbox("Include housing options?", &includeHousing);
+                        profile.setIncludeHousing(includeHousing);
+                        if (includeHousing) {
+                            ImGui::SameLine();
+                            ImGui::Checkbox("Combine housing fields?", &combineHousing);
+                            profile.setCombineHousing(combineHousing);
+                        }
+                        // Clear combined housing option if include housing isn't true
+                        else {
+                            ImGui::BeginDisabled();
+                            ImGui::SameLine();
+                            ImGui::Checkbox("Combine housing fields?", &combineHousing);
+                            profile.setCombineHousing(combineHousing);
+                            ImGui::EndDisabled();
+                            combineHousing = false;
+                        }
+                        ImGui::EndGroup();
+                    }
+
+                    // End field options group
+                    ImGui::EndGroup();
+                }
+
+                ImGui::Spacing();
+
+                ImGui::SeparatorText("Field Selection");
+                    
+                /* Had to use a different method to get unique label names in the list
+                *  We are receiving a list of vector strings from the field list function
+                *  Then we created our 2D array of chars
+                *  This is what we use to case the strings onto, since Selectable() needs a char array for the strings
+                *  Then use strcpy to copy the string into the char array so we can pass it to Selectable() and it will be happy
+                */
+                for (int i = 0; i < fields.size(); i++)
+                {
+                    strcpy(label[i], fields[i].c_str());
+                    profile.setLabel(i, fields[i].c_str());
+                }
+
+                // When button is clicked we loop over all array options and reset the selected value to false, clearing the board
+                if (ImGui::Button("Clear Selections")) {
+                    clearSelectedFields();
+                }
+
+                // Sizing for table to fit in window
+                ImVec2 windowSize = ImVec2(ImGui::GetMainViewport()->Size.x, 0);
+
+                    
+                //if (items.Size == 0 && selectedId.size() == 1) {
+                //    items.resize(1, items::MyItem());
+                //    items::MyItem& item = items[0];
+                //    item.ID = 0;
+                //    item.Name = selectedFieldName[0].c_str();
+                //    item.Order = 0;
+                //}
+                ///*for (int i = 0; i < items.Size; i++)
+                //{
+                //    items::MyItem& item = items[i];
+                //    item.ID = i;
+                //    item.Name = selectedFieldName[i].c_str();
+                //    item.Order = ImGui::InputInt(("##order" + std::to_string(i)).c_str(), &order[i], 0, 0);
+                //}*/
+
+                // Begin table for selectable field items
+                ImGui::BeginChild("FieldSelectionTable", ImVec2(544, 360),ImGuiChildFlags_AutoResizeX);
+                if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_Borders, windowSize)) {
+                    for (int i = 0; i < fields.size(); i++)
+                    {
+
+                        ImGui::TableNextColumn();
+                        if (!includeHousing && fields[i] == "LocFac" || !includeHousing && fields[i] == "LocSec" || !includeHousing && fields[i] == "LocUnit" || !includeHousing && fields[i] == "LocBed") {
+                            ImGui::BeginDisabled();
+                            ImGui::Text(label[i]);
+                            ImGui::SetItemTooltip("Enable include housing options to select field");
+                            ImGui::EndDisabled();
+                        }
+                        else if (!isPinReq && fields[i] == "Pin") {
+                            ImGui::BeginDisabled();
+                            ImGui::Text("Pin");
+                            ImGui::SetItemTooltip("Enable Extra PIN option to select field");
+                            ImGui::EndDisabled();
+                        }
+                        else {
+                            ImGui::Selectable(label[i], &selected[i]);
+                        }
+                        // If data was loaded from a profile we don't want to insert it into selectedIds or selectedFieldName twice.
+                        if (selected[i] && !profileLoaded) {
+                            if (std::find(selectedId.begin(), selectedId.end(), i) == selectedId.end()) {
+                                selectedId.push_back(i);
+                                selectedFieldName.push_back(label[i]);
+                                profile.setSelected(i, selected[i]);                                    
+                            }
+                        }
+                        else if(!profileLoaded) {
+                            // Find the index of i in selectedId
+                            auto it = std::find(selectedId.begin(), selectedId.end(), i);
+                            if (it != selectedId.end()) {
+                                // Calculate the index position
+                                int index = std::distance(selectedId.begin(), it);
+                                // Remove the element from selectedId
+                                selectedId.erase(it);
+                                // Remove the corresponding element from selectedFieldName
+                                selectedFieldName.erase(selectedFieldName.begin() + index);
+                            }
+                            selected[i] = false;
+                            profile.setSelected(i, false);
+                            profile.setOrder(i, 0);
+                        }
+                        // After adding fields from a profile we break this loop and set it back to normal functionality by resetting profileLoaded
+                        else {
+                            profileLoaded = false;
+                            break;
+                        }
+                    }
+
+                    // End Field table
+                    ImGui::EndTable();
+                }
+
+                // End field selection child window
+                ImGui::EndChild();
+                ImGui::SameLine();
+                ImGui::BeginChild("FieldOrderTableChildWindow",ImVec2(0, 360), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+
+                // Create field list
+                static ImVector<items::MyItem> items;
+                if (items.Size != selectedId.size())
+                    items.resize(selectedId.size(), items::MyItem());
+                for (int j = 0; j < selectedId.size(); j++)
+                {
+                    items::MyItem& item = items[j];
+                    item.ID = j;
+                    item.Name = selectedFieldName[j].c_str();
+                    item.Order = j;
+                }
+                    
+                // TODO: fix ordering fields
+                ImGui::BeginGroup();
+                // Leaving as is for now
+                    
+                if (ImGui::BeginTable("fieldOrder", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_NoHostExtendX  | ImGuiTableFlags_Sortable | ImGuiTableFlags_Borders | ImGuiTableFlags_NoKeepColumnsVisible  )) {
+                    ImGui::TableSetupColumn("Field",ImGuiTableColumnFlags_PreferSortAscending, 0.0f, items::MyItemColumnID_Name);
+                    ImGui::TableSetupColumn("Order", ImGuiTableColumnFlags_DefaultSort, 0.0f, items::MyItemColumnID_Order);
+                    ImGui::TableSetupScrollFreeze(0, 1);
+                    ImGui::TableHeadersRow();
+
+                    // Sort the data if specs change
+                    ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs();
+                    if (sort_specs && sort_specs->SpecsDirty) {                            
+                        items::MyItem::SortWithSortSpecs(sort_specs, items.Data, items.Size);
+                        sort_specs->SpecsDirty = false;
+                    }
+
+                    const bool sorts_specs_using_order = (ImGui::TableGetColumnFlags(2) & ImGuiTableColumnFlags_IsSorted) != 0;
+                    // Try clipper for large verticle list of fields
+                    ImGuiListClipper clipper;
+                    clipper.Begin(items.size());
+                    while (clipper.Step()) {
+                        for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++)
+                        {
+                            items::MyItem* item = &items[row_n];
+                            ImGui::PushID(item->ID);
+                            ImGui::TableNextRow(ImGuiTableRowFlags_None, 25);
+                            ImGui::TableNextColumn();
+                            ImGui::Text(item->Name);
+                            ImGui::TableNextColumn();
+                            // If there isn't already an order value we set it equal to the next available value
+                            if (order[row_n] == 0)
+                                order[row_n] = row_n;
+                            // Disable the custom order input for now until sorting works. Currently, it will order based on the order the fields are clicked in.
+                            //ImGui::InputInt(("##order" + std::to_string(row_n)).c_str(), &order[row_n], 0, 0);
+                            //ImGui::InputInt(("##order" + std::to_string(row_n)).c_str(), &item->Order, 0, 0);
+                            ImGui::Text("%i", item->Order);
+                            ImGui::PopID();
+                        }
+                    }                        
+
+                    // End field order table
+                    ImGui::EndTable();
+                }
+                // End field order group
+                ImGui::EndGroup();
+
+                // End Field order table child window
+                ImGui::EndChild();
+
+                // End Field selection tab node
+                ImGui::EndTabItem();
             }
                 
-                // End tab bar
-                ImGui::EndTabBar();
-        }
+            // End tab bar
+            ImGui::EndTabBar();
+    }
         // Display of currently entered options in an overview format.
         ImGui::BeginGroup();
         {
