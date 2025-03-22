@@ -5,6 +5,9 @@
 #include "Agencies.h"
 #include "AgencyUnit.h"
 #include "agencyImport.h"
+#include "Group.h"
+#include "Groups.h"
+#include "groupImport.h"
 
 void unitBuilder(bool* p_open, Sql& sql, std::string dir)
 {
@@ -15,27 +18,34 @@ void unitBuilder(bool* p_open, Sql& sql, std::string dir)
     Units units;
     AgencyUnit agency;
     Agencies agencies;
+    Group group;
+    Groups groups;
 
     units.setDir(dir + "Unit\\");
 
 	if (ImGui::CollapsingHeader("Step 1. Import Agencies", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-        agencyImport(sql, agencies, dir);
+        static int unitSuccess = 0;
+        unitSuccess = agencyImport(sql, agencies, dir);
 
-        // Check agency table to see if any agencies have been added yet to advance to step 2
         if(sql._GetConnected() && sql._GetDatabase() == "cad" && !step1)
         {
-            if (sql.returnRecordCount("agency", "agencycode") > 0)
+            if (unitSuccess > 0)
             {
                 step1 = true;
             }
         }
+        if (ImGui::Button("Complete Step 1"))
+            step1 = true;
 	}
     if (step1)
     {
         if (ImGui::CollapsingHeader("Step 2. Import Groups"))
         {
-            // Add code to import groups
+            static int groupSuccess = 0;
+            groupSuccess = groupImport(sql, groups, dir);
+            if (groupSuccess > 0)
+                step2 = true;
             if (ImGui::Button("Complete Step 2"))
                 step2 = true;
         }

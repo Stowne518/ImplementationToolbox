@@ -68,6 +68,11 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="Agencies.cpp" />
+    <ClCompile Include="Groups.cpp" />
+    <ClCompile Include="Group.cpp" />
+    <ClCompile Include="groupImport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fieldOrderTable.h">
@@ -134,6 +139,11 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Agencies.h" />
+    <ClInclude Include="Groups.h" />
+    <ClInclude Include="Group.h" />
+    <ClInclude Include="groupImport.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />

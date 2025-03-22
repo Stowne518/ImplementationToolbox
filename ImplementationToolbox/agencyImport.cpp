@@ -10,7 +10,7 @@
 #include "Sql.h"
 #include "imgui.h"
 
-void agencyImport(Sql& sql, Agencies& agencies, std::string dir)
+int agencyImport(Sql& sql, Agencies& agencies, std::string dir)
 {
     // Vector to hold each agency with their data
     static std::vector<AgencyUnit> agency;
@@ -20,6 +20,9 @@ void agencyImport(Sql& sql, Agencies& agencies, std::string dir)
     static char agencycode[30][5];
     static char agencytype[30][5];
     static char agencyname[30][50];
+
+    // return value for successful entries
+    static int recordCount = 0;
 
     try
     {
@@ -97,7 +100,7 @@ void agencyImport(Sql& sql, Agencies& agencies, std::string dir)
         {
             if (ImGui::Button("SQL Import##Agency"))
             {
-                insertAgencySql(sql, agency, &results);
+                recordCount = insertAgencySql(sql, agency, &results);
             }
         }
         else if (sqlconnetion && sql._GetDatabase() != "cad")
@@ -130,6 +133,7 @@ void agencyImport(Sql& sql, Agencies& agencies, std::string dir)
         }
         ImGui::Dummy(ImVec2(0, 25));
     }
+    return recordCount;
 }
 
 /// <summary>
@@ -137,7 +141,8 @@ void agencyImport(Sql& sql, Agencies& agencies, std::string dir)
 /// </summary>
 /// <param name="sql">is a SQL Class with conneciton string info and query function</param>
 /// <param name="units">is a vector container of all units built in our unitImport functions with all their information</param>
-void insertAgencySql(Sql& sql, std::vector<AgencyUnit> agencies, std::vector<std::string>* result) {
+int insertAgencySql(Sql& sql, std::vector<AgencyUnit> agencies, std::vector<std::string>* result) {
+    int recordCount = 0;
     // Write query into buffer var since we store it with C style strings then convert to string and pass along to SQL        
     for (int i = 0; i < agencies.size(); i++) {
         char buffer[1000];
@@ -153,8 +158,10 @@ void insertAgencySql(Sql& sql, std::vector<AgencyUnit> agencies, std::vector<std
         else {
             sql.executeQuery(query);
             result->push_back("Agency " + (std::string)agencies[i].getCode() + " added successfully!");
+            recordCount++;
         }
     }
+    return recordCount;
 }
 
 void readAgencyRows(Agencies& agencies, std::string dir)

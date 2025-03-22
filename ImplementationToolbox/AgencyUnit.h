@@ -8,7 +8,6 @@ private:
 	char code[5];
 	char type[5];
 	char name[50];
-
 	
 public:
 	// Default constructor
