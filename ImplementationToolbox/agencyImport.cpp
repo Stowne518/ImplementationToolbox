@@ -27,8 +27,8 @@ int agencyImport(Sql& sql, Agencies& agencies, std::string dir)
     try
     {
         ImGui::Text("Select a file to import: "); ImGui::SameLine();
-        std::string fileName = displayFiles(dir + "Agencies");
-        agencies.setFileName(dir + "Agencies\\" + fileName);
+        std::string agencyFileName = displayAgencyFiles(dir + "Agencies");
+        agencies.setFileName(dir + "Agencies\\" + agencyFileName);
     }
     catch (std::exception& e)
     {
@@ -36,15 +36,15 @@ int agencyImport(Sql& sql, Agencies& agencies, std::string dir)
     }
     static bool agency_imported = false;
     ImGui::SameLine();
-    if (!agency_imported)
+    if (!agency_imported && agencies.getFileName() != "C:\\ImplementationToolbox\\Units\\Agencies\\")
     {
-        if (ImGui::Button("ImportCSV##agency"))
+        if (ImGui::Button("Import CSV##agency"))
             agency_imported = true;
     }
-    if (agency_imported)
+    if (agency_imported || agencies.getFileName() == "C:\\ImplementationToolbox\\Units\\Agencies\\")
     {
         ImGui::BeginDisabled();
-        ImGui::Button("ImportCSV");
+        ImGui::Button("Import CSV");
         ImGui::EndDisabled();
     }
     if (agency_imported)
@@ -96,20 +96,20 @@ int agencyImport(Sql& sql, Agencies& agencies, std::string dir)
 
         bool sqlconnetion = sql._GetConnected();            // Continually make sure we're connected to SQL
         static std::vector<std::string> results;
-        if(sqlconnetion && sql._GetDatabase() == "cad")
+        if(sqlconnetion /*&& sql._GetDatabase() == "cad"*/)
         {
             if (ImGui::Button("SQL Import##Agency"))
             {
                 recordCount = insertAgencySql(sql, agency, &results);
             }
         }
-        else if (sqlconnetion && sql._GetDatabase() != "cad")
+        /*else if (sqlconnetion && sql._GetDatabase() != "cad")
         {
             ImGui::BeginDisabled();
             ImGui::Button("SQL Import");
             ImGui::SetItemTooltip("Connect to cad database");
             ImGui::EndDisabled();
-        }
+        }*/
         else
         {
             ImGui::BeginDisabled();
@@ -134,6 +134,54 @@ int agencyImport(Sql& sql, Agencies& agencies, std::string dir)
         ImGui::Dummy(ImVec2(0, 25));
     }
     return recordCount;
+}
+
+/// <summary>
+/// Function to read in file names and display in an ImGui::ComboBox for selection
+/// </summary>
+/// <param name="dir">is the directory path to the unit_csv files</param>
+/// <returns>selected file name</returns>
+std::string displayAgencyFiles(std::string dir) {
+    static std::string chosenName = "";
+    std::vector<std::string> fileNames;
+    for (const auto& entry : std::filesystem::directory_iterator(dir))
+    {
+        std::string filename = entry.path().filename().string();
+        size_t pos = filename.find(".csv");
+        if (pos != std::string::npos) {
+            std::string displayName = filename;
+            fileNames.push_back(displayName);
+        }
+    }
+
+    // Convert std::vector<std::string> to array of const char* for ImGui display
+    std::vector<const char*> fileNameCStr;
+    for (const auto& name : fileNames) {
+        fileNameCStr.push_back(name.c_str());
+    }
+
+    // Display the Combo box if we find a profile has been created otherwise we show text instead
+    static int currentItem = 0;
+    ImGui::SetNextItemWidth(250);
+    if (!fileNameCStr.empty() && ImGui::BeginCombo(("##Select unit csv" + dir).c_str(), fileNameCStr[currentItem])) {
+        for (int n = 0; n < fileNameCStr.size(); n++) {
+            bool isSelected = (currentItem == n);
+            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
+                currentItem = n;
+                chosenName = fileNameCStr[n];
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        // End Combo Box for profile drop down
+        ImGui::EndCombo();
+    }
+    else if (fileNameCStr.empty())
+        ImGui::TextWrapped("No CSV files found. Place a .csv file in %s", dir.c_str());
+
+    // Return the currently selected name in the combo box
+    return chosenName;
 }
 
 /// <summary>

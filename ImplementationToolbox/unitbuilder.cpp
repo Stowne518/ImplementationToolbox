@@ -8,6 +8,7 @@
 #include "Group.h"
 #include "Groups.h"
 #include "groupImport.h"
+#include "beatImport.h"
 
 void unitBuilder(bool* p_open, Sql& sql, std::string dir)
 {
@@ -58,9 +59,15 @@ void unitBuilder(bool* p_open, Sql& sql, std::string dir)
     }
     if (step1 && step2)
     {
-        if (ImGui::CollapsingHeader("Step 3. Import Beats"))
+        if (ImGui::CollapsingHeader("Step 3. Import Beats - Moving to map import")) // Beats move to Geotab1 import
         {
             // Add code to import beats
+            // Need smarter import options here
+            // Beat info comes from shape files that we get from GIS
+            // Current idea is to read in column names first, then have a drag-n-drop mapping option to match client columns to our geotab1 columns before importing data
+            // After columns are confirmed we enable data mapping/importing
+            // Go to imgui_demo.cpp line 2434 for example of drag/drop swapping
+            /*beatImport(beats, dir);*/
             if (ImGui::Button("Complete Step 3"))
                 step3 = true;
         }
@@ -68,12 +75,12 @@ void unitBuilder(bool* p_open, Sql& sql, std::string dir)
     else
     {
         ImGui::BeginDisabled();
-        ImGui::CollapsingHeader("Step 3. Import Beats");
+        ImGui::CollapsingHeader("Step 3. Import Beats - moving to map import");
         ImGui::EndDisabled();
     }
     if (step1 && step2 && step3)
     {
-        if (ImGui::CollapsingHeader("Step 4. Import Stations"))
+        if (ImGui::CollapsingHeader("Step 4. Import Stations - moving to map import"))
         {
             // Add function to import stations
             if (ImGui::Button("Complete Step 4"))
@@ -83,7 +90,7 @@ void unitBuilder(bool* p_open, Sql& sql, std::string dir)
     else
     {
         ImGui::BeginDisabled();
-        ImGui::CollapsingHeader("Step 4. Import Stations");
+        ImGui::CollapsingHeader("Step 4. Import Stations - moving to map import"); // Move stations to Geotab1 import
         ImGui::EndDisabled();
     }
     if(step1 && step2 && step3 && step4)
@@ -99,54 +106,6 @@ void unitBuilder(bool* p_open, Sql& sql, std::string dir)
         ImGui::CollapsingHeader("Step 5. Import Units");
         ImGui::EndDisabled();
     }
-}
-
-/// <summary>
-/// Function to read in file names and display in an ImGui::ComboBox for selection
-/// </summary>
-/// <param name="dir">is the directory path to the unit_csv files</param>
-/// <returns>selected file name</returns>
-std::string displayFiles(std::string dir) {
-    static std::string chosenName;
-    std::vector<std::string> fileNames;
-    for (const auto& entry : std::filesystem::directory_iterator(dir))
-    {
-        std::string filename = entry.path().filename().string();
-        size_t pos = filename.find(".csv");
-        if (pos != std::string::npos) {
-            std::string displayName = filename;
-            fileNames.push_back(displayName);
-        }
-    }
-
-    // Convert std::vector<std::string> to array of const char* for ImGui display
-    std::vector<const char*> fileNameCStr;
-    for (const auto& name : fileNames) {
-        fileNameCStr.push_back(name.c_str());
-    }
-
-    // Display the Combo box if we find a profile has been created otherwise we show text instead
-    static int currentItem = 0;
-    ImGui::SetNextItemWidth(250);
-    if (!fileNameCStr.empty() && ImGui::BeginCombo(("##Select unit csv" + dir).c_str(), fileNameCStr[currentItem])) {
-        for (int n = 0; n < fileNameCStr.size(); n++) {
-            bool isSelected = (currentItem == n);
-            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
-                currentItem = n;
-                chosenName = fileNameCStr[n];
-            }
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        // End Combo Box for profile drop down
-        ImGui::EndCombo();
-    }
-    else if (fileNameCStr.empty())
-        ImGui::TextWrapped("No CSV files found. Place a .csv file in %s", dir.c_str());
-
-    // Return the currently selected name in the combo box
-    return chosenName;
 }
 
 void DrawGreenCheckMark(ImDrawList* draw_list, ImVec2 pos, float size) {

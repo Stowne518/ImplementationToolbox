@@ -3,6 +3,7 @@
 #include "Sql.h"
 #include "sqlConnectionHandler.h"
 #include <filesystem>
+#include <iostream>
 
 bool Sql::requiredInfo(std::string s, std::string db, std::string u, std::string p) {
 	// Should check if any field is blank on the SQL Connection form and if so not allow the connection attempt
@@ -109,7 +110,16 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
 
 void Sql::saveConnString(std::string dir, std::string name) {
     std::ofstream connStr;
-    connStr.open(dir + name + "_" + _GetDatabase() + ".str");
+    try
+    {
+        connStr.open(dir + name + "_" + _GetDatabase() + ".str");
+        std::cout << "Saving connection string to: " << dir + name + "_" << _GetDatabase() << ".str" << std::endl;
+    }    
+    catch (std::exception& e)
+    {
+        std::cerr << "Error saving file: " << e.what() << std::endl;
+        return;
+    }
 
     if (!connStr) {
         return;

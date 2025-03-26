@@ -3,6 +3,7 @@
 #include "Group.h"
 #include "Groups.h"
 #include "Sql.h"
+#include <filesystem>
 
 int groupImport(Sql& sql, Groups& groups, std::string dir)
 {
@@ -20,8 +21,8 @@ int groupImport(Sql& sql, Groups& groups, std::string dir)
 	try
 	{
 		ImGui::Text("Select a file to import: "); ImGui::SameLine();
-		std::string fileName = displayFiles(dir + "Groups");
-		groups.setFileName(dir + "Groups\\" + fileName);
+		std::string groupFileName = displayGroupFiles(dir + "Groups");
+		groups.setFileName(dir + "Groups\\" + groupFileName);
 	}
 	catch (std::exception& e)
 	{
@@ -29,15 +30,15 @@ int groupImport(Sql& sql, Groups& groups, std::string dir)
 	}
 	static bool group_imported = false;
     ImGui::SameLine();
-    if (!group_imported)
+    if (!group_imported && groups.getFileName() != "C:\\ImplementationToolbox\\Units\\Groups\\")
     {
-        if (ImGui::Button("ImportCSV##groups"))
+        if (ImGui::Button("Import CSV##groups"))
             group_imported = true;
     }
-    if (group_imported)
+    if (group_imported || groups.getFileName() == "C:\\ImplementationToolbox\\Units\\Groups\\")
     {
         ImGui::BeginDisabled();
-        ImGui::Button("ImportCSV");
+        ImGui::Button("Import CSV##disgroups");
         ImGui::EndDisabled();
     }
     if (group_imported)
@@ -89,14 +90,14 @@ int groupImport(Sql& sql, Groups& groups, std::string dir)
 
         bool sqlconnetion = sql._GetConnected();            // Continually make sure we're connected to SQL
         static std::vector<std::string> results;
-        if (sqlconnetion && sql._GetDatabase() == "cad")
+        if (sqlconnetion/* && sql._GetDatabase() == "cad"*/)
         {
             if (ImGui::Button("SQL Import##Group"))
             {
                 recordCount = insertGroupsSql(sql, group, &results);
             }
         }
-        else if (sqlconnetion && sql._GetDatabase() != "cad")
+        else if (sqlconnetion/* && sql._GetDatabase() != "cad"*/)
         {
             ImGui::BeginDisabled();
             ImGui::Button("SQL Import");
@@ -127,6 +128,49 @@ int groupImport(Sql& sql, Groups& groups, std::string dir)
         ImGui::Dummy(ImVec2(0, 25));
     }
     return recordCount;
+}
+
+std::string displayGroupFiles(std::string dir) {
+    static std::string chosenName = "";
+    std::vector<std::string> fileNames;
+    for (const auto& entry : std::filesystem::directory_iterator(dir))
+    {
+        std::string filename = entry.path().filename().string();
+        size_t pos = filename.find(".csv");
+        if (pos != std::string::npos) {
+            std::string displayName = filename;
+            fileNames.push_back(displayName);
+        }
+    }
+
+    // Convert std::vector<std::string> to array of const char* for ImGui display
+    std::vector<const char*> fileNameCStr;
+    for (const auto& name : fileNames) {
+        fileNameCStr.push_back(name.c_str());
+    }
+
+    // Display the Combo box if we find a profile has been created otherwise we show text instead
+    static int currentItem = 0;
+    ImGui::SetNextItemWidth(250);
+    if (!fileNameCStr.empty() && ImGui::BeginCombo(("##Select group csv" + dir).c_str(), fileNameCStr[currentItem])) {
+        for (int n = 0; n < fileNameCStr.size(); n++) {
+            bool isSelected = (currentItem == n);
+            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
+                currentItem = n;
+                chosenName = fileNameCStr[n];
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        // End Combo Box for profile drop down
+        ImGui::EndCombo();
+    }
+    else if (fileNameCStr.empty())
+        ImGui::TextWrapped("No CSV files found. Place a .csv file in %s", dir.c_str());
+
+    // Return the currently selected name in the combo box
+    return chosenName;
 }
 
 /// <summary>

@@ -34,6 +34,35 @@
 #include "unitImport.h"
 #include "popups.h"
 #include "unitbuilder.h"
+#include "mapImport.h"
+#include <Windows.h>
+
+// Get center of monitor from Windows API
+static POINT getScreenCenter() {
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    POINT center;
+    center.x = screenWidth / 2;
+    center.y = screenHeight / 2;
+    return center;
+}
+
+static POINT getScreenSize()
+{
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    POINT size;
+    size.x = screenWidth;
+    size.y = screenHeight;
+    return size;
+}
+
+const int WIDTH = getScreenSize().x * 0.6;                        // Initial window width definition
+const int HEIGHT = getScreenSize().y * 0.7;                       // Initial window height definition
+auto START_X = getScreenCenter().x - (WIDTH / 2);           // Get center screen x coordinate - based on window size
+auto START_Y = getScreenCenter().y - (HEIGHT / 2);          // Get center screen y coordinate - based on window size
+static bool isDarkMode = false;
+
 // Data
 static LPDIRECT3D9              g_pD3D = nullptr;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = nullptr;
@@ -47,6 +76,7 @@ void CleanupDeviceD3D();
 void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+
 // Main code
 int main(int, char**)
 {
@@ -57,9 +87,9 @@ int main(int, char**)
 
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
-    WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"Implementation Toolbox", nullptr };
+    WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, versionNum, nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, versionNum, WS_OVERLAPPEDWINDOW, 100, 100, 1280, 900, nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, versionNum, WS_OVERLAPPEDWINDOW, START_X, START_Y, WIDTH, HEIGHT, nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -81,8 +111,11 @@ int main(int, char**)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
-    // ImGui::StyleColorsDark();
-    ImGui::StyleColorsLight();
+    loadCustomSettings("ImplementationToolbox.ini", isDarkMode);
+    if(isDarkMode)
+        ImGui::StyleColorsDark();
+    else
+        ImGui::StyleColorsLight();
 
     // Darken the input text boxes
     ImGuiStyle& style = ImGui::GetStyle();
@@ -117,7 +150,6 @@ int main(int, char**)
     // If we can't find it use the default one
     else (io.Fonts->AddFontDefault());
 
-   
 
     // Our state
     bool show_demo_window = false;
@@ -129,6 +161,7 @@ int main(int, char**)
     bool show_sql_query_builder_window = false;
     bool show_xml_parser_window = false;
     bool show_unit_import_window = false;
+    bool show_map_import_window = false;
     bool show_sql_conn_window = false;                  // Is SQL connection configuration window open or closed
     bool show_modules = true;
 
@@ -287,7 +320,7 @@ int main(int, char**)
         static Sql sql;
         // Open the SQL configuration window if the menu item is selected
         if (show_sql_conn_window)
-            sql.DisplaySqlConfigWindow(&show_sql_conn_window, directory_path + "\\ConnectionStrings\\");
+            sql.DisplaySqlConfigWindow(&show_sql_conn_window, directory_path + "ConnectionStrings\\");
 
         // Create a program health window to check for required setup at the start.
         static bool directoryFound = createDirectory(directory_path);
@@ -361,42 +394,68 @@ int main(int, char**)
         static char genExprtLabel[] = "Generic Export Generator";
         static char oneBttnLabel[] = "One Button Database Refresh";
         static char sqlQryLabel[] = "SQL Query Builder";
-        static char unitImportLabel[] = "Bulk Import";
+        static char unitImportLabel[] = "Unit Bulk Import";
+        static char mapDataImportLabel[] = "Map Data Import";
         // Show generic export generator button 
         ImGui::SeparatorText("RMS/JMS");
         if (!show_generic_export_window)
-            if (ImGui::Button(genExprtLabel, moduleSelectionSize)) {
+        {
+            if (ImGui::Button(genExprtLabel, moduleSelectionSize))
+            {
                 show_generic_export_window = true;
             }
-        if (show_generic_export_window) {
+        }
+        else
+        {
             showDisabledButton(genExprtLabel, moduleSelectionSize);
         }
         // Show one button refresh button 
         if (!show_one_button_refresh_window)
-            if (ImGui::Button(oneBttnLabel, moduleSelectionSize)) {
+        {
+            if (ImGui::Button(oneBttnLabel, moduleSelectionSize))
+            {
                 show_one_button_refresh_window = true;
             }
-        if (show_one_button_refresh_window) {
+        }
+        else
+        {
             showDisabledButton(oneBttnLabel, moduleSelectionSize);
-        }            
+        }        
         
         ImGui::SeparatorText("CAD");
-        if (!show_unit_import_window) {
-            if (ImGui::Button(unitImportLabel, moduleSelectionSize)) {
+        if (!show_map_import_window)
+        {
+            if (ImGui::Button(mapDataImportLabel, moduleSelectionSize))
+            {
+                show_map_import_window = true;
+            }
+        }
+        else
+        {
+            showDisabledButton(mapDataImportLabel, moduleSelectionSize);
+        }
+        if (!show_unit_import_window) 
+        {
+            if (ImGui::Button(unitImportLabel, moduleSelectionSize)) 
+            {
                 show_unit_import_window = true;
             }
         }
-        if (show_unit_import_window) {
+        else 
+        {
             showDisabledButton(unitImportLabel, moduleSelectionSize);
         }
-        
         ImGui::SeparatorText("SQL");
         // Show sql query builder button 
         if (!show_sql_query_builder_window)
-            if (ImGui::Button(sqlQryLabel, moduleSelectionSize)) {
+        {
+            if (ImGui::Button(sqlQryLabel, moduleSelectionSize)) 
+            {
                 show_sql_query_builder_window = true;
             }
-        if (show_sql_query_builder_window) {
+        }
+        else 
+        {
             showDisabledButton(sqlQryLabel, moduleSelectionSize);
         }
 
@@ -411,7 +470,8 @@ int main(int, char**)
         ImGui::SetNextWindowPos(recentUpdatePos, ImGuiCond_Always, ImVec2(0.0f, 0.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 0));
 
-        if (open_recent_updates) {
+        if (open_recent_updates) 
+        {
             ImGui::Begin(currVersion, &open_recent_updates, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
             displayUpdates();
 
@@ -427,45 +487,61 @@ int main(int, char**)
         ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
         ImGui::SetNextWindowSize(moduleSize);
         ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_unit_import_window) {
+        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_unit_import_window && !show_map_import_window) 
+        {
             ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
         }
-        else {
-            if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) {
-                if (ImGui::BeginTabItem("Generic Export Generator", &show_generic_export_window, ImGuiTabItemFlags_None)) {
+        else 
+        {
+            if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) 
+            {
+                if (ImGui::BeginTabItem(genExprtLabel, &show_generic_export_window, ImGuiTabItemFlags_None)) 
+                {
                     showGenericExportWindow(&show_generic_export_window, sql);
 
                     // End Generic export generator tab
                     ImGui::EndTabItem();
                 }
                 // Add tab for one button refresh window
-                if (ImGui::BeginTabItem("OneButton RMS Refresh", &show_one_button_refresh_window, ImGuiTabItemFlags_None)) {
+                if (ImGui::BeginTabItem(oneBttnLabel, &show_one_button_refresh_window, ImGuiTabItemFlags_None)) 
+                {
                     showOneButtonRefreshWindow(&show_one_button_refresh_window);
 
                     // End Refresh tab
                     ImGui::EndTabItem();
                 }
                 // Add tab for sql generator
-                if (ImGui::BeginTabItem("SQL Query Builder - WIP", &show_sql_query_builder_window, ImGuiTabItemFlags_None)) {
+                if (ImGui::BeginTabItem(sqlQryLabel, &show_sql_query_builder_window, ImGuiTabItemFlags_None)) 
+                {
                     showSqlQueryBuilderWindow(&show_sql_query_builder_window);
 
                     // End sql query builder tab
                     ImGui::EndTabItem();
                 }
                 // Tab for XML parser module
-                if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) {
+                if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) 
+                {
                     xmlParser(directory_path);
 
                     // End XML Parser
                     ImGui::EndTabItem();
                 }
+                // Map Import for CAD
+                if (ImGui::BeginTabItem(mapDataImportLabel, &show_map_import_window, ImGuiTabItemFlags_None))
+                {
+                    mapImport(sql, directory_path);
+
+                    // End Map Import tab
+                    ImGui::EndTabItem();
+                }
                 // Unit Import for CAD
-                if (ImGui::BeginTabItem("Bulk Import", &show_unit_import_window, ImGuiTabItemFlags_None)) {
+                if (ImGui::BeginTabItem(unitImportLabel, &show_unit_import_window, ImGuiTabItemFlags_None)) 
+                {
                     unitBuilder(&show_unit_import_window, sql, units_directory_path);
 
                     // End Unit Import Window
                     ImGui::EndTabItem();
-                }
+                }                
 
                 // End Modules tab
                 ImGui::EndTabBar();
@@ -475,15 +551,19 @@ int main(int, char**)
         // End modules child window
         ImGui::End();
         
-        if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Close Application")) {
+        if (ImGui::BeginMainMenuBar()) 
+        {
+            if (ImGui::BeginMenu("File")) 
+            {
+                if (ImGui::MenuItem("Close Application")) 
+                {
                     return 0;
                 }
                 // End File menu
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("View")) {
+            if (ImGui::BeginMenu("View")) 
+            {
                 if (ImGui::MenuItem("Getting Started",NULL, &open_getting_started));
                 if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
                 if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
@@ -493,32 +573,18 @@ int main(int, char**)
                 // End View menu
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Settings")) {
-
+            if (ImGui::BeginMenu("Settings")) 
+            {
                 // Open popup for SQL settings
                 if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
 
-                if (ImGui::BeginMenu("Display")) {
-                    if (ImGui::BeginMenu("Style")) {
-                        if (ImGui::MenuItem("Light")) {
-                            ImGui::StyleColorsLight();
-                        }
-                        if (ImGui::MenuItem("Dark")) {
-                            ImGui::StyleColorsDark();
-                        }
-                        // End Style Menu
-                        ImGui::EndMenu();
-                    }
-
-                    // End Display Menu
-                    ImGui::EndMenu();
-                }
-                
                 // End settings menu
                 ImGui::EndMenu();
             }
-            if (show_generic_export_window) {
-                if (ImGui::BeginMenu("Generic Export Generator Options")) {
+            if (show_generic_export_window) 
+            {
+                if (ImGui::BeginMenu("Generic Export Generator Options")) 
+                {
                     // Center window when it opens
                     ImVec2 screen_center = ImGui::GetMainViewport()->GetCenter();
                     ImGui::SetNextWindowPos(screen_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -529,8 +595,27 @@ int main(int, char**)
                     ImGui::EndMenu();
                 }                
             }
+            if (isDarkMode)
+            {
+                if (ImGui::Button("Light Mode"))
+                {
+                    ImGui::StyleColorsLight();
+                    isDarkMode = false;
+                }
+            }
+            else
+            {
+                if (ImGui::Button("Dark Mode"))
+                {
+                    ImGui::StyleColorsDark();
+                    isDarkMode = true;
+                }
+            }
+            saveCustomSettings("ImplementationToolbox.ini", isDarkMode);
             ImGui::EndMainMenuBar();
         }
+
+        
 
         if (gen_export_info) { genExportInfoModPop(&gen_export_info); }
 

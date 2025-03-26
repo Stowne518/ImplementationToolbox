@@ -12,7 +12,7 @@ class Unit;			// Declare Unit class
 class AgencyUnit;	// Declare AgencyUnit class
 
 void unitInsert(Sql&, Units&);
-std::string displayFiles(std::string);
+std::string displayUnitFiles(std::string);
 void insertSql(Sql&, std::vector<Unit>, std::vector<std::string>*, std::string);
 void readColumns(Units&);
 void readRows(Units&);

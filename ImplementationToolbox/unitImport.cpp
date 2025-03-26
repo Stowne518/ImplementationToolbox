@@ -33,7 +33,7 @@ void unitInsert(Sql& sql, Units& units) {
     try
     {
         ImGui::Text("Select a file to import: "); ImGui::SameLine();
-        std::string fileName = displayFiles(dir);
+        std::string fileName = displayUnitFiles(dir);
         units.setFileName(fileName);
     }
     catch (std::exception& e)
@@ -42,12 +42,12 @@ void unitInsert(Sql& sql, Units& units) {
     }
     ImGui::SameLine();
 
-    if (!imported)
-        if (ImGui::Button("ImportCSV##units"))
+    if (!imported && units.getFileName() != "C:\\ImplementationToolbox\\Units\\Unit\\")
+        if (ImGui::Button("Import CSV##units"))
             imported = true;
-    if (imported) {
+    if (imported || units.getFileName() == "C:\\ImplementationToolbox\\Units\\Unit\\") {
         ImGui::BeginDisabled();
-        ImGui::Button("ImportCSV");
+        ImGui::Button("Import CSV");
         ImGui::EndDisabled();
     }
 
@@ -230,57 +230,54 @@ void unitInsert(Sql& sql, Units& units) {
     }
 }
 
-/*
-* MOVED TO unitbuilder
+/// <summary>
+/// Function to read in file names and display in an ImGui::ComboBox for selection
+/// </summary>
+/// <param name="dir">is the directory path to the unit_csv files</param>
+/// <returns>selected file name</returns>
+std::string displayUnitFiles(std::string dir) {
+    static std::string chosenName;
+    std::vector<std::string> fileNames;
+    for (const auto& entry : std::filesystem::directory_iterator(dir))
+    {
+        std::string filename = entry.path().filename().string();
+        size_t pos = filename.find(".csv");
+        if (pos != std::string::npos) {
+            std::string displayName = filename;
+            fileNames.push_back(displayName);
+        }
+    }
 
-///// <summary>
-///// Function to read in file names and display in an ImGui::ComboBox for selection
-///// </summary>
-///// <param name="dir">is the directory path to the unit_csv files</param>
-///// <returns>selected file name</returns>
-//std::string displayFiles(std::string dir) {
-//    static std::string chosenName;
-//    std::vector<std::string> fileNames;
-//    for (const auto& entry : std::filesystem::directory_iterator(dir))
-//    {
-//        std::string filename = entry.path().filename().string();
-//        size_t pos = filename.find(".csv");
-//        if (pos != std::string::npos) {
-//            std::string displayName = filename;
-//            fileNames.push_back(displayName);
-//        }
-//    }
-//
-//    // Convert std::vector<std::string> to array of const char* for ImGui display
-//    std::vector<const char*> fileNameCStr;
-//    for (const auto& name : fileNames) {
-//        fileNameCStr.push_back(name.c_str());
-//    }
-//
-//    // Display the Combo box if we find a profile has been created otherwise we show text instead
-//    static int currentItem = 0;
-//    ImGui::SetNextItemWidth(250);
-//    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select unit csv", fileNameCStr[currentItem])) {
-//        for (int n = 0; n < fileNameCStr.size(); n++) {
-//            bool isSelected = (currentItem == n);
-//            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
-//                currentItem = n;
-//                chosenName = fileNameCStr[n];
-//            }
-//            if (isSelected) {
-//                ImGui::SetItemDefaultFocus();
-//            }
-//        }
-//        // End Combo Box for profile drop down
-//        ImGui::EndCombo();
-//    }
-//    else if (fileNameCStr.empty())
-//        ImGui::TextWrapped("No CSV files found. Place a .csv file in %s", dir.c_str());
-//
-//    // Return the currently selected name in the combo box
-//    return chosenName;
-//}
-*/
+    // Convert std::vector<std::string> to array of const char* for ImGui display
+    std::vector<const char*> fileNameCStr;
+    for (const auto& name : fileNames) {
+        fileNameCStr.push_back(name.c_str());
+    }
+
+    // Display the Combo box if we find a profile has been created otherwise we show text instead
+    static int currentItem = 0;
+    ImGui::SetNextItemWidth(250);
+    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select unit csv", fileNameCStr[currentItem])) {
+        for (int n = 0; n < fileNameCStr.size(); n++) {
+            bool isSelected = (currentItem == n);
+            if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
+                currentItem = n;
+                chosenName = fileNameCStr[n];
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        // End Combo Box for profile drop down
+        ImGui::EndCombo();
+    }
+    else if (fileNameCStr.empty())
+        ImGui::TextWrapped("No CSV files found. Place a .csv file in %s", dir.c_str());
+
+    // Return the currently selected name in the combo box
+    return chosenName;
+}
+
 
 /// <summary>
 /// utilize SQL connetion to send insert statments for each unit added to the agency csv unit file

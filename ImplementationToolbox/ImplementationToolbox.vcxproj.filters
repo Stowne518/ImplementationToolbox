@@ -67,10 +67,28 @@
     <ClCompile Include="agencyImport.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="Agencies.cpp" />
-    <ClCompile Include="Groups.cpp" />
-    <ClCompile Include="Group.cpp" />
     <ClCompile Include="groupImport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="beatImport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Agencies.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Beat.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Beats.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Group.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Groups.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="mapImport.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -138,10 +156,28 @@
     <ClInclude Include="agencyImport.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Agencies.h" />
-    <ClInclude Include="Groups.h" />
-    <ClInclude Include="Group.h" />
     <ClInclude Include="groupImport.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="beatImport.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Agencies.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Beat.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Beats.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Group.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Groups.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="mapImport.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -10,6 +10,8 @@ class Groups;
 
 int groupImport(Sql& sql, Groups& groups, std::string dir);
 
+std::string displayGroupFiles(std::string dir);
+
 int insertGroupsSql(Sql& sql, std::vector<Group> group, std::vector<std::string>* result);
 
 void readGroupRows(Groups& groups, std::string dir);

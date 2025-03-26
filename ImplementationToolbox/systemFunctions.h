@@ -19,11 +19,22 @@
 bool createDirectory(std::string& path) {
     std::string sqlOutputSubDir = path + "SQL Output\\";
     std::string profileOutputDir = path + "Profiles\\";
+
+    // Unit Paths
     std::string unitCSVDir = path + "Units\\Unit\\";
     std::string agencyCSVDir = path + "Units\\Agencies\\";
     std::string groupsCSVDir = path + "Units\\Groups\\";
-    std::string beatsCSVDir = path + "Units\\Beats\\";
-    std::string stationsCSVDir = path + "Units\\Stations\\";
+
+    // Map Paths
+    std::string 
+        map_dir = path + "Maps\\",
+        beats_dir = map_dir + "Beats\\",
+        district_dir = map_dir + "Districts\\",
+        station_dir = map_dir + "Stations\\",
+        geoprox_dir = map_dir + "GeoProx\\",
+        responseplan_dir = map_dir + "ResponsePlans\\",
+        reportingarea_dir = map_dir + "ReportingAreas\\";
+
     std::string connStrDir = path + "ConnectionStrings\\";
     // Check for the primary directory we will use for program if not there we try to create it
     if (!std::filesystem::exists(path)) {
@@ -41,10 +52,15 @@ bool createDirectory(std::string& path) {
             std::filesystem::create_directory(agencyCSVDir);
             // Create Groups CSV directory
             std::filesystem::create_directory(groupsCSVDir);
-            // Create Beats CSV directory
-            std::filesystem::create_directory(beatsCSVDir);
+            // Create Maps directory
+            std::filesystem::create_directory(map_dir);
             // Create Stations CSV directory
-            std::filesystem::create_directory(stationsCSVDir);
+            std::filesystem::create_directory(beats_dir);
+            std::filesystem::create_directory(district_dir);
+            std::filesystem::create_directory(station_dir);
+            std::filesystem::create_directory(geoprox_dir);
+            std::filesystem::create_directory(responseplan_dir);
+            std::filesystem::create_directory(reportingarea_dir);
             return true;
         }
         else {
@@ -52,34 +68,72 @@ bool createDirectory(std::string& path) {
         }
     }
     // Create subdirectories if they don't exists in the working dir
-    if (!std::filesystem::exists(sqlOutputSubDir)) {
-        std::filesystem::create_directory(sqlOutputSubDir);
-    }
-    if (!std::filesystem::exists(profileOutputDir)) {
-        std::filesystem::create_directory(profileOutputDir);
-    }
-    if (!std::filesystem::exists(unitCSVDir)) {
-        std::filesystem::create_directory(unitCSVDir);
-    }
-    if (!std::filesystem::exists(connStrDir)) {
-        std::filesystem::create_directories(connStrDir);
-    }
-    if (!std::filesystem::exists(agencyCSVDir)) {
-        std::filesystem::create_directories(agencyCSVDir);
-    }
-    if (!std::filesystem::exists(groupsCSVDir)) {
-        std::filesystem::create_directories(groupsCSVDir);
-    }
-    if (!std::filesystem::exists(beatsCSVDir)) {
-        std::filesystem::create_directories(beatsCSVDir);
-    }
-    if (!std::filesystem::exists(stationsCSVDir)) {
-        std::filesystem::create_directories(stationsCSVDir);
-    }
-    // If they all already exists we also return true
-    else {
+    try
+    {
+        if (!std::filesystem::exists(sqlOutputSubDir))
+        {
+            std::filesystem::create_directory(sqlOutputSubDir);
+        }
+        if (!std::filesystem::exists(profileOutputDir))
+        {
+            std::filesystem::create_directory(profileOutputDir);
+        }
+        if (!std::filesystem::exists(unitCSVDir))
+        {
+            std::filesystem::create_directory(unitCSVDir);
+        }
+        if (!std::filesystem::exists(connStrDir))
+        {
+            std::filesystem::create_directories(connStrDir);
+        }
+        if (!std::filesystem::exists(agencyCSVDir))
+        {
+            std::filesystem::create_directories(agencyCSVDir);
+        }
+        if (!std::filesystem::exists(groupsCSVDir))
+        {
+            std::filesystem::create_directories(groupsCSVDir);
+        }
+        if (!std::filesystem::exists(beats_dir))
+        {
+            std::filesystem::create_directories(beats_dir);
+        }
+        if (!std::filesystem::exists(station_dir))
+        {
+            std::filesystem::create_directories(station_dir);
+        }
+        if (!std::filesystem::exists(district_dir))
+        {
+            std::filesystem::create_directory(district_dir);
+        }
+        if (!std::filesystem::exists(geoprox_dir))
+        {
+            std::filesystem::create_directory(geoprox_dir);
+        }
+        if (!std::filesystem::exists(responseplan_dir))
+        {
+            std::filesystem::create_directory(responseplan_dir);
+        }
+        if (!std::filesystem::exists(reportingarea_dir))
+        {
+            std::filesystem::create_directory(reportingarea_dir);
+        }
+        // Return true if we make it here without exception
         return true;
     }
+    catch (std::filesystem::filesystem_error& fse)
+    {
+        std::cerr << "Filesystem error: " << fse.what() << std::endl;
+        return false;
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "General error: " << e.what() << std::endl;
+        return false;
+    }
+
+    // Default return
+    return false;
  }
 
 // Function to check in the list of generic export fields were correctly read in.
@@ -189,4 +243,28 @@ void showDisabledButton(static char label[], ImVec2 size) {
     ImGui::BeginDisabled();
     ImGui::Button(label, size);
     ImGui::EndDisabled();
+}
+
+void saveCustomSettings(const char* filename, bool isDarkMode)
+{
+    FILE* file = fopen(filename, "w");
+    if (file)
+    {
+        fprintf(file, "isDarkMode=%d\n", isDarkMode ? 1 : 0);
+        fclose(file);
+    }
+}
+
+void loadCustomSettings(const char* filename, bool& isDarkMode)
+{
+    FILE* file = fopen(filename, "r");
+    if (file)
+    {
+        int mode;
+        if (fscanf(file, "isDarkMode=%d", &mode) == 1)
+        {
+            isDarkMode = (mode == 1);
+        }
+        fclose(file);
+    }
 }
