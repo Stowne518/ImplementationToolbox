@@ -57,10 +57,12 @@ static POINT getScreenSize()
     return size;
 }
 
-const int WIDTH = getScreenSize().x * 0.6;                        // Initial window width definition
-const int HEIGHT = getScreenSize().y * 0.7;                       // Initial window height definition
-auto START_X = getScreenCenter().x - (WIDTH / 2);           // Get center screen x coordinate - based on window size
-auto START_Y = getScreenCenter().y - (HEIGHT / 2);          // Get center screen y coordinate - based on window size
+const int WIDTH = getScreenSize().x * 0.6;                          // Initial window width definition
+const int HEIGHT = getScreenSize().y * 0.7;                         // Initial window height definition
+const auto START_X = getScreenCenter().x - (WIDTH / 2);             // Get center screen x coordinate - based on window size
+const auto START_Y = getScreenCenter().y - (HEIGHT / 2);            // Get center screen y coordinate - based on window size
+
+constexpr auto settings_filename = "ImplementationToolbox.ini";
 static bool isDarkMode = false;
 
 // Data
@@ -76,13 +78,14 @@ void CleanupDeviceD3D();
 void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+std::map settings = readINI(settings_filename);
 
 // Main code
 int main(int, char**)
 {
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.6.2";
-    const char* currVersion = "Implementation Toolbox v0.6.2";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.2.1";
+    const char* currVersion = "Implementation Toolbox v0.6.2.1";
     const char* lastUpdate = "3/21/25";
 
     // Create application window
@@ -110,8 +113,15 @@ int main(int, char**)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+    ImGuiViewport* windowPos = ImGui::GetMainViewport();
+    ImVec2 windowPosCoords = windowPos->Pos;
+    static double windowPosX = windowPosCoords.x;
+    static double windowPosY = windowPosCoords.y;
+
+    saveWindowPosX(settings_filename, windowPosX);
+    saveWindowPosY("ImplementationToolbox.ini", windowPosY);
     // Setup Dear ImGui style
-    loadCustomSettings("ImplementationToolbox.ini", isDarkMode);
+    loadDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
     if(isDarkMode)
         ImGui::StyleColorsDark();
     else
@@ -611,7 +621,7 @@ int main(int, char**)
                     isDarkMode = true;
                 }
             }
-            saveCustomSettings("ImplementationToolbox.ini", isDarkMode);
+            saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
             ImGui::EndMainMenuBar();
         }
 

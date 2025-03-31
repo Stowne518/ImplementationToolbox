@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <D3dx9tex.h>
+#include <map>
 
 
 /// <summary>
@@ -245,7 +246,7 @@ void showDisabledButton(static char label[], ImVec2 size) {
     ImGui::EndDisabled();
 }
 
-void saveCustomSettings(const char* filename, bool isDarkMode)
+void saveDarkModeSettings(const char* filename, bool isDarkMode)
 {
     FILE* file = fopen(filename, "w");
     if (file)
@@ -255,7 +256,7 @@ void saveCustomSettings(const char* filename, bool isDarkMode)
     }
 }
 
-void loadCustomSettings(const char* filename, bool& isDarkMode)
+void loadDarkModeSettings(const char* filename, bool& isDarkMode)
 {
     FILE* file = fopen(filename, "r");
     if (file)
@@ -267,4 +268,55 @@ void loadCustomSettings(const char* filename, bool& isDarkMode)
         }
         fclose(file);
     }
+}
+
+void saveWindowPosX(const char* filename, double x)
+{
+    FILE* file = fopen(filename, "w");
+    if (file)
+    {
+        fprintf(file, "windowPosX=%f", x);
+        fclose(file);
+    }
+}
+
+void saveWindowPosY(const char* filename, double y)
+{
+    FILE* file = fopen(filename, "w");
+    if (file)
+    {
+        fprintf(file, "windowPosY=%f", y);
+        fclose(file);
+    }
+}
+
+// Function to read INI file into a map
+std::map<std::string, std::string> readINI(const std::string& filename) {
+    std::map<std::string, std::string> settings;
+    std::ifstream file(filename);
+    std::string line;
+    while (std::getline(file, line)) {
+        size_t pos = line.find('=');
+        if (pos != std::string::npos) {
+            std::string key = line.substr(0, pos);
+            std::string value = line.substr(pos + 1);
+            settings[key] = value;
+        }
+    }
+    return settings;
+}
+
+// Function to write map to INI file
+void writeINI(const std::string& filename, const std::map<std::string, std::string>& settings) {
+    std::ofstream file(filename);
+    for (const auto& [key, value] : settings) {
+        file << key << "=" << value << "\n";
+    }
+}
+
+// Function to update or add a setting
+void updateSetting(const std::string& filename, const std::string& key, const std::string& value) {
+    auto settings = readINI(filename);
+    settings[key] = value;
+    writeINI(filename, settings);
 }
