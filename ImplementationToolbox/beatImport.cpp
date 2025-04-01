@@ -135,7 +135,7 @@ void beatImport(std::string dir)
 			read_rows = true;
 		}
 
-		if (ImGui::CollapsingHeader("Geotab1 column mapping")) {
+		if (ImGui::TreeNode("Geotab1 column mapping")) {
 			ImGui::Indent();
 			enum Mode
 			{
@@ -206,6 +206,8 @@ void beatImport(std::string dir)
 				// End column table
 				ImGui::EndTable();
 			}
+			// End column mapping tree node
+			ImGui::TreePop();
 		}
 	}
 }
