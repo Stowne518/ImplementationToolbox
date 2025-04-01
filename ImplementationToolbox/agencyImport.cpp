@@ -24,6 +24,8 @@ int agencyImport(Sql& sql, Agencies& agencies, std::string dir)
     // return value for successful entries
     static int recordCount = 0;
 
+    static bool read = false;
+
     try
     {
         ImGui::Text("Select a file to import: "); ImGui::SameLine();
@@ -47,13 +49,36 @@ int agencyImport(Sql& sql, Agencies& agencies, std::string dir)
         ImGui::Button("Import CSV");
         ImGui::EndDisabled();
     }
+	ImGui::SameLine();
     if (agency_imported)
     {
-        static bool read = false;
+        if (ImGui::Button("Reset##agencys"))
+        {
+            // clear all data
+            agency.clear();
+            rows.clear();
+            // reset all buffers
+            for (int i = 0; i < 300; i++)
+            {
+				memset(agencycode[i], 0, sizeof(agencycode[i]));
+				memset(agencytype[i], 0, sizeof(agencytype[i]));
+				memset(agencyname[i], 0, sizeof(agencyname[i]));
+            }
+            agency_imported = false;
+            read = false;
+        }
+    }
+    else
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button("Reset##agencys");
+        ImGui::EndDisabled();
+    }
+    if (agency_imported)
+    {
         while (!read)
         {
             readAgencyRows(agencies, agencies.getFileName());
-
             rows = agencies.getRows();
             agency = buildAgencies(agencies);
             for (int i = 0; i < agency.size(); i++)
