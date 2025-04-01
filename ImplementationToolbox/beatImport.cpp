@@ -16,6 +16,9 @@ void beatImport(std::string dir)
 	static std::vector<std::string> rows;
 	static std::vector<std::string> cols;
 
+	static bool read_cols = false;
+	static bool read_rows = false;
+
 	// Buffers to read the data into
 	static char code_fbi[30][CODE_KEY_LEN];
 	static char code_sbi[30][CODE_KEY_LEN];
@@ -64,10 +67,37 @@ void beatImport(std::string dir)
 		ImGui::Button("Import CSV");
 		ImGui::EndDisabled();
 	}
+	ImGui::SameLine();
 	if (beat_imported)
 	{
-		static bool read_cols = false;
-		static bool read_rows = false;
+		if (ImGui::Button("Reset"))
+		{
+			for (int i = 0; i < beat.size(); i++)
+			{
+				beat.pop_back();
+			}
+			beat_imported = false;
+			for (int i = 0; i < rows.size(); i++)
+			{
+				rows.pop_back();
+			}
+			read_rows = false;
+			for (int i = 0; i < cols.size(); i++)
+			{
+				cols.pop_back();
+			}
+			read_cols = false;
+		}
+	}
+	else
+	{
+		ImGui::BeginDisabled();
+		ImGui::Button("Reset");
+		ImGui::EndDisabled();
+	}
+	if (beat_imported)
+	{
+		
 		while (!read_cols)
 		{
 			readBeatColumns(beats);
@@ -105,8 +135,8 @@ void beatImport(std::string dir)
 			read_rows = true;
 		}
 
-
 		if (ImGui::CollapsingHeader("Geotab1 column mapping")) {
+			ImGui::Indent();
 			enum Mode
 			{
 				Mode_Copy,
@@ -150,12 +180,13 @@ void beatImport(std::string dir)
 								cad_targets[i] = cols[payload_n].c_str();
 								cols[payload_n] = "";
 							}
-							if (mode == Mode_Swap)
-							{
-								const char* tmp = cad_targets[i];
-								cad_targets[i] = cols[payload_n].c_str();
-								cols[payload_n] = tmp;
-							}
+							// Not functional currently
+                            if (mode == Mode_Swap)
+                            {
+                                const char* tmp = cad_targets[i];
+                                cad_targets[i] = cols[payload_n].c_str();
+                                strncpy_s(cols[payload_n].data(), cols[payload_n].size() + 1, tmp, strlen(tmp) + 1);
+                            }
 						}
 						ImGui::EndDragDropTarget();
 					}
