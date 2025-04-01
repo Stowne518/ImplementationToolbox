@@ -118,8 +118,8 @@ int main(int, char**)
     static double windowPosX = windowPosCoords.x;
     static double windowPosY = windowPosCoords.y;
 
-    saveWindowPosX(settings_filename, windowPosX);
-    saveWindowPosY("ImplementationToolbox.ini", windowPosY);
+    //saveWindowPosX(settings_filename, windowPosX);
+    //saveWindowPosY("ImplementationToolbox.ini", windowPosY);
     // Setup Dear ImGui style
     loadDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
     if(isDarkMode)

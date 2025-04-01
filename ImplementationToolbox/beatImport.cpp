@@ -2,6 +2,7 @@
 #include "beatImport.h"
 #include "Beat.h"
 #include "Beats.h"
+#include "genericDataImport.h"
 #include <fstream>
 #include <sstream>
 
@@ -70,12 +71,20 @@ void beatImport(std::string dir)
 		while (!read_cols)
 		{
 			readBeatColumns(beats);
+			// If we find out we have less than 9 columns imported populate the remaining with blanks
+			if (beats.getColsCount() < 9)
+			{
+				for (int i = beats.getColsCount(); i < IM_ARRAYSIZE(cad_labels); i++)
+				{
+					beats.setCols("");
+				}
+			}
 			static int columncount = beats.getColsCount();
 			for(int i = 0; i < columncount; i++)
 			{
 				cols.push_back(beats.getCols(i));
-			}
-			read_cols = true;
+			}			
+				read_cols = true;
 		}
 		while (!read_rows)
 		{
@@ -249,6 +258,7 @@ void readBeatRows(Beats& beats)
 	}
 }
 
+// Need to rebuild function since it needs to take custom columns anyway. We'll only pass it columns that are mapped in the future and refer to columns within function in vague terms so it doesn't crash when the specific columns aren't present
 std::vector<Beat> buildBeats(Beats& beats)
 {
 	std::vector<Beat> beat;
@@ -273,7 +283,7 @@ std::vector<Beat> buildBeats(Beats& beats)
 		{
 			values.push_back(value);
 		}
-		strncpy_s(code_fbi[i], values[0].c_str(), IM_ARRAYSIZE(code_fbi[i]));
+		// strncpy_s(code_fbi.c_str(), values[0].c_str(), code_fbi.size());
 		strncpy_s(code_sbi[i], values[1].c_str(), IM_ARRAYSIZE(code_sbi[i]));
 		strncpy_s(code_agcy[i], values[2].c_str(), IM_ARRAYSIZE(code_agcy[i]));
 		strncpy_s(code_key[i], values[3].c_str(), IM_ARRAYSIZE(code_key[i]));

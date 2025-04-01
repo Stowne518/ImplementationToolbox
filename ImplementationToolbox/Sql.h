@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include "imgui.h"
 
 #ifndef SQL_H
@@ -69,6 +70,7 @@ public:
 	void saveConnString(std::string, std::string name);
 	int returnRecordCount(std::string table, std::string column);
 	int returnRecordCount(std::string table, std::string column, std::string value);
+	std::vector<std::string> getTableColumns(std::string connStr, std::string table);
 	std::string displayConnectionName(const std::string& directory);
 	void readConnString(const std::string dir, char source[], char* db, char* un, char* pw, bool);
 };

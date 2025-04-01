@@ -21,11 +21,14 @@ private:
 		notes[1000];
 	int
 		internal;
+	std::string
+		code_fbi_s,
+		code_sbi_s;
 public:
 	// Default constructor
 	Beat() = default;
 
-	// Constructor
+	// Constructors 
 	Beat(char* code_fbi, char* code_sbi, char* code_agcy, char* code_key, char* descriptn, char* sys_msg, char* sys_use, char* notes, int internal)
 	{
 		strncpy_s(this->code_fbi, code_fbi, CODE_KEY_LEN);

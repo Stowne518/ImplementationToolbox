@@ -229,3 +229,9 @@ int Sql::returnRecordCount(std::string table, std::string column, std::string va
     int count;
     return count = SqlConnectionHandler::getRecordCount(_GetConnectionString(), _GetDatabase(), table, column, value);
 }
+
+std::vector<std::string> Sql::getTableColumns(std::string connStr, std::string table)
+{
+    std::vector<std::string> table_columns = SqlConnectionHandler::getColumns(connStr, table);
+    return table_columns;
+}
