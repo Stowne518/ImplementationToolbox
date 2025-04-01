@@ -29,6 +29,8 @@ void unitInsert(Sql& sql, Units& units) {
 
 
     static bool imported = false;
+    static bool read = false;
+
 
     try
     {
@@ -43,18 +45,54 @@ void unitInsert(Sql& sql, Units& units) {
     ImGui::SameLine();
 
     if (!imported && units.getFileName() != "C:\\ImplementationToolbox\\Units\\Unit\\")
+    {
         if (ImGui::Button("Import CSV##units"))
+        {
             imported = true;
-    if (imported || units.getFileName() == "C:\\ImplementationToolbox\\Units\\Unit\\") {
+        }
+    }
+    if (imported || units.getFileName() == "C:\\ImplementationToolbox\\Units\\Unit\\") 
+    {
         ImGui::BeginDisabled();
         ImGui::Button("Import CSV");
         ImGui::EndDisabled();
     }
-
-    if (imported) {
-        static bool read = false;
+	ImGui::SameLine();
+    if (imported)
+    {
+        if (ImGui::Button("Reset##units"))
+        {
+            // clear all data
+            unit.clear();
+            cols.clear();
+            rows.clear();
+            // reset all buffers
+            for (int i = 0; i < 300; i++)
+            {
+                memset(unitcode[i], 0, sizeof(unitcode[i]));
+                memset(type[i], 0, sizeof(type[i]));
+                memset(agency[i], 0, sizeof(agency[i]));
+                memset(groupcode[i], 0, sizeof(groupcode[i]));
+                memset(station[i], 0, sizeof(station[i]));
+                memset(district[i], 0, sizeof(district[i]));
+                memset(beat[i], 0, sizeof(beat[i]));
+                memset(service[i], 0, sizeof(service[i]));
+            }
+            imported = false;
+            read = false;
+        }
+    }  
+    else
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button("Reset##units");
+        ImGui::EndDisabled();
+    }
+    if (imported) 
+    {
         // Only read in imported data once
-        while (!read) {
+        while (!read) 
+        {
             // Read in columns from CSV
             // readColumns(units);
             // Read in row data from CSV
@@ -81,7 +119,8 @@ void unitInsert(Sql& sql, Units& units) {
         }
 
         // Build table for each element found in Unit class and make it editable
-        if (ImGui::BeginTable("Imported Units", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) {
+        if (ImGui::BeginTable("Imported Units", 7, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) 
+        {
             // Start with header row
             ImGui::TableSetupColumn("Unitcode");
             ImGui::TableSetupColumn("Type");
@@ -91,7 +130,8 @@ void unitInsert(Sql& sql, Units& units) {
             ImGui::TableSetupColumn("District");
             ImGui::TableSetupColumn("Beat");
             ImGui::TableHeadersRow();
-            for (int i = 0; i < unit.size(); i++) {
+            for (int i = 0; i < unit.size(); i++) 
+            {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::InputText(("##unitcode%i" + std::to_string(i)).c_str(), unitcode[i], IM_ARRAYSIZE(unitcode[i]));
@@ -128,7 +168,8 @@ void unitInsert(Sql& sql, Units& units) {
         // DONE: Write sql query to return int count of record results
         ImGui::Text("Enter the username to add these units with: "); ImGui::SameLine();
         ImGui::SetNextItemWidth(150);
-        if (!sqlConnected && sql._GetDatabase() != "cad" || sqlConnected && sql._GetDatabase() != "cad") {
+        if (!sqlConnected && sql._GetDatabase() != "cad" || sqlConnected && sql._GetDatabase() != "cad") 
+        {
             ImGui::BeginDisabled();
             ImGui::InputText("##OSUser", username, sizeof(username), ImGuiInputTextFlags_CharsUppercase);
             ImGui::SetItemTooltip("Connect to the cad database to proceed.");
@@ -139,10 +180,12 @@ void unitInsert(Sql& sql, Units& units) {
 
             ImGui::EndDisabled();
         }
-        if (sqlConnected && sql._GetDatabase() == "cad") {
+        if (sqlConnected && sql._GetDatabase() == "cad") 
+        {
             ImGui::InputText("##OSUser", username, IM_ARRAYSIZE(username), ImGuiInputTextFlags_CharsUppercase);
             ImGui::SameLine();
-            if (ImGui::Button("Check Username in CAD")) {
+            if (ImGui::Button("Check Username in CAD")) 
+            {
                 user_count = sql.returnRecordCount("system1", "userid", username);
             }
             text_box_pos = ImGui::GetItemRectMax(); // Get the position of the text box
@@ -150,20 +193,24 @@ void unitInsert(Sql& sql, Units& units) {
         if (!validOSUsername && sqlConnected) {
             // Get count of users when checking for user existence
             // If it's more than one we found 2 or more users with the same name (shouldn't be possible, but who knows).
-            if (user_count > 1) {
+            if (user_count > 1) 
+            {
                 validOSUsername = false;
             }
             // If no results come back we know user isn't valid in DB
-            else if (user_count < 1) {
+            else if (user_count < 1) 
+            {
                 validOSUsername = false;
             }
             // If we only get 1 record returned we know the user exits and is unique in the DB
-            else {
+            else 
+            {
                 validOSUsername = true;
             }
         }
 
-        if (validOSUsername) {
+        if (validOSUsername) 
+        {
             text_box_pos.x += 5.0f; // Adjust the position to place the check mark next to the text box
             text_box_pos.y -= 20.0f;
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -171,7 +218,8 @@ void unitInsert(Sql& sql, Units& units) {
             DrawGreenCheckMark(draw_list, text_box_pos, size);
         }
         // If we're connected and that database is cad but the user isn't found
-        if (sql._GetConnected() && sql._GetDatabase() == "cad" && !validOSUsername) {
+        if (sql._GetConnected() && sql._GetDatabase() == "cad" && !validOSUsername) 
+        {
             text_box_pos.x += 10.0f; // Adjust the position to place the check mark next to the text box
             text_box_pos.y -= 10.0f;
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -180,21 +228,25 @@ void unitInsert(Sql& sql, Units& units) {
             ImGui::SetItemTooltip("Not a valid username in CAD");
         }
 
-        if (!sql._GetConnected() || !validOSUsername) {
+        if (!sql._GetConnected() || !validOSUsername) 
+        {
             ImGui::BeginDisabled();
             ImGui::Button("SQL Insert");
             ImGui::SetItemTooltip("Make sure your username is valid.");
             ImGui::EndDisabled();
         }
         // If we've connected to SQL make sure we're connected to the CAD database
-        if (sql._GetConnected() && sql._GetDatabase() != "cad" && validOSUsername) {
+        if (sql._GetConnected() && sql._GetDatabase() != "cad" && validOSUsername) 
+        {
             ImGui::BeginDisabled();
             ImGui::Button("SQL Insert");
             ImGui::SetItemTooltip("Connect to the cad database.");
             ImGui::EndDisabled();
         }
-        if (sql._GetConnected() && validOSUsername && sql._GetDatabase() == "cad") {
-            if (ImGui::Button("SQL Insert")) {
+        if (sql._GetConnected() && validOSUsername && sql._GetDatabase() == "cad") 
+        {
+            if (ImGui::Button("SQL Insert")) 
+            {
                 ImGui::OpenPopup("Verify Duplicates");
             }
 
@@ -202,7 +254,8 @@ void unitInsert(Sql& sql, Units& units) {
             ImVec2 validate_center = ImGui::GetMainViewport()->GetCenter();
             ImGui::SetNextWindowPos(validate_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
             ImGui::SetNextWindowSize(ImVec2(ImGui::GetContentRegionMax().x * .3, ImGui::GetContentRegionMax().y * .17));
-            if (ImGui::BeginPopupModal("Verify Duplicates", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::BeginPopupModal("Verify Duplicates", NULL, ImGuiWindowFlags_AlwaysAutoResize)) 
+            {
                 ImGui::TextWrapped("CAD does not allow duplicated units. Any attempt to import duplicate units here will return a fail and no insertion will be made for that unit.");
                 if (ImGui::Button("Acknowledge")) {
                     ImGui::CloseCurrentPopup();
@@ -215,10 +268,12 @@ void unitInsert(Sql& sql, Units& units) {
                 ImGui::EndPopup();
             }
 
-            if (ImGui::BeginTable("SqlResults", 1, ImGuiTableFlags_SizingStretchProp)) {
+            if (ImGui::BeginTable("SqlResults", 1, ImGuiTableFlags_SizingStretchProp)) 
+            {
                 ImGui::TableSetupColumn("Results");
                 ImGui::TableHeadersRow();
-                for (int i = 0; i < results.size(); i++) {
+                for (int i = 0; i < results.size(); i++) 
+                {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("%s", results[i].c_str());
@@ -235,7 +290,8 @@ void unitInsert(Sql& sql, Units& units) {
 /// </summary>
 /// <param name="dir">is the directory path to the unit_csv files</param>
 /// <returns>selected file name</returns>
-std::string displayUnitFiles(std::string dir) {
+std::string displayUnitFiles(std::string dir) 
+{
     static std::string chosenName;
     std::vector<std::string> fileNames;
     for (const auto& entry : std::filesystem::directory_iterator(dir))
