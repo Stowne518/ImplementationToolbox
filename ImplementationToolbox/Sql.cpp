@@ -235,3 +235,15 @@ std::vector<std::string> Sql::getTableColumns(std::string connStr, std::string t
     std::vector<std::string> table_columns = SqlConnectionHandler::getColumns(connStr, table);
     return table_columns;
 }
+
+int Sql::returnTableCount(std::string connStr)
+{
+	int count;
+	return count = SqlConnectionHandler::getTableCount(connStr, _GetDatabase());
+}
+
+std::vector<std::string> Sql::getTableNames(std::string connStr, std::string database)
+{
+	std::vector<std::string> table_names = SqlConnectionHandler::getTables(connStr, database);
+	return table_names;
+}

@@ -91,6 +91,9 @@
     <ClCompile Include="mapImport.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="genericDataImport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fieldOrderTable.h">
@@ -178,6 +181,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="mapImport.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="genericDataImport.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

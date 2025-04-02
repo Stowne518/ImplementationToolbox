@@ -20,6 +20,7 @@
 bool createDirectory(std::string& path) {
     std::string sqlOutputSubDir = path + "SQL Output\\";
     std::string profileOutputDir = path + "Profiles\\";
+	std::string dataImportDir = path + "DataImport\\";
 
     // Unit Paths
     std::string unitCSVDir = path + "Units\\Unit\\";
@@ -62,6 +63,8 @@ bool createDirectory(std::string& path) {
             std::filesystem::create_directory(geoprox_dir);
             std::filesystem::create_directory(responseplan_dir);
             std::filesystem::create_directory(reportingarea_dir);
+			std::filesystem::create_directory(dataImportDir);
+            // Return true if we make it here without exception
             return true;
         }
         else {
@@ -118,6 +121,10 @@ bool createDirectory(std::string& path) {
         if (!std::filesystem::exists(reportingarea_dir))
         {
             std::filesystem::create_directory(reportingarea_dir);
+        }
+        if (!std::filesystem::exists(dataImportDir))
+        {
+			std::filesystem::create_directory(dataImportDir);
         }
         // Return true if we make it here without exception
         return true;

@@ -36,6 +36,7 @@
 #include "unitbuilder.h"
 #include "mapImport.h"
 #include <Windows.h>
+#include "genericDataImport.h"
 
 // Get center of monitor from Windows API
 static POINT getScreenCenter() {
@@ -172,7 +173,8 @@ int main(int, char**)
     bool show_xml_parser_window = false;
     bool show_unit_import_window = false;
     bool show_map_import_window = false;
-    bool show_sql_conn_window = false;                  // Is SQL connection configuration window open or closed
+	bool show_generic_import_data_window = false;
+    bool show_sql_conn_window = false;
     bool show_modules = true;
 
     // Popup window states
@@ -270,7 +272,7 @@ int main(int, char**)
 
             // Module button window size & pos
             module_buttons_x = getting_started_x,
-            module_buttons_y = 400,
+            module_buttons_y = 430,
             module_buttons_posx = getting_started_posx,
             module_buttons_posy = getting_started_y + getting_started_posy,
 
@@ -289,7 +291,7 @@ int main(int, char**)
 
             // Module Button size
             module_button_size_x = module_buttons_x,
-            module_button_size_y = 50;        // Divide by 3 for 3 buttons so they should take up the whole window for each button        
+            module_button_size_y = 50;        
 
         // Containers for ImGui window sizes
         ImVec2
@@ -406,6 +408,7 @@ int main(int, char**)
         static char sqlQryLabel[] = "SQL Query Builder";
         static char unitImportLabel[] = "Unit Bulk Import";
         static char mapDataImportLabel[] = "Map Data Import";
+		static char genericDataImportLabel[] = "Generic Data Import";
         // Show generic export generator button 
         ImGui::SeparatorText("RMS/JMS");
         if (!show_generic_export_window)
@@ -468,6 +471,17 @@ int main(int, char**)
         {
             showDisabledButton(sqlQryLabel, moduleSelectionSize);
         }
+		if (!show_generic_import_data_window)
+		{
+			if (ImGui::Button(genericDataImportLabel, moduleSelectionSize))
+			{
+				show_generic_import_data_window = true;
+			}
+		}
+		else
+		{
+			showDisabledButton(genericDataImportLabel, moduleSelectionSize);
+		}
 
         // End Module Selection window
         ImGui::End();
@@ -497,7 +511,7 @@ int main(int, char**)
         ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
         ImGui::SetNextWindowSize(moduleSize);
         ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_unit_import_window && !show_map_import_window) 
+        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_unit_import_window && !show_map_import_window && !show_generic_import_data_window) 
         {
             ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
         }
@@ -552,6 +566,13 @@ int main(int, char**)
                     // End Unit Import Window
                     ImGui::EndTabItem();
                 }                
+                if (ImGui::BeginTabItem(genericDataImportLabel, &show_generic_import_data_window, ImGuiTabItemFlags_None))
+                {
+					genericDataImport(sql, directory_path);
+
+					// End Generic Data Import tab
+					ImGui::EndTabItem();
+                }
 
                 // End Modules tab
                 ImGui::EndTabBar();
