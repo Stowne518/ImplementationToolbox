@@ -185,6 +185,7 @@
     <ClCompile Include="popups.cpp" />
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="readFieldList.cpp" />
+    <ClCompile Include="servlogViewer.cpp" />
     <ClCompile Include="Sql.cpp" />
     <ClCompile Include="sqlQueryBuilder.cpp" />
     <ClCompile Include="Unit.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="popups.h" />
     <ClInclude Include="Profile.h" />
     <ClInclude Include="readFieldList.h" />
+    <ClInclude Include="servlogViewer.h" />
     <ClInclude Include="Sql.h" />
     <ClInclude Include="sqlQueryBuilder.h" />
     <ClInclude Include="systemFunctions.h" />

@@ -35,6 +35,7 @@
 #include "popups.h"
 #include "unitbuilder.h"
 #include "mapImport.h"
+#include "servlogViewer.h"
 #include <Windows.h>
 #include "genericDataImport.h"
 
@@ -171,8 +172,9 @@ int main(int, char**)
     bool show_one_button_refresh_window = false;
     bool show_sql_query_builder_window = false;
     bool show_xml_parser_window = false;
-    bool show_unit_import_window = false;
-    bool show_map_import_window = false;
+    // bool show_unit_import_window = false;        -- DEPRECATED
+    // bool show_map_import_window = false;         -- DEPRECATED
+    bool show_servlog_viewer = false;
 	bool show_generic_import_data_window = false;
     bool show_sql_conn_window = false;
     bool show_modules = true;
@@ -406,8 +408,9 @@ int main(int, char**)
         static char genExprtLabel[] = "Generic Export Generator";
         static char oneBttnLabel[] = "One Button Database Refresh";
         static char sqlQryLabel[] = "SQL Query Builder";
-        static char unitImportLabel[] = "Unit Bulk Import";
-        static char mapDataImportLabel[] = "Map Data Import";
+        // static char unitImportLabel[] = "Unit Bulk Import";              -- DEPRECATED
+        // static char mapDataImportLabel[] = "Map Data Import";            -- DEPRECATED
+		static char servlogLabel[] = "Servlog Viewer";
 		static char genericDataImportLabel[] = "Generic Data Import";
         // Show generic export generator button 
         ImGui::SeparatorText("RMS/JMS");
@@ -436,6 +439,19 @@ int main(int, char**)
         }        
         
         ImGui::SeparatorText("CAD");
+        if (!show_servlog_viewer)
+        {
+			if (ImGui::Button(servlogLabel, moduleSelectionSize))
+			{
+				show_servlog_viewer = true;
+			}
+		}
+        else
+        {
+            showDisabledButton(servlogLabel, moduleSelectionSize);
+        }
+        /*
+        * Deprecated modules removed from program after replacing with generic importer
         if (!show_map_import_window)
         {
             if (ImGui::Button(mapDataImportLabel, moduleSelectionSize))
@@ -457,7 +473,7 @@ int main(int, char**)
         else 
         {
             showDisabledButton(unitImportLabel, moduleSelectionSize);
-        }
+        }*/
         ImGui::SeparatorText("SQL");
         // Show sql query builder button 
         if (!show_sql_query_builder_window)
@@ -511,7 +527,7 @@ int main(int, char**)
         ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
         ImGui::SetNextWindowSize(moduleSize);
         ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_unit_import_window && !show_map_import_window && !show_generic_import_data_window) 
+        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_generic_import_data_window) 
         {
             ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
         }
@@ -534,6 +550,13 @@ int main(int, char**)
                     // End Refresh tab
                     ImGui::EndTabItem();
                 }
+                // Add tab for servlog viewer
+				if (ImGui::BeginTabItem(servlogLabel, &show_servlog_viewer, ImGuiTabItemFlags_None))
+				{
+					servlogViewer(&show_servlog_viewer);
+					// End servlog viewer tab
+					ImGui::EndTabItem();
+				}
                 // Add tab for sql generator
                 if (ImGui::BeginTabItem(sqlQryLabel, &show_sql_query_builder_window, ImGuiTabItemFlags_None)) 
                 {
@@ -543,29 +566,29 @@ int main(int, char**)
                     ImGui::EndTabItem();
                 }
                 // Tab for XML parser module
-                if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) 
-                {
-                    xmlParser(directory_path);
+                //if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) 
+                //{
+                //    xmlParser(directory_path);
 
-                    // End XML Parser
-                    ImGui::EndTabItem();
-                }
-                // Map Import for CAD
-                if (ImGui::BeginTabItem(mapDataImportLabel, &show_map_import_window, ImGuiTabItemFlags_None))
-                {
-                    mapImport(sql, directory_path);
+                //    // End XML Parser
+                //    ImGui::EndTabItem();
+                //}
+                // Map Import for CAD   -- DEPRECATED
+                //if (ImGui::BeginTabItem(mapDataImportLabel, &show_map_import_window, ImGuiTabItemFlags_None))
+                //{
+                //    mapImport(sql, directory_path);
 
-                    // End Map Import tab
-                    ImGui::EndTabItem();
-                }
-                // Unit Import for CAD
-                if (ImGui::BeginTabItem(unitImportLabel, &show_unit_import_window, ImGuiTabItemFlags_None)) 
-                {
-                    unitBuilder(&show_unit_import_window, sql, units_directory_path);
+                //    // End Map Import tab
+                //    ImGui::EndTabItem();
+                //}
+                //// Unit Import for CAD    -- DEPRECATED
+                //if (ImGui::BeginTabItem(unitImportLabel, &show_unit_import_window, ImGuiTabItemFlags_None)) 
+                //{
+                //    unitBuilder(&show_unit_import_window, sql, units_directory_path);
 
-                    // End Unit Import Window
-                    ImGui::EndTabItem();
-                }                
+                //    // End Unit Import Window
+                //    ImGui::EndTabItem();
+                //}                
                 if (ImGui::BeginTabItem(genericDataImportLabel, &show_generic_import_data_window, ImGuiTabItemFlags_None))
                 {
 					genericDataImport(sql, directory_path);

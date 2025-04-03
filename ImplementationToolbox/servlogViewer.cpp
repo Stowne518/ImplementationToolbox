@@ -1,0 +1,4 @@
+void servlogViewer(bool* open)
+{
+
+}

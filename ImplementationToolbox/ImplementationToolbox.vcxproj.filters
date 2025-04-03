@@ -49,50 +49,53 @@
     <ClCompile Include="Sql.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="unitImport.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Unit.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="popups.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="AgencyUnit.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="unitbuilder.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="agencyImport.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="groupImport.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="beatImport.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Agencies.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Beat.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Beats.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Group.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Groups.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="mapImport.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="genericDataImport.cpp">
       <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Agencies.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="agencyImport.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="AgencyUnit.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Beat.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="beatImport.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Beats.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Group.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="groupImport.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Groups.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="mapImport.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Unit.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="unitbuilder.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="unitImport.cpp">
+      <Filter>CAD source files</Filter>
+    </ClCompile>
+    <ClCompile Include="servlogViewer.cpp">
+      <Filter>CAD source files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -138,53 +141,56 @@
     <ClInclude Include="Sql.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="unitImport.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Units.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Unit.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="popups.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="AgencyUnit.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="unitbuilder.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="agencyImport.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="groupImport.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="beatImport.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Agencies.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Beat.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Beats.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Group.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Groups.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="mapImport.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="genericDataImport.h">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Units.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="unitImport.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="unitbuilder.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Unit.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="mapImport.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Groups.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="groupImport.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Group.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Beats.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Beat.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="AgencyUnit.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="agencyImport.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Agencies.h">
+      <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="servlogViewer.h">
+      <Filter>CAD header files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -205,6 +211,12 @@
     </Filter>
     <Filter Include="imgui">
       <UniqueIdentifier>{e0af5dc3-6998-4a39-893c-265a4600dd88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CAD source files">
+      <UniqueIdentifier>{26d0c025-199f-42f6-bc7b-9d7b9a8d986c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CAD header files">
+      <UniqueIdentifier>{04957380-52d5-4211-b4a5-9e19422fef45}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

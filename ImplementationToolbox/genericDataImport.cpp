@@ -8,6 +8,7 @@ void genericDataImport(Sql sql, std::string dir)
 	static std::vector<std::string> destination_columns;
     static std::vector<std::string> buffer_columns;
     static std::vector<std::string> data_rows;
+	static std::vector<std::string> insert_rows;
 	static std::string table_name;
 	ImGui::Text("Select a file to import: "); ImGui::SameLine();
 	std::string filepath = displayDataFiles(dir + "DataImport\\");
@@ -17,32 +18,40 @@ void genericDataImport(Sql sql, std::string dir)
     static bool load_columns = false;
     static bool confirm_mapping = false;
     ImGui::SameLine();
-	if (!filepath.empty() && !loaded_csv || !loaded_csv)
-    {
-		if(ImGui::Button("Load CSV"))
-        {
-            getColumns(std::filesystem::path(dir + "DataImport\\" + filepath), source_columns);
-			getRows(std::filesystem::path(dir + "DataImport\\" + filepath), data_rows);
-			for (int i = 0; i < source_columns.size(); i++)
-			{
-				std::cout << "Column loaded: " << source_columns[i] << std::endl;
-				buffer_columns.push_back("");
-			}
-            loaded_csv = true;
-        }
-        
-	}
-    else
+	if (filepath.empty() || loaded_csv)
     {
         ImGui::BeginDisabled();
         ImGui::Button("Load CSV");
+        ImGui::SetItemTooltip("CSV loaded!");
         ImGui::EndDisabled();
+	}
+    else
+    {
+        if (ImGui::Button("Load CSV"))
+        {
+            getColumns(std::filesystem::path(dir + "DataImport\\" + filepath), source_columns);
+            getRows(std::filesystem::path(dir + "DataImport\\" + filepath), data_rows);
+            for (int i = 0; i < source_columns.size(); i++)
+            {
+                std::cout << "Column loaded: " << source_columns[i] << std::endl;
+                buffer_columns.push_back("");
+            }
+            loaded_csv = true;
+        }        
     }
 
 	// Get destination columns
-	if (sql._GetConnected())
+	if (!sql._GetConnected())
     {
-        if(!load_tables)
+        ImGui::SameLine();
+        ImGui::BeginDisabled();
+        ImGui::Button("Load SQL Tables");
+        ImGui::SetItemTooltip("Connect to a SQL database to proceed.");
+        ImGui::EndDisabled();
+	}
+	else
+	{
+        if (!load_tables)
         {
             ImGui::SameLine();
             if (ImGui::Button("Load SQL Tables"))
@@ -50,14 +59,30 @@ void genericDataImport(Sql sql, std::string dir)
                 load_tables = true;
             }
         }
-        if(load_tables)
+        if (load_tables)
         {
             ImGui::Text("Select a table to import to: "); ImGui::SameLine();
             ImGui::SetNextItemWidth(200);
             table_name = displayTableNames(sql);
         }
-		if (!table_name.empty() && !load_columns)
-		{
+        if (load_columns)
+        {
+            ImGui::SameLine();
+            ImGui::BeginDisabled();
+            ImGui::Button("Load Columns");
+            ImGui::SetItemTooltip("Columns loaded!");
+            ImGui::EndDisabled();
+        }
+        else if (table_name.empty())
+        {
+            ImGui::SameLine();
+            ImGui::BeginDisabled();
+            ImGui::Button("Load Columns");
+            ImGui::SetItemTooltip("Select a table to proceed.");
+            ImGui::EndDisabled();
+        }
+        else
+        {
             ImGui::SameLine();
             if (ImGui::Button("Load Columns"))
             {
@@ -69,23 +94,7 @@ void genericDataImport(Sql sql, std::string dir)
                 }
                 load_columns = true;
             }
-		}
-		else if (table_name.empty() && load_tables)
-        {
-            ImGui::SameLine();
-            ImGui::BeginDisabled();
-            ImGui::Button("Load Columns");
-            ImGui::SetItemTooltip("Select a table to proceed.");
-            ImGui::EndDisabled();
         }
-	}
-	else
-	{
-        ImGui::SameLine();
-		ImGui::BeginDisabled();
-		ImGui::Button("Load SQL Tables");
-        ImGui::SetItemTooltip("Connect to a SQL database to proceed.");
-		ImGui::EndDisabled();
 	}
     if (ImGui::CollapsingHeader("Column Mapping", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -112,11 +121,22 @@ void genericDataImport(Sql sql, std::string dir)
                 confirm_mapping = false;
             }
         }
-        else
+        if (confirm_mapping)
         {
-            ImGui::BeginDisabled();
-            // displayMappingTable(source_columns, destination_columns, buffer_columns, data_rows);
-            ImGui::EndDisabled();
+            // Remove blanks from buffer vector
+            for (int i = 0; i < buffer_columns.size(); i++)
+            {
+                if (buffer_columns[i] == "")
+                {
+                    buffer_columns.erase(buffer_columns.begin() + i);
+                    i--;
+                }
+            }
+            // Generate insert queries and store them in vector
+            for (int i = 0; i < data_rows.size(); i++)
+            {
+                insert_rows = buildInsertQuery(table_name, buffer_columns, data_rows);
+            }
         }
     }
 
@@ -271,7 +291,7 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
     * This way we don't blow up if the column numbers aren't exactly the same.
 	* We can also expand/contract based on the number of columns imported.
     */
-	ImGui::BeginChild("ColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ ImGui::GetContentRegionAvail().y * 0.7), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_Border);
+	ImGui::BeginChild("DestinationColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ ImGui::GetContentRegionAvail().y * 0.7), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
     if (ImGui::BeginTable("DestinationMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
     {
         ImGui::TableSetupColumn(" Table Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
@@ -299,11 +319,14 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
         // End column mapping
         ImGui::EndTable();
     }
+	// End destination column mapping child window
+    ImGui::EndChild();
     ImGui::SameLine();
-    if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
+    ImGui::BeginChild("SourceColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ ImGui::GetContentRegionAvail().y * 0.7), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
+    if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX/* | ImGuiTableFlags_NoPadInnerX*/))
     {
         ImGui::TableSetupColumn(" Source Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
-        ImGui::TableSetupColumn(" Source Data Example", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
+        ImGui::TableSetupColumn(" Sample data", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableHeadersRow();
         for (int i = 0; i < s_columns.size(); i++)
         {
@@ -340,4 +363,37 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
 
     // End table child window
     ImGui::EndChild();
+}
+
+std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<std::string>& b_columns, std::vector<std::string>& rows)
+{
+    std::vector<std::string> queries;
+    for(int i = 0; i < rows.size(); i++)
+    {
+        std::string query = "INSERT INTO " + table_name + " (";
+        for (int i = 0; i < b_columns.size(); i++)
+        {
+            query += b_columns[i];
+            if (i != b_columns.size() - 1)
+                query += ", ";
+        }
+        query += ") VALUES (";
+        for (int i = 0; i < rows.size(); i++)
+        {
+            query += "'" + rows[i] + "'";
+            if (i != rows.size() - 1)
+                query += ", ";
+        }
+        query += ");";
+        queries.push_back(query);
+    }
+
+	return queries;
+}
+
+bool insertMappedData(Sql& sql, std::string query)
+{
+	// Execute the query to insert the data
+	bool success = sql.executeQuery(query);
+	return success;
 }
