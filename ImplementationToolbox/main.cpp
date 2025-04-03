@@ -36,8 +36,10 @@
 #include "unitbuilder.h"
 #include "mapImport.h"
 #include "servlogViewer.h"
+#include "UserSettings.h"
 #include <Windows.h>
 #include "genericDataImport.h"
+
 
 // Get center of monitor from Windows API
 static POINT getScreenCenter() {
@@ -59,10 +61,25 @@ static POINT getScreenSize()
     return size;
 }
 
-const int WIDTH = getScreenSize().x * 0.6;                          // Initial window width definition
-const int HEIGHT = getScreenSize().y * 0.7;                         // Initial window height definition
-const auto START_X = getScreenCenter().x - (WIDTH / 2);             // Get center screen x coordinate - based on window size
-const auto START_Y = getScreenCenter().y - (HEIGHT / 2);            // Get center screen y coordinate - based on window size
+// Get window position from Windows
+static POINT getWindowPos(HWND hwnd) {
+	RECT rect;
+	GetWindowRect(hwnd, &rect);
+	POINT pos;
+	pos.x = rect.left;
+	pos.y = rect.top;
+	return pos;
+}
+
+// Get window size from Windows
+static POINT getWindowSize(HWND hwnd) {
+	RECT rect;
+	GetWindowRect(hwnd, &rect);
+	POINT size;
+	size.x = rect.right - rect.left;
+	size.y = rect.bottom - rect.top;
+	return size;
+}
 
 constexpr auto settings_filename = "ImplementationToolbox.ini";
 static bool isDarkMode = false;
@@ -85,6 +102,21 @@ std::map settings = readINI(settings_filename);
 // Main code
 int main(int, char**)
 {
+	static float w_width, w_height, wx_pos, wy_pos;
+    static int w_darkmode;
+    // Load initial settings
+    UserSettings usrsettings;
+	usrsettings.loadSettings(settings_filename);                        // Load all settings
+	isDarkMode = usrsettings.getDarkMode();                             // Load dark mode setting from file
+    // const int WIDTH = getScreenSize().x * 0.6;                       // Initial window width definition
+    const int WIDTH = usrsettings.getWindowWidth();                     // Initial window width definition
+    // const int HEIGHT = getScreenSize().y * 0.7;                      // Initial window height definition
+    const int HEIGHT = usrsettings.getWindowHeight();                   // Initial window height definition
+    // const auto START_X = getScreenCenter().x - (WIDTH / 2);          // Get center screen x coordinate - based on window size
+    const auto START_X = usrsettings.getWindowPosX();                   // Get center screen x coordinate - based on window size
+    // const auto START_Y = getScreenCenter().y - (HEIGHT / 2);         // Get center screen y coordinate - based on window size
+    const auto START_Y = usrsettings.getWindowPosY();                   // Get center screen y coordinate - based on window size
+
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
     const wchar_t* versionNum = L"Implementation Toolbox v0.6.3";
     const char* currVersion = "Implementation Toolbox v0.6.3";
@@ -246,6 +278,30 @@ int main(int, char**)
         ImGui_ImplDX9_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
+
+		w_darkmode = usrsettings.getDarkMode(); // Load dark mode setting for comparison
+		w_width = usrsettings.getWindowWidth(); // Load window width for comparison
+		w_height = usrsettings.getWindowHeight(); // Load window height for comparison
+		wx_pos = usrsettings.getWindowPosX(); // Load window x position for comparison
+		wy_pos = usrsettings.getWindowPosY(); // Load window y position for comparison
+		// Check if the window has been moved or resized
+		if (w_width != getWindowSize(hwnd).x || w_height != getWindowSize(hwnd).y || wx_pos != getWindowPos(hwnd).x || wy_pos != getWindowPos(hwnd).y || w_darkmode != isDarkMode)
+		{
+			// Save the new window size and position
+			usrsettings.setWindowHeight(getWindowSize(hwnd).y);
+			usrsettings.setWindowWidth(getWindowSize(hwnd).x);
+			usrsettings.setWindowPosX(getWindowPos(hwnd).x);
+			usrsettings.setWindowPosY(getWindowPos(hwnd).y);
+			usrsettings.setDarkMode(isDarkMode);
+			usrsettings.saveSettings(settings_filename);
+		}
+		// Save user setting updates
+		/*usrsettings.setWindowHeight(getWindowSize(hwnd).y);
+		usrsettings.setWindowWidth(getWindowSize(hwnd).x);
+		usrsettings.setWindowPosX(getWindowPos(hwnd).x);
+		usrsettings.setWindowPosY(getWindowPos(hwnd).y);
+		usrsettings.setDarkMode(isDarkMode);
+		usrsettings.saveSettings(settings_filename);*/
 
         // Get main viewport
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -665,7 +721,7 @@ int main(int, char**)
                     isDarkMode = true;
                 }
             }
-            saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
+            // saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
             ImGui::EndMainMenuBar();
         }
 

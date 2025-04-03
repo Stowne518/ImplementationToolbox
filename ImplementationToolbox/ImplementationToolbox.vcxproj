@@ -224,6 +224,7 @@
     <ClInclude Include="unitbuilder.h" />
     <ClInclude Include="Units.h" />
     <ClInclude Include="unitImport.h" />
+    <ClInclude Include="UserSettings.h" />
     <ClInclude Include="xmlParser.h" />
   </ItemGroup>
   <ItemGroup>
