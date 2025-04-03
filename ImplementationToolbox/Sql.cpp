@@ -28,6 +28,8 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
     static bool integratedSecurity = false;
     static bool connection_attempted = false;   // Have we tried to connect yet? - Use this to determine what to display in the health check window
     static bool connection_success = false;     // Did we succeed in our attempt to connect to SQL?
+    static bool integrated_security = false;    // Offer option to use integrated security within SQL instead of username/password
+    static int server_type = 0;                 // Offer option of server type to include (0 == MSSQL, 1 == SQLEXPRESS)
     static float fieldLen = 101;                // Length to display connection string boxes
     bool checkrequiredInfo = false;             // Check that we have all info filled out
     static bool changed = false;
@@ -35,8 +37,15 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
 
     if (ImGui::BeginPopupModal("SQL Connection Settings", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
         readConnString(dir, serverNameBuffer, databaseNameBuffer, usernameBuffer, passwordBuffer, checkrequiredInfo);
+        if (ImGui::CollapsingHeader("Server Type"))
+        {
+            ImGui::RadioButton("MSSQL", &server_type, 0);
+            ImGui::SetItemTooltip("Select this option if you're connecting to a Microsoft SQL Server.");
+            ImGui::SameLine();
+            ImGui::RadioButton("SQLEXPRESS", &server_type, 1);
+            ImGui::SetItemTooltip("Select this option if you're connecting to a SQLEXPRESS edition of SQL.");
+        }
         if (ImGui::BeginTable("SQL Connection String", 2, ImGuiTableFlags_SizingFixedFit)) {
-            ImGui::TableNextColumn();
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Server name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##server", serverNameBuffer, IM_ARRAYSIZE(serverNameBuffer));
@@ -92,7 +101,14 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
         if(checkrequiredInfo && _GetConnected())
         {
             if (ImGui::Button("Save Connection String", ImVec2(248, 30))) {
-                saveConnString(dir, _GetSource());
+                if(server_type == 0)
+                {
+                    saveConnString(dir, _GetSource());
+                }
+                else if (server_type == 1)
+                {
+                    saveConnString(dir, _GetSource(), server_type);
+                }
             }
         }
         if (!checkrequiredInfo || !_GetConnected())
@@ -115,6 +131,31 @@ void Sql::saveConnString(std::string dir, std::string name) {
         connStr.open(dir + name + "_" + _GetDatabase() + ".str");
         std::cout << "Saving connection string to: " << dir + name + "_" << _GetDatabase() << ".str" << std::endl;
     }    
+    catch (std::exception& e)
+    {
+        std::cerr << "Error saving file: " << e.what() << std::endl;
+        return;
+    }
+
+    if (!connStr) {
+        return;
+    }
+    else {
+        connStr << _GetSource() << std::endl;
+        connStr << _GetDatabase() << std::endl;
+        connStr << _GetUsername() << std::endl;
+        connStr << _GetPassword();
+    }
+}
+
+void Sql::saveConnString(std::string dir, std::string name, int servertype) {
+    int serverlen = _GetSource().length() - 11;     // Server name length, minus 11 characters to drop off SQLEXPRESS\ //
+    std::ofstream connStr;
+    try
+    {
+        connStr.open(dir + name.substr(11, serverlen) + "_" + _GetDatabase() + ".str");
+        std::cout << "Saving connection string to: " << dir + name.substr(11, serverlen) + "_" << _GetDatabase() << ".str" << std::endl;
+    }
     catch (std::exception& e)
     {
         std::cerr << "Error saving file: " << e.what() << std::endl;

@@ -68,6 +68,7 @@ public:
 	bool executeQuery(std::string);
 	void DisplaySqlConfigWindow(bool*, std::string);
 	void saveConnString(std::string, std::string name);
+	void saveConnString(std::string dir, std::string name, int servertype);
 	int returnRecordCount(std::string table, std::string column);
 	int returnRecordCount(std::string table, std::string column, std::string value);
 	std::vector<std::string> getTableColumns(std::string connStr, std::string table);
