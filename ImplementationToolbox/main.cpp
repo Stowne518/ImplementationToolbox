@@ -39,6 +39,7 @@
 #include "UserSettings.h"
 #include <Windows.h>
 #include "genericDataImport.h"
+#include "AppLog.h"
 
 
 // Get center of monitor from Windows API
@@ -81,6 +82,27 @@ static POINT getWindowSize(HWND hwnd) {
 	return size;
 }
 
+//// Map to store previous states of boolean variables
+//std::map<std::string, bool> previousStates;
+//
+//// Function to log message only once when boolean state changes
+//void logStateChange(const std::string& varName, bool currentState, AppLog& log) 
+//{
+//    if (previousStates.find(varName) == previousStates.end()) 
+//    {
+//        // Initialize previous state if not found
+//        previousStates[varName] = !currentState;
+//    }
+//
+//    if (previousStates[varName] != currentState) 
+//    {
+//        // Log the message if state changes
+//        log.AddLog("[DEBUG] State of \'%s\' changed to \'%s\'\n", varName.c_str(), currentState ? "true" : "false");
+//        // Update the previous state
+//        previousStates[varName] = currentState;
+//    }
+//}
+
 constexpr auto settings_filename = "ImplementationToolbox.ini";
 static bool isDarkMode = false;
 
@@ -97,29 +119,33 @@ void CleanupDeviceD3D();
 void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-std::map settings = readINI(settings_filename);
-
 // Main code
 int main(int, char**)
 {
 	static float w_width, w_height, wx_pos, wy_pos;
     static int w_darkmode;
+	static bool getting_started, recent_update, health_check, debug_log;
+    
+    // Initialize AppLog
+    static AppLog log;
+
     // Load initial settings
     UserSettings usrsettings;
-	usrsettings.loadSettings(settings_filename);                        // Load all settings
+	usrsettings.loadSettings(settings_filename);                        // Load all settings/ create default file
 	isDarkMode = usrsettings.getDarkMode();                             // Load dark mode setting from file
-    // const int WIDTH = getScreenSize().x * 0.6;                       // Initial window width definition
     const int WIDTH = usrsettings.getWindowWidth();                     // Initial window width definition
-    // const int HEIGHT = getScreenSize().y * 0.7;                      // Initial window height definition
     const int HEIGHT = usrsettings.getWindowHeight();                   // Initial window height definition
-    // const auto START_X = getScreenCenter().x - (WIDTH / 2);          // Get center screen x coordinate - based on window size
     const auto START_X = usrsettings.getWindowPosX();                   // Get center screen x coordinate - based on window size
-    // const auto START_Y = getScreenCenter().y - (HEIGHT / 2);         // Get center screen y coordinate - based on window size
     const auto START_Y = usrsettings.getWindowPosY();                   // Get center screen y coordinate - based on window size
+    // Window open state
+    static bool open_getting_started = usrsettings.getGettingStarted();
+    static bool open_recent_updates = usrsettings.getRecentUpdates();
+    static bool open_health_check = usrsettings.getHealthCheck();
+    static bool show_log = usrsettings.getDebugLog();
 
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.6.3";
-    const char* currVersion = "Implementation Toolbox v0.6.3";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.4";
+    const char* currVersion = "Implementation Toolbox v0.6.4";
     const char* lastUpdate = "4/2/25";
 
     // Create application window
@@ -144,22 +170,24 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;        // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
     ImGuiViewport* windowPos = ImGui::GetMainViewport();
     ImVec2 windowPosCoords = windowPos->Pos;
     static double windowPosX = windowPosCoords.x;
     static double windowPosY = windowPosCoords.y;
 
-    //saveWindowPosX(settings_filename, windowPosX);
-    //saveWindowPosY("ImplementationToolbox.ini", windowPosY);
-    // Setup Dear ImGui style
-    loadDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
     if(isDarkMode)
+    {
         ImGui::StyleColorsDark();
+    }
     else
+    {
         ImGui::StyleColorsLight();
+    }
 
     // Darken the input text boxes
     ImGuiStyle& style = ImGui::GetStyle();
@@ -214,11 +242,7 @@ int main(int, char**)
     // Popup window states
     bool gen_export_info = false;
     
-    // Window open state
-    static bool open_getting_started = true;
-    static bool open_recent_updates = true;
-    static bool open_health_check = true;
-    static bool open_bgcolor_picker = false;
+    
 
     // Background colors
     static ImVec4 bg_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
@@ -272,7 +296,23 @@ int main(int, char**)
             ResetDevice();
         }
 
-        
+        // Check and log state changes
+        log.logStateChange("show_demo_window", show_demo_window);
+        log.logStateChange("show_another_window", show_another_window);
+        log.logStateChange("show_generic_export_window", show_generic_export_window);
+        log.logStateChange("show_one_button_refresh_window", show_one_button_refresh_window);
+        log.logStateChange("show_sql_query_builder_window", show_sql_query_builder_window);
+        log.logStateChange("show_xml_parser_window", show_xml_parser_window);
+        log.logStateChange("show_servlog_viewer", show_servlog_viewer);
+        log.logStateChange("show_generic_import_data_window", show_generic_import_data_window);
+        log.logStateChange("show_sql_conn_window", show_sql_conn_window);
+        log.logStateChange("show_modules", show_modules);
+        log.logStateChange("gen_export_info", gen_export_info);
+        log.logStateChange("open_getting_started", open_getting_started);
+        log.logStateChange("open_recent_updates", open_recent_updates);
+        log.logStateChange("open_health_check", open_health_check);
+        log.logStateChange("isDarkMode", isDarkMode);
+		log.logStateChange("show_log", show_log);
 
         // Start the Dear ImGui frame
         ImGui_ImplDX9_NewFrame();
@@ -284,8 +324,13 @@ int main(int, char**)
 		w_height = usrsettings.getWindowHeight(); // Load window height for comparison
 		wx_pos = usrsettings.getWindowPosX(); // Load window x position for comparison
 		wy_pos = usrsettings.getWindowPosY(); // Load window y position for comparison
+		getting_started = usrsettings.getGettingStarted(); // Load getting started window state for comparison
+		recent_update = usrsettings.getRecentUpdates(); // Load recent updates window state for comparison
+		health_check = usrsettings.getHealthCheck(); // Load health check window state for comparison
+		debug_log = usrsettings.getDebugLog(); // Load debug log window state for comparison
+
 		// Check if the window has been moved or resized
-		if (w_width != getWindowSize(hwnd).x || w_height != getWindowSize(hwnd).y || wx_pos != getWindowPos(hwnd).x || wy_pos != getWindowPos(hwnd).y || w_darkmode != isDarkMode)
+		if (w_width != getWindowSize(hwnd).x || w_height != getWindowSize(hwnd).y || wx_pos != getWindowPos(hwnd).x || wy_pos != getWindowPos(hwnd).y || w_darkmode != isDarkMode || getting_started != open_getting_started || recent_update != open_recent_updates || health_check != open_health_check || debug_log != show_log)
 		{
 			// Save the new window size and position
 			usrsettings.setWindowHeight(getWindowSize(hwnd).y);
@@ -293,19 +338,92 @@ int main(int, char**)
 			usrsettings.setWindowPosX(getWindowPos(hwnd).x);
 			usrsettings.setWindowPosY(getWindowPos(hwnd).y);
 			usrsettings.setDarkMode(isDarkMode);
-			usrsettings.saveSettings(settings_filename);
+            if (open_getting_started) usrsettings.setGettingStarted('Y'); else usrsettings.setGettingStarted('N');
+			if (open_health_check) usrsettings.setHealthCheck('Y'); else usrsettings.setHealthCheck('N');
+			if (open_recent_updates) usrsettings.setRecentUpdates('Y'); else usrsettings.setRecentUpdates('N');
+			if (show_log) usrsettings.setDebugLog('Y'); else usrsettings.setDebugLog('N');
+			usrsettings.saveSettings(settings_filename, log);
 		}
-		// Save user setting updates
-		/*usrsettings.setWindowHeight(getWindowSize(hwnd).y);
-		usrsettings.setWindowWidth(getWindowSize(hwnd).x);
-		usrsettings.setWindowPosX(getWindowPos(hwnd).x);
-		usrsettings.setWindowPosY(getWindowPos(hwnd).y);
-		usrsettings.setDarkMode(isDarkMode);
-		usrsettings.saveSettings(settings_filename);*/
 
         // Get main viewport
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImVec2 window_center = ImGui::GetMainViewport()->GetCenter();
+
+        // Enable dockspace
+		ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+		ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_None);
+
+        // Begin main menu bar
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("Close Application"))
+                {
+                    return 0;
+                }
+                // End File menu
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("View"))
+            {
+                if (ImGui::MenuItem("Getting Started", NULL, &open_getting_started));
+                if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
+                if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
+				if (ImGui::MenuItem("Debug Log", NULL, &show_log));
+                ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();
+                if (ImGui::MenuItem("Demo Window", NULL, &show_demo_window));
+
+                // End View menu
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Settings"))
+            {
+                // Open popup for SQL settings
+                if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
+
+                // End settings menu
+                ImGui::EndMenu();
+            }
+            if (isDarkMode)
+            {
+                if (ImGui::Button("Light Mode"))
+                {
+                    ImGui::StyleColorsLight();
+                    isDarkMode = false;
+                }
+            }
+            else
+            {
+                if (ImGui::Button("Dark Mode"))
+                {
+                    ImGui::StyleColorsDark();
+                    isDarkMode = true;
+                }
+            }
+            if (show_generic_export_window)
+            {
+                if (ImGui::BeginMenu("Generic Export Generator Options"))
+                {
+                    // Center window when it opens
+                    ImGui::SetNextWindowPos(window_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+                    if (ImGui::MenuItem("Information", NULL, &gen_export_info));
+                    if (ImGui::MenuItem("Help"));
+
+                    // End Gen Exprt Gen menu options
+                    ImGui::EndMenu();
+                }
+            }
+            
+            //saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
+            ImGui::EndMainMenuBar();
+        }
+
+		// Show log if enabled
+        if (show_log)
+        {
+			log.Draw("Debug Log", &show_log);
+        }
 
         // Window sizes for each main screen window
         float
@@ -374,10 +492,10 @@ int main(int, char**)
         static std::string units_directory_path = directory_path + "Units\\";
 
         // Display the CST logo at the top of the screen
-        ImGui::SetNextWindowPos(cstLogoPos);
-        ImGui::SetNextWindowSize(cstLogoSize);
+        //ImGui::SetNextWindowPos(cstLogoPos);
+        //ImGui::SetNextWindowSize(cstLogoSize);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, cst_purple);
-        ImGui::Begin("##cstlogo", NULL, ImGuiWindowFlags_NoDecoration);
+        ImGui::Begin("cstlogo", NULL, ImGuiWindowFlags_NoDecoration);
         ImGui::Spacing(); ImGui::Spacing();
         ImGui::Image((ImTextureID)(intptr_t)my_texture, ImVec2(my_image_width, my_image_height));
         // End logo image window
@@ -390,17 +508,20 @@ int main(int, char**)
         static Sql sql;
         // Open the SQL configuration window if the menu item is selected
         if (show_sql_conn_window)
-            sql.DisplaySqlConfigWindow(&show_sql_conn_window, directory_path + "ConnectionStrings\\");
+        {
+            ImGui::SetNextWindowPos(window_center);
+            sql.DisplaySqlConfigWindow(&show_sql_conn_window, directory_path + "ConnectionStrings\\", log);
+        }
 
         // Create a program health window to check for required setup at the start.
-        static bool directoryFound = createDirectory(directory_path);
+        static bool directoryFound = createDirectory(directory_path, log);
         static bool fieldsLoaded = genericFieldCheck();
         if (open_health_check) {
-            ImGui::SetNextWindowSize(healthCheckSize);
-            ImGui::SetNextWindowPos(healthCheckPos/*, ImGuiCond_Always, ImVec2(1.0f, 0.0f)*/ );
+            //ImGui::SetNextWindowSize(healthCheckSize);
+            //ImGui::SetNextWindowPos(healthCheckPos/*, ImGuiCond_Always, ImVec2(1.0f, 0.0f)*/ );
 
             // Begin Health check window
-            ImGui::Begin("Health Check", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove );
+            ImGui::Begin("Health Check", &open_health_check, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar );
             if (ImGui::BeginTable("HealthCheck", 2, ImGuiTableFlags_SizingFixedFit)) {
                 // Check for the directory and display it in green if found, red text if not
                 ImGui::TableNextColumn();
@@ -446,7 +567,7 @@ int main(int, char**)
         }
 
         ImGui::SetNextWindowSize(gettingStartedSize);
-        ImGui::SetNextWindowPos(gettingStartedPos);
+        //ImGui::SetNextWindowPos(gettingStartedPos);
         if (open_getting_started) {
             ImGui::Begin("Getting Started", &open_getting_started, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
             ImGui::TextWrapped("To get started, click on modules from the menu bar and select the module you'd like to use.");
@@ -456,8 +577,8 @@ int main(int, char**)
         }
 
         // Module Buttons
-        ImGui::SetNextWindowSize(moduleButtonSize);
-        ImGui::SetNextWindowPos(moduleButtonPos);
+        //ImGui::SetNextWindowSize(moduleButtonSize);
+        //ImGui::SetNextWindowPos(moduleButtonPos);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, (ImVec2(0, 4.5)));
         ImGui::Begin("Module Selection", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
         // Button labels
@@ -562,8 +683,8 @@ int main(int, char**)
         ImGui::PopStyleVar();
 
         // Recent Updates window
-        ImGui::SetNextWindowSize(recentUpdateSize);
-        ImGui::SetNextWindowPos(recentUpdatePos, ImGuiCond_Always, ImVec2(0.0f, 0.0f));
+        //ImGui::SetNextWindowSize(recentUpdateSize);
+        //ImGui::SetNextWindowPos(recentUpdatePos, ImGuiCond_Always, ImVec2(0.0f, 0.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 0));
 
         if (open_recent_updates) 
@@ -580,10 +701,10 @@ int main(int, char**)
 
         // Set modules in designated area with tabs
         // Future idea: Make buttons that open modules as tabs and make tabs able to be closed as needed
-        ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
-        ImGui::SetNextWindowSize(moduleSize);
+        //ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
+        //ImGui::SetNextWindowSize(moduleSize);
         ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_generic_import_data_window) 
+        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_generic_import_data_window && !show_servlog_viewer) 
         {
             ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
         }
@@ -647,7 +768,7 @@ int main(int, char**)
                 //}                
                 if (ImGui::BeginTabItem(genericDataImportLabel, &show_generic_import_data_window, ImGuiTabItemFlags_None))
                 {
-					genericDataImport(sql, directory_path);
+					genericDataImport(sql, log, directory_path);
 
 					// End Generic Data Import tab
 					ImGui::EndTabItem();
@@ -661,69 +782,73 @@ int main(int, char**)
         // End modules child window
         ImGui::End();
         
-        if (ImGui::BeginMainMenuBar()) 
-        {
-            if (ImGui::BeginMenu("File")) 
-            {
-                if (ImGui::MenuItem("Close Application")) 
-                {
-                    return 0;
-                }
-                // End File menu
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("View")) 
-            {
-                if (ImGui::MenuItem("Getting Started",NULL, &open_getting_started));
-                if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
-                if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
-                ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();
-                if (ImGui::MenuItem("Demo Window", NULL, &show_demo_window));
-
-                // End View menu
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Settings")) 
-            {
-                // Open popup for SQL settings
-                if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
-
-                // End settings menu
-                ImGui::EndMenu();
-            }
-            if (show_generic_export_window) 
-            {
-                if (ImGui::BeginMenu("Generic Export Generator Options")) 
-                {
-                    // Center window when it opens
-                    ImVec2 screen_center = ImGui::GetMainViewport()->GetCenter();
-                    ImGui::SetNextWindowPos(screen_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-                    if (ImGui::MenuItem("Information", NULL, &gen_export_info));
-                    if (ImGui::MenuItem("Help"));
-
-                    // End Gen Exprt Gen menu options
-                    ImGui::EndMenu();
-                }                
-            }
-            if (isDarkMode)
-            {
-                if (ImGui::Button("Light Mode"))
-                {
-                    ImGui::StyleColorsLight();
-                    isDarkMode = false;
-                }
-            }
-            else
-            {
-                if (ImGui::Button("Dark Mode"))
-                {
-                    ImGui::StyleColorsDark();
-                    isDarkMode = true;
-                }
-            }
-            // saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
-            ImGui::EndMainMenuBar();
-        }
+//<<<<<<< Updated upstream
+//        if (ImGui::BeginMainMenuBar()) 
+//        {
+//            if (ImGui::BeginMenu("File")) 
+//            {
+//                if (ImGui::MenuItem("Close Application")) 
+//                {
+//                    return 0;
+//                }
+//                // End File menu
+//                ImGui::EndMenu();
+//            }
+//            if (ImGui::BeginMenu("View")) 
+//            {
+//                if (ImGui::MenuItem("Getting Started",NULL, &open_getting_started));
+//                if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
+//                if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
+//                ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();
+//                if (ImGui::MenuItem("Demo Window", NULL, &show_demo_window));
+//
+//                // End View menu
+//                ImGui::EndMenu();
+//            }
+//            if (ImGui::BeginMenu("Settings")) 
+//            {
+//                // Open popup for SQL settings
+//                if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
+//
+//                // End settings menu
+//                ImGui::EndMenu();
+//            }
+//            if (show_generic_export_window) 
+//            {
+//                if (ImGui::BeginMenu("Generic Export Generator Options")) 
+//                {
+//                    // Center window when it opens
+//                    ImVec2 screen_center = ImGui::GetMainViewport()->GetCenter();
+//                    ImGui::SetNextWindowPos(screen_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+//                    if (ImGui::MenuItem("Information", NULL, &gen_export_info));
+//                    if (ImGui::MenuItem("Help"));
+//
+//                    // End Gen Exprt Gen menu options
+//                    ImGui::EndMenu();
+//                }                
+//            }
+//            if (isDarkMode)
+//            {
+//                if (ImGui::Button("Light Mode"))
+//                {
+//                    ImGui::StyleColorsLight();
+//                    isDarkMode = false;
+//                }
+//            }
+//            else
+//            {
+//                if (ImGui::Button("Dark Mode"))
+//                {
+//                    ImGui::StyleColorsDark();
+//                    isDarkMode = true;
+//                }
+//            }
+//            // saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
+//            ImGui::EndMainMenuBar();
+//        }
+//=======
+//        
+//>>>>>>> Stashed changes
 
         
 
@@ -779,6 +904,13 @@ int main(int, char**)
             ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
             g_pd3dDevice->EndScene();
         }
+
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+		}
+
         HRESULT result = g_pd3dDevice->Present(nullptr, nullptr, nullptr, nullptr);
         if (result == D3DERR_DEVICELOST)
             g_DeviceLost = true;

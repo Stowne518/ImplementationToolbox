@@ -1,0 +1,309 @@
+#include "systemFunctions.h"
+
+#include "AppLog.h"
+
+#include "imgui.h"
+
+/// <summary>
+/// Function used to check the main directory path exists for us to save various files into it. Returns true if it is able to create the directory or already exists. Returns false if it can't create it and doesn't exist
+/// </summary>
+/// <param name="path">= the directory path that we check to save profiles to</param>
+/// <returns></returns>
+bool createDirectory(std::string& path, AppLog& log) {
+    std::string sqlOutputSubDir = path + "SQL Output\\";
+    std::string profileOutputDir = path + "Profiles\\";
+    std::string dataImportDir = path + "DataImport\\";
+
+    // Unit Paths
+    std::string unitCSVDir = path + "Units\\Unit\\";
+    std::string agencyCSVDir = path + "Units\\Agencies\\";
+    std::string groupsCSVDir = path + "Units\\Groups\\";
+
+    // Map Paths
+    std::string
+        map_dir = path + "Maps\\",
+        beats_dir = map_dir + "Beats\\",
+        district_dir = map_dir + "Districts\\",
+        station_dir = map_dir + "Stations\\",
+        geoprox_dir = map_dir + "GeoProx\\",
+        responseplan_dir = map_dir + "ResponsePlans\\",
+        reportingarea_dir = map_dir + "ReportingAreas\\";
+
+    std::string connStrDir = path + "ConnectionStrings\\";
+    // Check for the primary directory we will use for program if not there we try to create it
+    try
+    {
+        if (!std::filesystem::exists(path)) {
+            log.AddLog("[INFO] Working directory not found... attempting to create at: %s\n", path.c_str());
+            // Try and create it
+            if (std::filesystem::create_directory(path)) {
+				log.AddLog("[INFO] Working directory successfully created at: %s\n", path.c_str());
+                // Create sql output sub directory so we can save out output files there.
+                std::filesystem::create_directory(sqlOutputSubDir);
+				log.AddLog("[INFO] SQL Output directory successfully created at: %s\n", sqlOutputSubDir.c_str());
+                // Create profile sub directories
+                std::filesystem::create_directory(profileOutputDir);
+				log.AddLog("[INFO] Profile Output directory successfully created at: %s\n", profileOutputDir.c_str());
+                // Create connection string directory
+                std::filesystem::create_directory(connStrDir);
+                log.AddLog("[INFO] Connection String directory successfully created at: %s\n", connStrDir.c_str());
+                std::filesystem::create_directory(dataImportDir);
+				log.AddLog("[INFO] Data Import directory successfully created at: %s\n", dataImportDir.c_str());
+                // Return true if we make it here without exception
+                log.AddLog("[INFO] All directories successfully created.\n");
+                return true;
+
+
+    //            // Create unit directory to store unit csv files
+    //            std::filesystem::create_directory(unitCSVDir);
+				//log.AddLog("[INFO] Unit CSV directory successfully created at: %s\n", unitCSVDir.c_str());
+                // Create agency CSV directory
+    //            std::filesystem::create_directory(agencyCSVDir);
+				//log.AddLog("[INFO] Agency CSV directory successfully created at: %s\n", agencyCSVDir.c_str());
+    //            // Create Groups CSV directory
+    //            std::filesystem::create_directory(groupsCSVDir);
+				//log.AddLog("[INFO] Groups CSV directory successfully created at: %s\n", groupsCSVDir.c_str());
+    //            // Create Maps directory
+    //            std::filesystem::create_directory(map_dir);
+				//log.AddLog("[INFO] Maps directory successfully created at: %s\n", map_dir.c_str());
+    //            // Create Stations CSV directory
+    //            std::filesystem::create_directory(beats_dir);
+
+    //            std::filesystem::create_directory(district_dir);
+    //            std::filesystem::create_directory(station_dir);
+    //            std::filesystem::create_directory(geoprox_dir);
+    //            std::filesystem::create_directory(responseplan_dir);
+    //            std::filesystem::create_directory(reportingarea_dir);                
+            }
+            else {
+                log.AddLog("[INFO] Working Directory already exists.\n");
+                return false;
+            }
+        }
+	}
+	catch (std::filesystem::filesystem_error& fse)
+	{
+		log.AddLog("[ERROR] Filesystem error: %s\n", fse.what());
+		return false;
+	}
+	catch (std::exception& e)
+	{
+		log.AddLog("[ERROR] General error: %s\n", e.what());
+		return false;
+	}
+    // Create subdirectories if they don't exists in the working dir
+    try
+    {
+        if (!std::filesystem::exists(sqlOutputSubDir))
+        {
+			// Create sql output sub directory so we can save out output files there.
+			log.AddLog("[INFO] SQL Output directory not found... attempting to create at: %s\n", sqlOutputSubDir.c_str());
+            std::filesystem::create_directory(sqlOutputSubDir);
+			log.AddLog("[INFO] SQL Output directory successfully created at: %s\n", sqlOutputSubDir.c_str());
+        }
+        if (!std::filesystem::exists(profileOutputDir))
+        {
+			// Create profile sub directories
+			log.AddLog("[INFO] Profile Output directory not found... attempting to create at: %s\n", profileOutputDir.c_str());
+            std::filesystem::create_directory(profileOutputDir);
+			log.AddLog("[INFO] Profile Output directory successfully created at: %s\n", profileOutputDir.c_str());
+        }
+        if (!std::filesystem::exists(connStrDir))
+        {
+			// Create connection string directory
+			log.AddLog("[INFO] Connection String directory not found... attempting to create at: %s\n", connStrDir.c_str());
+            std::filesystem::create_directories(connStrDir);
+			log.AddLog("[INFO] Connection String directory successfully created at: %s\n", connStrDir.c_str());
+        }
+        if (!std::filesystem::exists(dataImportDir))
+        {
+			// Create data import directory
+			log.AddLog("[INFO] Data Import directory not found... attempting to create at: %s\n", dataImportDir.c_str());
+            std::filesystem::create_directory(dataImportDir);
+			log.AddLog("[INFO] Data Import directory successfully created at: %s\n", dataImportDir.c_str());
+        }
+        // Return true if we make it here without exception
+		log.AddLog("[INFO] All subdirectories successfully found/created.\n");
+        return true;
+        /*
+        * --DEPRECATED OLD DIRECTORIES NO LONGER USED
+        if (!std::filesystem::exists(unitCSVDir))
+        {
+            std::filesystem::create_directory(unitCSVDir);
+        }
+
+        if (!std::filesystem::exists(agencyCSVDir))
+        {
+            std::filesystem::create_directories(agencyCSVDir);
+        }
+        if (!std::filesystem::exists(groupsCSVDir))
+        {
+            std::filesystem::create_directories(groupsCSVDir);
+        }
+        if (!std::filesystem::exists(beats_dir))
+        {
+            std::filesystem::create_directories(beats_dir);
+        }
+        if (!std::filesystem::exists(station_dir))
+        {
+            std::filesystem::create_directories(station_dir);
+        }
+        if (!std::filesystem::exists(district_dir))
+        {
+            std::filesystem::create_directory(district_dir);
+        }
+        if (!std::filesystem::exists(geoprox_dir))
+        {
+            std::filesystem::create_directory(geoprox_dir);
+        }
+        if (!std::filesystem::exists(responseplan_dir))
+        {
+            std::filesystem::create_directory(responseplan_dir);
+        }
+        if (!std::filesystem::exists(reportingarea_dir))
+        {
+            std::filesystem::create_directory(reportingarea_dir);
+        }*/
+
+
+    }
+    catch (std::filesystem::filesystem_error& fse)
+    {
+        log.AddLog("[ERROR] Filesystem error: %s\n", fse.what());
+        return false;
+    }
+    catch (std::exception& e)
+    {
+        log.AddLog("[ERROR] General error: %s\n", e.what());
+        return false;
+    }
+
+    // Default return
+    return false;
+}
+
+// Function to check in the list of generic export fields were correctly read in.
+bool genericFieldCheck() {
+    std::vector<std::string> fieldTest;
+
+    fieldTest = readFieldList();
+    if (fieldTest.empty()) {
+        return false;
+    }
+    else
+        return true;
+
+    // Return false by default
+    return false;
+}
+
+// Display text as either green or red by passing true/false respectively
+void DisplayColoredText(const char* text, bool isGreen) {
+    ImVec4 color = isGreen ? ImVec4(0.0f, 0.75f, 0.0f, 1.0f) : ImVec4(0.75f, 0.0f, 0.0f, 1.0f);
+    ImGui::PushStyleColor(ImGuiCol_Text, color);
+    ImGui::Text("%s", text);
+    ImGui::PopStyleColor();
+}
+
+void displayUpdates() {
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, (ImVec2(0, 5)));
+    if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("- Added new directories for Data Import CSV files in the working directory.");
+        ImGui::TextWrapped("- New Feature: User settings.\nThese settings are now allowing for more customization than before. Windows can now be affixed to anchor points in the main window or to other modules. This creates a viewport as well, so windows can now be moved outside the main display area. It will also track the position and size of the main window and reopen to those specifications each time the program is opened now.");
+		ImGui::TextWrapped("- New feature: Debug logging. This window can be opened from the main menu bar under view. It will show the current state of the program and any errors that occur.\nThis should allow for reduced testing time and faster troubleshooting moving forward.");
+		ImGui::TextWrapped("- Debug log has to be retroactively added to support all corners of the program. This will be an ongoing process and it is still limited to the following areas:");
+		ImGui::TextWrapped("- SQL Connection\n- Directory creation at launch.\n- Most main screen variables/functions\n- Generic Data Import\n -User Settings\n- System Functions");
+        ImGui::Spacing();
+    }
+    ImGui::SeparatorText("RMS/JMS");
+    if (ImGui::CollapsingHeader("Generic Export Generator")) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("No updates this version.");
+        ImGui::SeparatorText("Known Bugs");
+        ImGui::TextWrapped("- Sorting on field list and editing field order is still not functional for generic exports.");
+    }
+    if (ImGui::CollapsingHeader("One Button Database Refresh")) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("No updates this version.");
+        ImGui::Spacing();
+    }
+    ImGui::SeparatorText("CAD");
+    if (ImGui::CollapsingHeader("Bulk Import"))
+    {
+        ImGui::Spacing();
+        ImGui::TextWrapped("- Bulk Import is now deprecated and has been replaced with Generic Data Import module.");
+        ImGui::TextWrapped("- Please remove csv files from old Unit and Maps directories and place all csv files to be mapped in the new DataImport directory.");
+        ImGui::Spacing();
+    }
+    ImGui::SeparatorText("SQL");
+    if (ImGui::CollapsingHeader("Generic Data Import"))
+    {
+        ImGui::Spacing();
+        ImGui::TextWrapped("- New Feature: generic data import.");
+        ImGui::TextWrapped("- The module will read in a CSV file and allow you to map the columns to the database table.");
+        ImGui::TextWrapped("- The module will also allow you to select the table you want to import into after connecting to SQL.");
+        ImGui::Spacing();
+    }
+    if (ImGui::CollapsingHeader("SQL Query Builder")) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("No updates this version.");
+        ImGui::Spacing();
+    }
+    ImGui::Spacing();
+
+    // End spacing style
+    ImGui::PopStyleVar();
+}
+
+// See imgui wiki for function example: https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+bool displayCentralSquareLogo(LPDIRECT3DDEVICE9 g_pd3dDevice, const char* filename, PDIRECT3DTEXTURE9* out_texture, int* out_width, int* out_height) {
+    PDIRECT3DTEXTURE9 texture;
+    HRESULT hr = D3DXCreateTextureFromFileA(g_pd3dDevice, filename, &texture);
+    if (hr != S_OK) {
+        std::cerr << "Failed to load image. HRESULT:" << hr << std::endl;
+        return false;
+    }
+
+    // Retrieve description of texture surfgace so we can access the size
+    D3DSURFACE_DESC my_image_desc;
+    texture->GetLevelDesc(0, &my_image_desc);
+    *out_texture = texture;
+    *out_width = (int)my_image_desc.Width;
+    *out_height = (int)my_image_desc.Height;
+    return true;
+}
+
+void showDisabledButton(static char label[], ImVec2 size) {
+    ImGui::BeginDisabled();
+    ImGui::Button(label, size);
+    ImGui::EndDisabled();
+}
+
+// Function to display a color picker and change the background color
+//void colorPickerWithBackgroundChange(ImVec4& bgColor) {
+//    ImGui::Begin("Select a Background color");
+//
+//    // Array of pleasing colors
+//    static ImVec4 colors[] = {
+//        ImVec4(0.9f, 0.1f, 0.1f, 1.0f), // Red
+//        ImVec4(0.1f, 0.9f, 0.1f, 1.0f), // Green
+//        ImVec4(0.1f, 0.1f, 0.9f, 1.0f), // Blue
+//        ImVec4(0.9f, 0.9f, 0.1f, 1.0f), // Yellow
+//        ImVec4(0.9f, 0.1f, 0.9f, 1.0f), // Magenta
+//        ImVec4(0.1f, 0.9f, 0.9f, 1.0f), // Cyan
+//        ImVec4(0.5f, 0.5f, 0.5f, 1.0f)  // Gray
+//    };
+//
+//    // Display color buttons
+//    for (int i = 0; i < IM_ARRAYSIZE(colors); ++i) {
+//        ImGui::PushID(i); // Ensure each button has a unique ID
+//        if (ImGui::ColorButton("##color", colors[i], ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(50, 50))) {
+//            bgColor = colors[i];
+//        }
+//        ImGui::PopID();
+//        if ((i + 1) % 3 != 0) ImGui::SameLine();
+//    }
+//
+//    ImGui::End();
+//}

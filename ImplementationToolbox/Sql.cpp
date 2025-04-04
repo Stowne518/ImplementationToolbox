@@ -2,6 +2,7 @@
 #include <fstream>
 #include "Sql.h"
 #include "sqlConnectionHandler.h"
+#include "AppLog.h"
 #include <filesystem>
 #include <iostream>
 
@@ -21,7 +22,7 @@ bool Sql::executeQuery(std::string query) {
         return true;
 }
 
-void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
+void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir, AppLog& log) {
     // SQL Connection string variables for connection test
     static char serverNameBuffer[256] = { }, databaseNameBuffer[256] = { }, usernameBuffer[256] = { }, passwordBuffer[256] = { };
     static std::string sqlServerName, databaseName, sqlUsername, sqlPassword;
@@ -33,6 +34,14 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
     static float fieldLen = 101;                // Length to display connection string boxes
     bool checkrequiredInfo = false;             // Check that we have all info filled out
     static bool changed = false;
+
+    // Log sql information
+	log.logStateChange("integrated_security", integrated_security);
+	log.logStateChange("connection_attempted", connection_attempted);
+	log.logStateChange("connection_success", connection_success);
+	log.logStateChange("server_type", server_type);
+	log.logStateChange("checkrequiredInfo", checkrequiredInfo);
+
     ImGui::OpenPopup("SQL Connection Settings");
 
     if (ImGui::BeginPopupModal("SQL Connection Settings", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -49,16 +58,16 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Server name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##server", serverNameBuffer, IM_ARRAYSIZE(serverNameBuffer));
-            if (serverNameBuffer != _GetSource()) { changed = true; }               // Did we change server name
+            if (serverNameBuffer != _GetSource()) { log.AddLog("[INFO] SQL Server Name changed to: %s from: %s\n", serverNameBuffer, _GetSource()); changed = true; }               // Did we change server name
             ImGui::TableNextColumn();
             ImGui::Text("Enter database name:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##database", databaseNameBuffer, IM_ARRAYSIZE(databaseNameBuffer));
-            if (databaseNameBuffer != _GetDatabase()) { changed = true; }           // Did we change database name
+            if (databaseNameBuffer != _GetDatabase()) { log.AddLog("[INFO] SQL Server Database changed to: %s from: %s\n", databaseNameBuffer, _GetDatabase()); changed = true; }           // Did we change database name
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Username:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##user", usernameBuffer, IM_ARRAYSIZE(usernameBuffer));
-            if (usernameBuffer != _GetUsername()) { changed = true; }               // Did we change username
+            if (usernameBuffer != _GetUsername()) { log.AddLog("[INFO] SQL Server Username changed to: %s from: %s\n", usernameBuffer, _GetUsername()); changed = true; }               // Did we change username
             ImGui::TableNextColumn();
             ImGui::Text("Enter SQL Password:"); ImGui::TableNextColumn(); ImGui::SetNextItemWidth(fieldLen); ImGui::InputText("##password", passwordBuffer, IM_ARRAYSIZE(passwordBuffer));
-            if (passwordBuffer != _GetPassword()) { changed = true; }               // Did we change database name
+            if (passwordBuffer != _GetPassword()) { log.AddLog("[INFO] SQL Server Password changed to: %s from: %s\n", passwordBuffer, _GetPassword()); changed = true; }               // Did we change database name
 
             // End SQL entry table
             ImGui::EndTable();
@@ -76,9 +85,17 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
 
         if (!_GetConnected() && checkrequiredInfo || changed) {
             if (ImGui::Button("Test Connection", ImVec2(120, 60))) {
+				log.AddLog("[INFO] Attempting to connect to SQL Server: %s\n", _GetSource().c_str());
                 _SetConnected(SqlConnectionHandler::sqlConnectionHandler(_GetSource(), _GetDatabase(), _GetUsername(), _GetPassword()));
                 if(_GetConnected())
+                {
+					log.AddLog("[INFO] SQL Connection Succeeded!\n");
                     _SetConnectionString();
+				}
+                else
+                {
+                    log.AddLog("[ERROR] SQL Connection Failed!\n");
+                }
                 _SetConnectionAttempt();
                 changed = false;
             }
@@ -103,7 +120,7 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
             if (ImGui::Button("Save Connection String", ImVec2(248, 30))) {
                 if(server_type == 0)
                 {
-                    saveConnString(dir, _GetSource());
+                    saveConnString(dir, _GetSource(), log);
                 }
                 else if (server_type == 1)
                 {
@@ -124,16 +141,16 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir) {
     }
 }
 
-void Sql::saveConnString(std::string dir, std::string name) {
+void Sql::saveConnString(std::string dir, std::string name, AppLog& log) {
     std::ofstream connStr;
     try
     {
         connStr.open(dir + name + "_" + _GetDatabase() + ".str");
-        std::cout << "Saving connection string to: " << dir + name + "_" << _GetDatabase() << ".str" << std::endl;
+        log.AddLog("Saving connection string to: %s_%s.str\n", (dir + name).c_str(), _GetDatabase());
     }    
     catch (std::exception& e)
     {
-        std::cerr << "Error saving file: " << e.what() << std::endl;
+        log.AddLog("Error saving file: %s\n", e.what());
         return;
     }
 
@@ -145,6 +162,8 @@ void Sql::saveConnString(std::string dir, std::string name) {
         connStr << _GetDatabase() << std::endl;
         connStr << _GetUsername() << std::endl;
         connStr << _GetPassword();
+        log.AddLog("Connection string successfully saved to: %s_%s.str\n", dir + name, _GetDatabase());
+
     }
 }
 

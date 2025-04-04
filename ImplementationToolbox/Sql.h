@@ -6,6 +6,8 @@
 #ifndef SQL_H
 #define SQL_H
 
+struct AppLog;
+
 class Sql
 {
 private:
@@ -66,8 +68,8 @@ public:
 
 	bool requiredInfo(std::string, std::string, std::string, std::string);
 	bool executeQuery(std::string);
-	void DisplaySqlConfigWindow(bool*, std::string);
-	void saveConnString(std::string, std::string name);
+	void DisplaySqlConfigWindow(bool*, std::string, AppLog&);
+	void saveConnString(std::string, std::string name, AppLog&);
 	void saveConnString(std::string dir, std::string name, int servertype);
 	int returnRecordCount(std::string table, std::string column);
 	int returnRecordCount(std::string table, std::string column, std::string value);

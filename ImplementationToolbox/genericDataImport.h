@@ -7,8 +7,9 @@
 
 // Class declartion
 class Sql;
+struct AppLog;
 
-void genericDataImport(Sql, std::string);
+void genericDataImport(Sql, AppLog&, std::string);
 
 void getColumns(std::filesystem::path& dir, std::vector<std::string>& columns);
 
@@ -20,6 +21,6 @@ std::string displayTableNames(Sql& sql);
 
 void displayMappingTable(std::vector<std::string>& s_columns, std::vector<std::string>& d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows);
 
-std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<std::string>& b_columns, std::vector<std::string>& rows);
+std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<std::string>& b_columns, std::vector<std::string>& rows, AppLog&);
 
 bool insertMappedData(Sql& sql, std::string query);

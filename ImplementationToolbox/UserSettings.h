@@ -1,6 +1,9 @@
 #pragma once
 #include <fstream>
 #include <string>
+
+struct AppLog;
+
 struct UserSettings
 {
 private:
@@ -10,6 +13,10 @@ private:
 	float windowPosX = 0;
 	float windowPosY = 0;
 	std::string filename = "ImplementationToolbox.ini";
+	char gettingStarted;
+	char healthCheck;
+	char recentUpdates;
+	char debugLog;
 public:
 	int getDarkMode() const { return DarkMode; }
 	void setDarkMode(int mode) { DarkMode = mode; }
@@ -26,24 +33,45 @@ public:
 	float getWindowPosY() const { return windowPosY; }
 	void setWindowPosY(float posY) { windowPosY = posY; }
 
-	// Save settings to file
-	void saveSettings(const std::string& filename) const
+	// Getters for debug log
+	bool getDebugLog() const
 	{
-		std::ofstream file(filename);
-		if (file.is_open())
-		{
-			file << "DarkMode=" << DarkMode << "\n";
-			file << "WindowWidth=" << windowWidth << "\n";
-			file << "WindowHeight=" << windowHeight << "\n";
-			file << "WindowPosX=" << windowPosX << "\n";
-			file << "WindowPosY=" << windowPosY << "\n";
-			file.close();
-		}
+		if (debugLog == 'Y')
+			return true;
 		else
-		{
-			std::cerr << "Error opening file for writing: " << filename << std::endl;
-		}
+			return false;
 	}
+
+	// Getters for other settings
+	bool getGettingStarted() const 
+	{ 
+		if (gettingStarted == 'Y')
+			return true;
+		else
+			return false;
+	}
+	bool getHealthCheck() const 
+	{ 
+		if (healthCheck == 'Y')
+			return true;
+		else
+			return false;
+	}
+	bool getRecentUpdates() const 
+	{ 
+		if (recentUpdates == 'Y')
+			return true;
+		else
+			return false;
+	}
+	// Setters for other settings
+	void setGettingStarted(char value) { gettingStarted = value; }
+	void setHealthCheck(char value) { healthCheck = value; }
+	void setRecentUpdates(char value) {	recentUpdates = value; }
+	void setDebugLog(char value) { debugLog = value; }
+
+	// Save settings to file
+	void saveSettings(const std::string& filename, AppLog&) const;
 
 	// Load settings from file
 	void loadSettings(const std::string& filename)
@@ -51,6 +79,21 @@ public:
 		std::ifstream file(filename);
 		if (!file.is_open())
 		{
+			// Build default settings file for first time launch
+			std::ofstream defaultFile(filename);
+			if (defaultFile.is_open())
+			{
+				defaultFile << "DarkMode=0\n"; // Default to light mode
+				defaultFile << "WindowWidth=1280\n"; // Default width
+				defaultFile << "WindowHeight=720\n"; // Default height
+				defaultFile << "WindowPosX=0\n"; // Default position X
+				defaultFile << "WindowPosY=0\n"; // Default position Y
+				defaultFile << "GettingStarted=Y\n"; // Default getting started setting
+				defaultFile << "HealthCheck=Y\n"; // Default health check setting
+				defaultFile << "RecentUpdates=Y\n"; // Default recent updates setting
+				defaultFile << "DebugLog=N\n"; // Default debug log setting
+				defaultFile.close();
+			}
 			return;
 		}
 		else
@@ -64,7 +107,7 @@ public:
 				}
 				if (std::getline(file, line))
 				{
-					setWindowWidth(std::stof(line.substr(line.find('=') + 1)));	// Load and set window width
+					setWindowWidth(std::stof(line.substr(line.find('=') + 1)));		// Load and set window width
 				}
 				if (std::getline(file, line))
 				{
@@ -72,11 +115,27 @@ public:
 				}
 				if (std::getline(file, line))
 				{
-					setWindowPosX(std::stof(line.substr(line.find('=') + 1)));	// Load and set window position X
+					setWindowPosX(std::stof(line.substr(line.find('=') + 1)));		// Load and set window position X
 				}
 				if (std::getline(file, line))
 				{
-					setWindowPosY(std::stof(line.substr(line.find('=') + 1)));	// Load and set window position Y
+					setWindowPosY(std::stof(line.substr(line.find('=') + 1)));		// Load and set window position Y
+				}
+				if (std::getline(file, line))
+				{
+					setGettingStarted(line.substr(line.find('=') + 1)[0]);			// Load and set getting started setting
+				}
+				if (std::getline(file, line))
+				{
+					setHealthCheck(line.substr(line.find('=') + 1)[0]);				// Load and set health check setting
+				}
+				if (std::getline(file, line))
+				{
+					setRecentUpdates(line.substr(line.find('=') + 1)[0]);			// Load and set recent updates setting
+				}
+				if (std::getline(file, line))
+				{
+					setDebugLog(line.substr(line.find('=') + 1)[0]);				// Load and set debug log setting
 				}
 			}
 		}

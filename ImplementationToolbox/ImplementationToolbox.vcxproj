@@ -188,9 +188,11 @@
     <ClCompile Include="servlogViewer.cpp" />
     <ClCompile Include="Sql.cpp" />
     <ClCompile Include="sqlQueryBuilder.cpp" />
+    <ClCompile Include="systemFunctions.cpp" />
     <ClCompile Include="Unit.cpp" />
     <ClCompile Include="unitbuilder.cpp" />
     <ClCompile Include="unitImport.cpp" />
+    <ClCompile Include="UserSettings.cpp" />
     <ClCompile Include="xmlParser.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -205,6 +207,7 @@
     <ClInclude Include="Beat.h" />
     <ClInclude Include="beatImport.h" />
     <ClInclude Include="Beats.h" />
+    <ClInclude Include="AppLog.h" />
     <ClInclude Include="fieldOrderTable.h" />
     <ClInclude Include="genericDataImport.h" />
     <ClInclude Include="genericexport_window.h" />
