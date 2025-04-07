@@ -214,6 +214,8 @@ void displayUpdates() {
 		ImGui::TextWrapped("- New feature: Debug logging. This window can be opened from the main menu bar under view. It will show the current state of the program and any errors that occur.\nThis should allow for reduced testing time and faster troubleshooting moving forward.");
 		ImGui::TextWrapped("- Debug log has to be retroactively added to support all corners of the program. This will be an ongoing process and it is still limited to the following areas:");
 		ImGui::TextWrapped("- SQL Connection\n- Directory creation at launch.\n- Most main screen variables/functions\n- Generic Data Import\n -User Settings\n- System Functions");
+        ImGui::TextWrapped("- Added new feature for SQL quick connection. It will read in the list of saved connection strings (if you have any) and then attempt to connect automatically usinng the one you click on.");
+        ImGui::TextWrapped("- Added new text filters to drop downs in Generic data import and SQL quick connection options.");
         ImGui::Spacing();
     }
     ImGui::SeparatorText("RMS/JMS");
@@ -307,3 +309,17 @@ void showDisabledButton(static char label[], ImVec2 size) {
 //
 //    ImGui::End();
 //}
+
+std::vector<std::string > getListOfConnStrings()
+{
+    std::string connStrDir = "C:\\ImplementationToolbox\\ConnectionStrings\\";
+    std::vector<std::string> connStrFiles;
+    for (const auto& entry : std::filesystem::directory_iterator(connStrDir))
+    {
+        if (entry.path().extension() == ".str")
+        {
+            connStrFiles.push_back(entry.path().filename().string());
+        }
+    }
+    return connStrFiles;
+}

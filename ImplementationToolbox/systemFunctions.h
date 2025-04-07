@@ -35,3 +35,5 @@ void displayUpdates();
 bool displayCentralSquareLogo(LPDIRECT3DDEVICE9 g_pd3dDevice, const char* filename, PDIRECT3DTEXTURE9* out_texture, int* out_width, int* out_height);
 
 void showDisabledButton(static char label[], ImVec2 size);
+
+std::vector<std::string> getListOfConnStrings();

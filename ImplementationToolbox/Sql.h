@@ -18,7 +18,8 @@ private:
 		connectionString;
 	bool 
 		connectionAttempt,
-		connected;
+		connected,
+		savedString;
 
 public:
 	// Setters
@@ -65,6 +66,12 @@ public:
 	std::string _GetConnectionString() {
 		return connectionString;
 	}
+	bool _GetSavedString() {
+		return savedString;
+	}
+	void _SetSavedString(bool s) {
+		savedString = s;
+	}
 
 	bool requiredInfo(std::string, std::string, std::string, std::string);
 	bool executeQuery(std::string);
@@ -77,7 +84,8 @@ public:
 	int returnTableCount(std::string connStr);
 	std::vector<std::string> getTableNames(std::string connStr, std::string database);
 	std::string displayConnectionName(const std::string& directory);
-	void readConnString(const std::string dir, char source[], char* db, char* un, char* pw, bool);
+	void readConnString(const std::string dir, char* source, char* db, char* un, char* pw, bool);
+	bool readConnString(const std::string);
 };
 
 #endif // SQL_H

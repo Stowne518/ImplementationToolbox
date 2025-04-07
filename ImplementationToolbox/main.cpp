@@ -125,9 +125,13 @@ int main(int, char**)
 	static float w_width, w_height, wx_pos, wy_pos;
     static int w_darkmode;
 	static bool getting_started, recent_update, health_check, debug_log;
+    std::string conn_str;
     
     // Initialize AppLog
     static AppLog log;
+
+    // Create a static sql class to store connection info in so we can pass to different functions that may need the SQL connectivity
+    static Sql sql;
 
     // Load initial settings
     UserSettings usrsettings;
@@ -142,6 +146,16 @@ int main(int, char**)
     static bool open_recent_updates = usrsettings.getRecentUpdates();
     static bool open_health_check = usrsettings.getHealthCheck();
     static bool show_log = usrsettings.getDebugLog();
+    // Save the file path to the connection string file saved in the system
+    // Going with a list of connection string files instead of only the last loaded one.
+    /*if (sql._GetConnected() && sql._GetSavedString() || usrsettings.getConnectString() == "")
+    {
+		usrsettings.setConnectString("C:\\ImplementationToolbox\\ConnectionStrings\\" + sql._GetSource() + "_" + sql._GetDatabase() + ".str");
+	}
+    else
+    {
+        usrsettings.setConnectString("");
+    }*/
 
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
     const wchar_t* versionNum = L"Implementation Toolbox v0.6.4";
@@ -330,7 +344,16 @@ int main(int, char**)
 		debug_log = usrsettings.getDebugLog(); // Load debug log window state for comparison
 
 		// Check if the window has been moved or resized
-		if (w_width != getWindowSize(hwnd).x || w_height != getWindowSize(hwnd).y || wx_pos != getWindowPos(hwnd).x || wy_pos != getWindowPos(hwnd).y || w_darkmode != isDarkMode || getting_started != open_getting_started || recent_update != open_recent_updates || health_check != open_health_check || debug_log != show_log)
+		if (
+            w_width != getWindowSize(hwnd).x 
+            || w_height != getWindowSize(hwnd).y 
+            || wx_pos != getWindowPos(hwnd).x 
+            || wy_pos != getWindowPos(hwnd).y 
+            || w_darkmode != isDarkMode 
+            || getting_started != open_getting_started 
+            || recent_update != open_recent_updates 
+            || health_check != open_health_check 
+            || debug_log != show_log )
 		{
 			// Save the new window size and position
 			usrsettings.setWindowHeight(getWindowSize(hwnd).y);
@@ -343,6 +366,7 @@ int main(int, char**)
 			if (open_recent_updates) usrsettings.setRecentUpdates('Y'); else usrsettings.setRecentUpdates('N');
 			if (show_log) usrsettings.setDebugLog('Y'); else usrsettings.setDebugLog('N');
 			usrsettings.saveSettings(settings_filename, log);
+            sql._SetSavedString(false); // Reset saved string if we save new one to file
 		}
 
         // Get main viewport
@@ -352,6 +376,9 @@ int main(int, char**)
         // Enable dockspace
 		ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 		ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_None);
+
+		// Get list of connection strings
+        static std::vector<std::string> connectionStrings = getListOfConnStrings();
 
         // Begin main menu bar
         if (ImGui::BeginMainMenuBar())
@@ -381,6 +408,50 @@ int main(int, char**)
             {
                 // Open popup for SQL settings
                 if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
+                if(connectionStrings.size() > 0)
+                {
+                    if (ImGui::BeginMenu("Quick SQL Connection"))
+                    {
+                        static ImGuiTextFilter conn_filter;
+                        conn_filter.Draw("Filter##Connections", 110.0f);
+                        for (int i = 0; i < connectionStrings.size(); i++)
+                        {
+                            if(conn_filter.PassFilter(connectionStrings[i].c_str()))
+                            {
+                                ImGui::PushID(i);
+                                if (ImGui::MenuItem(("%s", connectionStrings[i]).c_str()))
+                                {
+                                    try
+                                    {
+                                        // Load the connection string from the file
+                                        std::string conn_str = ("C:\\ImplementationToolbox\\ConnectionStrings\\" + connectionStrings[i]);
+                                        // Set the connection string in the SQL class
+                                        sql._SetConnectionAttempt();            // Show we attempted connection
+                                        sql._SetConnected(sql.readConnString(conn_str));
+                                        log.AddLog("[INFO] Loading connection: %s\n", connectionStrings[i].c_str());
+                                        if (!sql._GetConnected())
+                                        {
+                                            log.AddLog("[ERROR] Failed to connect to: %s\n", sql._GetSource().c_str());
+                                        }
+                                        else
+                                        {
+                                            log.AddLog("[INFO] Successfully connected to: %s\n", sql._GetSource().c_str());
+                                            // Set the connection string in the SQL class
+                                            sql._SetConnectionString();
+                                        }
+                                    }
+                                    catch (std::exception& e)
+                                    {
+                                        log.AddLog("[ERROR] Failed to load connection string: %s\n", e.what());
+                                    }
+                                }
+                                ImGui::PopID();
+                            }
+                        }
+                        // End Connection string menu
+                        ImGui::EndMenu();
+                    }
+                }
 
                 // End settings menu
                 ImGui::EndMenu();
@@ -504,8 +575,7 @@ int main(int, char**)
         // End orange color
         ImGui::PopStyleColor();
 
-        // Create a static sql class to store connection info in so we can pass to different functions that may need the SQL connectivity
-        static Sql sql;
+        
         // Open the SQL configuration window if the menu item is selected
         if (show_sql_conn_window)
         {

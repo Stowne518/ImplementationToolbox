@@ -155,6 +155,7 @@ void Sql::saveConnString(std::string dir, std::string name, AppLog& log) {
     }
 
     if (!connStr) {
+        _SetSavedString(false);
         return;
     }
     else {
@@ -163,7 +164,7 @@ void Sql::saveConnString(std::string dir, std::string name, AppLog& log) {
         connStr << _GetUsername() << std::endl;
         connStr << _GetPassword();
         log.AddLog("Connection string successfully saved to: %s_%s.str\n", dir + name, _GetDatabase());
-
+		_SetSavedString(true);
     }
 }
 
@@ -272,9 +273,47 @@ void Sql::readConnString(const std::string dir, char* source, char* db, char* un
             {
                 strncpy_s(pw, FIELD_LEN, line.c_str(), FIELD_LEN);                      // Read password value
             }
-            connStr.close();                                                            // Close file when done
+            connStr.close();
+			_SetSavedString(true);                                                      // Update saved string status
         }
     }
+}
+
+// Overloaded to take only a path to a pre-existing file
+// Used to quick load the previously saved/loaded file that we store to the settings file
+bool Sql::readConnString(std::string filepath)
+{
+    std::ifstream loadConnection;
+
+    loadConnection.open(filepath);
+    std::string line;
+    if(std::getline(loadConnection, line))
+	{
+		_SetSource(line);
+	}
+	if (std::getline(loadConnection, line))
+	{
+		_SetDatabase(line);
+	}
+	if (std::getline(loadConnection, line))
+	{
+		_SetUsername(line);
+	}
+	if (std::getline(loadConnection, line))
+	{
+		_SetPassword(line);
+	}
+	loadConnection.close();
+	_SetConnectionString();     // Build connection string with new values
+	_SetConnected(SqlConnectionHandler::sqlConnectionHandler(_GetSource(), _GetDatabase(), _GetUsername(), _GetPassword()));    // Attempt to connect to SQL
+	if (_GetConnected())
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 int Sql::returnRecordCount(std::string table, std::string column) 
