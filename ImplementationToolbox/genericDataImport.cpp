@@ -163,46 +163,85 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
         load_columns = false;
         confirm_mapping = false;
     }
+    // Display an overview of the mapping
+    ImGui::BeginGroup();
+    ImGui::Text("Mapping Overview:\n(Destination field = Source field)");
+    for (int i = 0; i < destination_columns.size(); i++)
+    {
+        if (!buffer_columns[i].empty())
+        {
+            ImGui::Text("%s = %s", destination_columns[i], buffer_columns[i]);
+        }
+    }
+
+    // End Mapping overview display group
+    ImGui::EndGroup();
     if (ImGui::CollapsingHeader("Column Mapping", ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (load_columns && !confirm_mapping && loaded_csv)
         {
-            displayMappingTable(source_columns, destination_columns, buffer_columns, data_rows, data_rows_index, source_columns_index, destination_columns_index);
+            displayMappingTable(log, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index);
             ImGui::SameLine();
             if (ImGui::Button("Confirm Mapping", ImVec2(150, 75)))
             {
                 // Confirm mapping and import data
                 confirm_mapping = true;
-            }
-            
+            }            
         }
         if (confirm_mapping && insert_rows.size() == 0)
         {
             // Map out buffer index values from source column index positions
-            // Loop over each buffer field to get it's matching source column index
-            for(int i = 0; i < buffer_columns.size(); i++)
+            // Clean up buffer index and remove -1's since we don't need them.
+            for (int i = 0; i < buffer_columns_index.size(); i++)
             {
-                // Loop over each source column to compare the buffer value
-                for (int j = 0; j < source_columns.size(); j++)
+                if (buffer_columns_index[i] != -1)
                 {
-					// When we match store source index position in buffer index columns vector
-					if (buffer_columns[i] == source_columns[j])
-					{
-						// Store index position from source columns vector to use in insert query builder
-                        // This index will match the destination columns to the respective data rows
-						buffer_columns_index.push_back(j);
-						log.AddLog("[INFO] Buffer column %s mapped to source column %s. SQL Column will be: %s\n", buffer_columns[i].c_str(), source_columns[j].c_str(), destination_columns[i]);
-                        // break this loop since we can only map one column to one buffer, there's no need to go over the rest when we find our match
-                        break;
-					}
+                    destination_columns_index.push_back(i);                 // Map SQL table columns in order they were mapped
+                    data_rows_index.push_back(buffer_columns_index[i]);     // Get index position of data that matches columns to the SQL tables they were mapped to
                 }
             }
-            // Generate insert queries and store them in vector
+
+            // Remove values from the columns that aren't mapped to anything from data_rows
             for (int i = 0; i < data_rows.size(); i++)
             {
-                insert_rows = buildInsertQuery(table_name, buffer_columns_index, destination_columns, data_rows, log);
+                std::vector<std::string>data_tmp;
+                std::string value;
+                std::vector<std::string>values;
+				std::stringstream ss(data_rows[i]);
+				while (std::getline(ss, value, ','))                                        // Read each line of data in data_rows
+				{
+					values.push_back(value);                                                // Add data to the vector containing the separated data elements
+				}
+				for (int j = 0; j < destination_columns_index.size(); j++)                  // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
+				{
+					data_tmp.push_back(values[data_rows_index[j]]);
+				}
+				data_rows[i] = "";                                                          // Clear out the row in the original data_row vector
+				for (int k = 0; k < data_tmp.size(); k++)                                   // Loop over newly constructed row of data and concantate it into a single string to push back to data_rows
+				{
+					data_rows[i] += data_tmp[k];
+					if (k != data_tmp.size() - 1)
+						data_rows[i] += ",";                                                // Separate each value by a comma if we're not next to the end position yet
+				}
             }
+            
+            // Generate insert queries and store them in vector
+            /*for (int i = 0; i < data_rows.size(); i++)
+            {
+                insert_rows = buildInsertQuery(table_name, buffer_columns_index, destination_columns, data_rows, log);
+            }*/
+
+            // This is for debugging so we don't keep running this section.
+            // TODO: Remove this when we're ready to start building insert queries
+            insert_rows.push_back("");
         }
+    }
+
+    
+    // Display newly mapped rows as a table
+    if(confirm_mapping)
+    {
+        displayDataTable(log, destination_columns, destination_columns_index, data_rows, data_rows_index);
     }
 
 	// Default return
@@ -338,7 +377,7 @@ std::string displayTableNames(Sql& sql)
 	return chosenName;
 }
 
-void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_column_index, std::vector<int>& d_column_index)
+void displayMappingTable(AppLog& log, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index)
 {
     std::string value;
     std::vector<std::string> values;
@@ -364,6 +403,14 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
         for (int i = rows.size(); i < s_columns.size(); i++)
         {
             values.push_back("");
+        }
+    }
+	// Prepopulate b_column_index with -1 to show no mapping has been done yet
+	if (b_column_index.size() < b_columns.size())
+    {
+        for (int i = 0; i < b_columns.size(); i++)
+        {
+            b_column_index.push_back(-1);
         }
     }
     /*
@@ -395,44 +442,56 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
                 {
                     IM_ASSERT(payload->DataSize == sizeof(int));
                     int payload_n = *(const int*)payload->Data;
-                    // Going to try a different approach with a swap method and see if it is any better.
+                    // Using a swap method to manage column labels
                     const std::string tmp = b_columns[i];
-                    b_columns[i] = s_columns_buf[payload_n];
-					s_columns_buf[payload_n] = tmp;
-                    // Swap works well, just need to track where the source columns index positions were when building queries.
+                    b_columns[i] = s_columns_buf[payload_n];                    
                     // If source column[0] swaps with buffer [1] we need to know that column [0] from source maps to column [1] for SQL columns
-                    // Perhaps use a buffer vector for source columns that way we don't mangle the original order and we can refer back to it when mapping is complete
+                    // Use this to set the source column index position to the buffer button it swapped places with
+					// Verify against the s_column vector at the end and correct any mismatched values
+                    if(s_columns_buf[payload_n] != "")
+                    {
+                        b_column_index[i] = payload_n;
+                        log.AddLog("[INFO] Source column index added to buffer column index %i = %i\n", i, payload_n);
+                    }
+                    else
+                    {
+                        b_column_index[i] = -1;                 // Set buffer back to -1 to indicate no mapping if we swap with a source column that is blank
+                    }
 
+                    s_columns_buf[payload_n] = tmp;             // Moving s_column swap after we store the index location to buffer column
 
-                    // Insert source column index into buffer column index list
-                    
-                    // If we find the most recently pushed back payload_n value in the b_columns_index already, erase the earlier index value to keep list current
-                    // Remove the old index if it exists
-       //             auto it = std::find(b_column_index.begin(), b_column_index.end(), payload_n);
-       //             if (it != b_column_index.end())
-       //             {
-       //                 // clear previous buffer column
-       //                 if(i < *it)
-       //                 {
-       //                     //auto find_label = std::find(b_columns.rbegin(), b_columns.rend(), s_columns[payload_n]); // Need way to get distance from end of array if new buffer index is less than the old
-       //                     // if i < find_label set b_columns[find_label] = "" and erase b_column_index[find_label]
-       //                     auto find_label = std::find(b_columns.begin(), b_columns.end(), s_columns[payload_n]);
-       //                     if (find_label != b_columns.end()) {
-       //                         b_columns[std::distance(b_columns.begin(), find_label)] = "";
-       //                     }
-       //                 }
-       //                 else
-       //                 {
-							//auto find_label = std::find(b_columns.begin(), b_columns.end(), s_columns[payload_n]); // Need way to get distance from end of array if new buffer index is less than the old
-							//if (find_label != b_columns.end()) {
-							//	b_columns[std::distance(b_columns.begin(), find_label)] = "";
-							//}
-       //                 }
-       //                 b_column_index.erase(it);
-       //             }
-       //             // Use this to swap buffer columns for table columns on the sql insert generation
-       //             b_column_index.push_back(payload_n);
+                    // Verify newly assigned buffer index against untouched source index
+                    log.AddLog("[DEBUG] Verifying buffer index position against source columns index...\n");
+                    for (int j = 0; j < b_column_index.size(); j++)
+                    {
+                        if (b_columns[j] == "")
+                        {
+                            // if label is blank do nothing
+                        }
+                        else if (b_columns[j] != s_columns[b_column_index[j]])
+                        {
+                            // If the buffer label isn't equal to the source label we know the source buffer has been misaligned.
+                            // Correct buffer label by comparing to source labels and use that position
+                            log.AddLog("[WARN] Detected mismatched indexes! Attempting to match now...\n");
+							auto it = std::find(s_columns.begin(), s_columns.end(), b_columns[j]);          // Find label value of buffer column at position j within the source column vector
+							int s_col = std::distance(s_columns.begin(), it);                               // Find distance to label located before and return position number
+                            b_column_index[j] = s_col;                                                      // Update buffer column to have correct index from source vector
+                            log.AddLog("[DEBUG] Buffer column index matched %i set to source column index %i\n", j, s_col);
+                        }
+                    }
+                    log.AddLog("[DEBUG] Buffer column index positions verified against source columns index successfully.\n");
+                    // Display final b_column_index values, when we're done it should match the order and source index of each column added
+                    log.AddLog("[DEBUG] b_column_index positions =  ");
+                    for (int i = 0; i < b_column_index.size(); i++)
+                    {
+                        if (i == b_column_index.size() - 1)
+                            log.AddLog("%i", b_column_index[i]);
+                        else
+                            log.AddLog("%i, ", b_column_index[i]);
+                    }
+					log.AddLog("\n");
                 }
+                
                 ImGui::EndDragDropTarget();
             }
         }
@@ -459,34 +518,20 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
             {
                 ImGui::SetDragDropPayload("DND_Column", &i, sizeof(int));
                 // Display prevew
-                ImGui::Text("Mapping column %s", s_columns[i]);
+                ImGui::Text("Mapping column %s", s_columns_buf[i]);
                 ImGui::EndDragDropSource();
             }
             ImGui::TableNextColumn();
-			ImGui::Text(("%s\n%s", s_columns[i], values[i]).c_str());
+			ImGui::Text("%s\n%s", s_columns[i].c_str(), values[i].c_str());
         }
 		// End source column mapping table
         ImGui::EndTable();
     }
     // End Source column mapping
     ImGui::EndChild();
-    ImGui::SameLine();
-	// Display an overview of the mapping
-    ImGui::BeginGroup();
-    ImGui::Text("Mapping Overview:\n(Destination field = Source field)");
-    for (int i = 0; i < d_columns.size(); i++)
-    {
-        if (!b_columns[i].empty())
-        {
-            ImGui::Text("%s = %s", d_columns[i], b_columns[i]);
-        }
-    }
-
-    // End Mapping overview display group
-    ImGui::EndGroup();
 }
 
-std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& b_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, AppLog& log)
+std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, AppLog& log)
 {
 	// TODO: Add multi-threading for large files to prevent UI from freezing and allow each insert to print to log as it's written
     // Changing logic here to only grab mapped data
@@ -501,32 +546,22 @@ std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<in
         {
             std::string query = "INSERT INTO " + table_name + " (";
             // This should be d_columns, not b_columns
-            for (int i = 0; i < b_columns_index.size(); i++)
+            for (int i = 0; i < d_columns_index.size(); i++)
             {
-                query += d_columns[b_columns_index[i]];
-                if (i != b_columns_index.size() - 1)
+                query += d_columns[d_columns_index[i]];
+                if (i != d_columns_index.size() - 1)
                     query += ", ";
             }
-            query += ") VALUES (";
-            /*for (int i = 0; i < rows.size(); i++)
-            {
-                std::stringstream ss(rows[i]);
-                while (std::getline(ss, value, ','))
-                {
-                    values.push_back(value);
-                }
-            }*/
-            // Remove for loop. We're doing a while loop here that will get all values for that row. 
-            // Now we just need to only get the data from columns that were selected in the correct order
+            query += ") VALUES (";  
             std::stringstream ss(rows[i]);
             while (std::getline(ss, value, ','))
             {
                 values.push_back(value);
             }
-            for (int i = 0; i < b_columns_index.size(); i++)
+            for (int i = 0; i < d_columns_index.size(); i++)
             {
                 query += "'" + values[i] + "'";
-                if (i != b_columns_index.size() - 1)
+                if (i != d_columns_index.size() - 1)
                     query += ", ";
             }
             query += ");";
@@ -542,6 +577,60 @@ std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<in
         return {};
 	}
     return {};
+}
+
+/// <summary>
+/// Uses data collected from an imported CSV and mapped column headers to build the table where we display the data we mapped and the order it was mapped in.
+/// </summary>
+/// <param name="log"> - Pass your AppLog object to allow the ability to write log lines as the data is processed for debugging</param>
+/// <param name="d_columns"> - vector containing all column headers pulled from the loaded SQL table.</param>
+/// <param name="d_columns_index"> - vector containing index positions of each column that was mapped.</param>
+/// <param name="rows"> - vector containing data that was read in from the CSV. By this point it should be reduced to only contain data from columns we have mapped to.</param>
+/// <param name="rows_index"> - vector containing index positions from the CSV of data columns to track which SQL column it shoudl belong in.</param>
+void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index)
+{
+	log.AddLog("[INFO] Generating staging table for data processing...\n");
+    ImGui::SeparatorText("Staging Area");                                           // Create some space between column mapping and staging table
+    // Begin table for displaying and editing actual data, as well as showing it was mapped correctly.
+    if (ImGui::BeginTable("DataRows", d_columns_index.size(), ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Resizable))
+    {
+        // Setup mapped columns as headers
+        for (int i = 0; i < d_columns_index.size(); i++)
+        {
+			ImGui::TableSetupColumn(d_columns[d_columns_index[i]].c_str());         // Use mapped column names from the SQL table to set up the headers
+			log.AddLog("[INFO] Table header %s identified\n", d_columns[d_columns_index[i]].c_str());
+        }
+		ImGui::TableHeadersRow();                                                   // Tells UI this will be our headers for the table
+
+
+        // Set up data rows
+        for (int i = 0; i < rows.size(); i++)                                       // Begin looping through each row of data
+        {
+			ImGui::TableNextRow();                                                  // Start new row each loop
+            std::string value;                                                      // String to store each individual value into while we parse lines
+			std::vector<std::string> values;                                        // Vector to hold each value from the row
+			std::stringstream ss(rows[i]);                                          // Stream the row data into a string stream
+            while (std::getline(ss, value, ','))
+            {
+                values.push_back(value.c_str());                                    // Push back value into values
+            }
+            // Push row ID to each row
+            ImGui::PushID(i);
+			for (int k = 0; k < d_columns_index.size(); k++)                        // Begin looping through the columns to populate data in each one
+			{
+				ImGui::TableSetColumnIndex(k);                                      // Set the next columns index up
+                // Push value ID of k to each value
+                ImGui::PushID(k);
+                ImGui::InputText("", &values[k][0], values[k].size() + 1);          // Create box for input lines to apppear in. This displays imported data and allows edits to be made before sending it
+                // Pop value ID of k
+                ImGui::PopID();
+			}
+            // Pop row ID of i
+            ImGui::PopID();
+        }
+        // End data table
+        ImGui::EndTable();
+    }
 }
 
 bool insertMappedData(Sql& sql, std::string query)
