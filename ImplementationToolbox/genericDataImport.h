@@ -19,8 +19,9 @@ std::string displayDataFiles(std::string dir);
 
 std::string displayTableNames(Sql& sql);
 
-void displayMappingTable(std::vector<std::string>& s_columns, std::vector<std::string>& d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>&, std::vector<int>&, std::vector<int>&);
+void displayMappingTable(AppLog&, std::vector<std::string>& s_columns, std::vector<std::string>& d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_columns_index, std::vector<int>&, std::vector<int>&);
 
 std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& b_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, AppLog&);
 
+void displayDataTable(AppLog&, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index);
 bool insertMappedData(Sql& sql, std::string query);
