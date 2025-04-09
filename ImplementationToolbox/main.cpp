@@ -9,13 +9,12 @@
 /*
 *****Author: Alex Towne
 *****Date: Began on 2/1/24
-*****Last Updated: 1/30/2025
+*****Last Updated: 4/09/25
 *****Purpose: This program is built in the ImGui framework to add UI wrapping to C++ code.
 * The plan is to continually update with tools/utilities that assist the Professional services department with rapid completion of installs/tasks
 * Will be expanded in the future to assist the tech team with migrations by integrating directly with file share systems and SQL servers via ODBC connections to automate file moving and SQL migration 
 
 */
-
 #include "imgui.h"
 #include "imgui_impl_dx9.h"
 #include "imgui_impl_win32.h"
@@ -40,6 +39,7 @@
 #include <Windows.h>
 #include "genericDataImport.h"
 #include "AppLog.h"
+
 
 
 // Get center of monitor from Windows API
@@ -146,16 +146,6 @@ int main(int, char**)
     static bool open_recent_updates = usrsettings.getRecentUpdates();
     static bool open_health_check = usrsettings.getHealthCheck();
     static bool show_log = usrsettings.getDebugLog();
-    // Save the file path to the connection string file saved in the system
-    // Going with a list of connection string files instead of only the last loaded one.
-    /*if (sql._GetConnected() && sql._GetSavedString() || usrsettings.getConnectString() == "")
-    {
-		usrsettings.setConnectString("C:\\ImplementationToolbox\\ConnectionStrings\\" + sql._GetSource() + "_" + sql._GetDatabase() + ".str");
-	}
-    else
-    {
-        usrsettings.setConnectString("");
-    }*/
 
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
     const wchar_t* versionNum = L"Implementation Toolbox v0.6.4";
@@ -165,6 +155,12 @@ int main(int, char**)
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, versionNum, nullptr };
+
+    // Load the icon
+    wc.hIcon = (HICON)LoadImage(NULL, _T("Images/CST_LOGO_icon_64x64.ico"), IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+    wc.hIconSm = (HICON)LoadImage(NULL, _T("Images/CST_LOGO_icon_32x32.ico"), IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+    
+    // Create window
     ::RegisterClassExW(&wc);
     HWND hwnd = ::CreateWindowW(wc.lpszClassName, versionNum, WS_OVERLAPPEDWINDOW, START_X, START_Y, WIDTH, HEIGHT, nullptr, nullptr, wc.hInstance, nullptr);
 
@@ -204,7 +200,7 @@ int main(int, char**)
     }
 
     // Darken the input text boxes
-    ImGuiStyle& style = ImGui::GetStyle();
+    static ImGuiStyle& style = ImGui::GetStyle();
     style.Colors[ImGuiCol_FrameBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.7f); // Darker gray for input box background
     style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f); // Slightly darker gray when hovered
     style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); // Even darker gray when active

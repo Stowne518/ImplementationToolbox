@@ -1,6 +1,7 @@
 #include "genericDataImport.h"
 #include "Sql.h"
 #include "AppLog.h"
+#include "imgui_stdlib.h"
 #include <iostream>
 
 void genericDataImport(Sql sql, AppLog& log, std::string dir)
@@ -162,20 +163,42 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
         load_tables = false;
         load_columns = false;
         confirm_mapping = false;
+        filepath.clear();
     }
-    // Display an overview of the mapping
-    ImGui::BeginGroup();
-    ImGui::Text("Mapping Overview:\n(Destination field = Source field)");
-    for (int i = 0; i < destination_columns.size(); i++)
+    static bool mapoverview = false;
+    if (ImGui::Checkbox("Display mapping overview", &mapoverview));
+    if(mapoverview)
     {
-        if (!buffer_columns[i].empty())
+        log.logStateChange("mapoverview", &mapoverview);
+        // Create new window for mapping overview
+        ImGui::Begin("Mapping Overview", &mapoverview, ImGuiWindowFlags_AlwaysAutoResize);
+        // Display an overview of the mapping
+        ImGui::Text("Mapping Overview:\n(Destination field = Source field)");
+        if(ImGui::BeginTable("Overview", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg))
         {
-            ImGui::Text("%s = %s", destination_columns[i], buffer_columns[i]);
+            for (int i = 0; i < destination_columns.size(); i++)
+            {
+                
+                if (!buffer_columns[i].empty())
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", destination_columns[i]);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("=");
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", buffer_columns[i]);
+                }
+            }   // End Mapping overview
+
+            // End Mapping overview table
+            ImGui::EndTable();
         }
+
+        // End Mapping overview window
+        ImGui::End();
     }
 
-    // End Mapping overview display group
-    ImGui::EndGroup();
     if (ImGui::CollapsingHeader("Column Mapping", ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (load_columns && !confirm_mapping && loaded_csv)
@@ -512,7 +535,7 @@ void displayMappingTable(AppLog& log, std::vector<std::string>&s_columns, std::v
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::PushID(i);
-            ImGui::Button(("%s", s_columns_buf[i]).c_str(), ImVec2(120, 40));
+            ImGui::Button((s_columns_buf[i]).c_str(), ImVec2(120, 40));
 			ImGui::PopID();
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
@@ -589,16 +612,33 @@ std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<in
 /// <param name="rows_index"> - vector containing index positions from the CSV of data columns to track which SQL column it shoudl belong in.</param>
 void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index)
 {
-	log.AddLog("[INFO] Generating staging table for data processing...\n");
+    const int TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+    ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * 10);
+	//log.AddLog("[INFO] Generating staging table for data processing...\n");
     ImGui::SeparatorText("Staging Area");                                           // Create some space between column mapping and staging table
     // Begin table for displaying and editing actual data, as well as showing it was mapped correctly.
-    if (ImGui::BeginTable("DataRows", d_columns_index.size(), ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Resizable))
+	// TODO fix table display for large imports, fix display for mapping overview to not be in the way(maybe make it it's own window?)
+    if (ImGui::BeginTable("DataStaging", d_columns_index.size(), ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV, outer_size))
     {
+        std::string value;
+        std::vector<std::string> tmp_rows;
+        static std::vector<std::vector<std::string>> values;
+        for(int i = 0; i < rows.size(); i++)
+        {
+            std::stringstream ss(rows[i]);
+            while (std::getline(ss, value, ','))
+            {
+                tmp_rows.push_back(value);
+            }
+            values.push_back(tmp_rows);
+            tmp_rows.clear();
+        }
         // Setup mapped columns as headers
+        ImGui::TableSetupScrollFreeze(0, 1);                                        // Make headers row always visible
         for (int i = 0; i < d_columns_index.size(); i++)
         {
 			ImGui::TableSetupColumn(d_columns[d_columns_index[i]].c_str());         // Use mapped column names from the SQL table to set up the headers
-			log.AddLog("[INFO] Table header %s identified\n", d_columns[d_columns_index[i]].c_str());
+			// log.AddLog("[INFO] Table header %s identified\n", d_columns[d_columns_index[i]].c_str());
         }
 		ImGui::TableHeadersRow();                                                   // Tells UI this will be our headers for the table
 
@@ -607,13 +647,13 @@ void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vec
         for (int i = 0; i < rows.size(); i++)                                       // Begin looping through each row of data
         {
 			ImGui::TableNextRow();                                                  // Start new row each loop
-            std::string value;                                                      // String to store each individual value into while we parse lines
-			std::vector<std::string> values;                                        // Vector to hold each value from the row
-			std::stringstream ss(rows[i]);                                          // Stream the row data into a string stream
-            while (std::getline(ss, value, ','))
-            {
-                values.push_back(value.c_str());                                    // Push back value into values
-            }
+   //         std::string value;                                                      // String to store each individual value into while we parse lines
+			//std::vector<std::string> values;                                        // Vector to hold each value from the row
+			//std::stringstream ss(rows[i]);                                          // Stream the row data into a string stream
+   //         while (std::getline(ss, value, ','))
+   //         {
+   //             values.push_back(value.c_str());                                    // Push back value into values
+   //         }
             // Push row ID to each row
             ImGui::PushID(i);
 			for (int k = 0; k < d_columns_index.size(); k++)                        // Begin looping through the columns to populate data in each one
@@ -621,7 +661,9 @@ void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vec
 				ImGui::TableSetColumnIndex(k);                                      // Set the next columns index up
                 // Push value ID of k to each value
                 ImGui::PushID(k);
-                ImGui::InputText("", &values[k][0], values[k].size() + 1);          // Create box for input lines to apppear in. This displays imported data and allows edits to be made before sending it
+                // TODO: Fix blank row editing probably need to append column name as well as index pos to field
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::InputText("", &values[i][k], ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsUppercase);          // Create box for input lines to apppear in. This displays imported data and allows edits to be made before sending it
                 // Pop value ID of k
                 ImGui::PopID();
 			}
