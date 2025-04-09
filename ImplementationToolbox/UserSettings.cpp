@@ -16,6 +16,7 @@ void UserSettings::saveSettings(const std::string& filename, AppLog& log) const
 		file << "HealthCheck=" << healthCheck << "\n";
 		file << "RecentUpdates=" << recentUpdates << "\n";
 		file << "DebugLog=" << debugLog << "\n";
+		file << "Modules=" << modules << "\n";
 		file.close();
 	}
 	else
