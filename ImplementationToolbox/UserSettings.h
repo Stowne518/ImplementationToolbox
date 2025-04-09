@@ -17,6 +17,7 @@ private:
 	char healthCheck;
 	char recentUpdates;
 	char debugLog;
+	char modules;
 public:
 	int getDarkMode() const { return DarkMode; }
 	void setDarkMode(int mode) { DarkMode = mode; }
@@ -32,6 +33,14 @@ public:
 
 	float getWindowPosY() const { return windowPosY; }
 	void setWindowPosY(float posY) { windowPosY = posY; }
+
+	bool getModules() const
+	{
+		if (modules == 'Y')
+			return true;
+		else
+			return false;
+	}
 
 	// Getters for debug log
 	bool getDebugLog() const
@@ -69,6 +78,7 @@ public:
 	void setHealthCheck(char value) { healthCheck = value; }
 	void setRecentUpdates(char value) {	recentUpdates = value; }
 	void setDebugLog(char value) { debugLog = value; }
+	void setModules(char value) { modules = value; }
 
 	// Save settings to file
 	void saveSettings(const std::string& filename, AppLog&) const;
@@ -83,15 +93,16 @@ public:
 			std::ofstream defaultFile(filename);
 			if (defaultFile.is_open())
 			{
-				defaultFile << "DarkMode=0\n"; // Default to light mode
-				defaultFile << "WindowWidth=1280\n"; // Default width
-				defaultFile << "WindowHeight=720\n"; // Default height
-				defaultFile << "WindowPosX=0\n"; // Default position X
-				defaultFile << "WindowPosY=0\n"; // Default position Y
-				defaultFile << "GettingStarted=Y\n"; // Default getting started setting
-				defaultFile << "HealthCheck=Y\n"; // Default health check setting
-				defaultFile << "RecentUpdates=Y\n"; // Default recent updates setting
-				defaultFile << "DebugLog=N\n"; // Default debug log setting
+				defaultFile << "DarkMode=0\n";			// Default to light mode
+				defaultFile << "WindowWidth=1280\n";	// Default width
+				defaultFile << "WindowHeight=720\n";	// Default height
+				defaultFile << "WindowPosX=0\n";		// Default position X
+				defaultFile << "WindowPosY=0\n";		// Default position Y
+				defaultFile << "GettingStarted=Y\n";	// Default getting started setting
+				defaultFile << "HealthCheck=Y\n";		// Default health check setting
+				defaultFile << "RecentUpdates=Y\n";		// Default recent updates setting
+				defaultFile << "DebugLog=N\n";			// Default debug log setting
+				defaultFile << "Modules=Y\n";				// Default modules setting
 				defaultFile.close();
 			}
 			return;
@@ -136,6 +147,10 @@ public:
 				if (std::getline(file, line))
 				{
 					setDebugLog(line.substr(line.find('=') + 1)[0]);				// Load and set debug log setting
+				}
+				if (std::getline(file, line))
+				{
+					setModules(line.substr(line.find('=') + 1)[0]);					// Load and set module setting
 				}
 			}
 		}
