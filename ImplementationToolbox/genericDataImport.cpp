@@ -25,6 +25,9 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
     static bool confirm_mapping = false;
 	static bool ready_to_import = false;
 
+    static int display_column_rows = 15;
+    static int display_data_rows = 15;
+
 	log.logStateChange("loaded_csv", loaded_csv);
 	log.logStateChange("load_tables", load_tables);
 	log.logStateChange("load_columns", load_columns);
@@ -173,12 +176,16 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
         // Create new window for mapping overview
         ImGui::Begin("Mapping Overview", &mapoverview, ImGuiWindowFlags_AlwaysAutoResize);
         // Display an overview of the mapping
-        ImGui::Text("Mapping Overview:\n(Destination field = Source field)");
+        ImGui::Text("Mapping Overview:");
         if(ImGui::BeginTable("Overview", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg))
         {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableSetupColumn("Destination");
+            ImGui::TableSetupColumn("=");
+            ImGui::TableSetupColumn("Source");
+            ImGui::TableHeadersRow();
             for (int i = 0; i < destination_columns.size(); i++)
-            {
-                
+            {                
                 if (!buffer_columns[i].empty())
                 {
                     ImGui::TableNextRow();
@@ -198,12 +205,26 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
         // End Mapping overview window
         ImGui::End();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Table Settings"))
+    {
+        ImGui::OpenPopup("TableSettings");
+    }
+    if (ImGui::BeginPopup("TableSettings"))
+    {
+        ImGui::Text("Table Settings\nClick outside this box to close it.");
+        ImGui::SetNextItemWidth(100);
+        ImGui::SliderInt("Mapping Table Length", &display_column_rows, 10, 100);
+        ImGui::SetNextItemWidth(100);
+        ImGui::SliderInt("Data Staging Table Length", &display_data_rows, 10, 100);
 
+        ImGui::EndPopup();
+    }
     if (ImGui::CollapsingHeader("Column Mapping", ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (load_columns && !confirm_mapping && loaded_csv)
-        {
-            displayMappingTable(log, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index);
+        {   
+            displayMappingTable(log, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows);
             ImGui::SameLine();
             if (!load_columns && !loaded_csv && confirm_mapping)
             {
@@ -229,7 +250,7 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
         else
         {
             ImGui::BeginDisabled();
-            displayMappingTable(log, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index);
+            displayMappingTable(log, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows);
             ImGui::SameLine();
             if (ImGui::Button("Confirm Mapping", ImVec2(150, 75)))
             {
@@ -292,7 +313,7 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
     // Display newly mapped rows as a table
     if(confirm_mapping)
     {
-        displayDataTable(log, destination_columns, destination_columns_index, data_rows, data_rows_index);
+        displayDataTable(log, destination_columns, destination_columns_index, data_rows, data_rows_index, display_data_rows);
     }
 
 	// Default return
@@ -428,7 +449,7 @@ std::string displayTableNames(Sql& sql)
 	return chosenName;
 }
 
-void displayMappingTable(AppLog& log, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index)
+void displayMappingTable(AppLog& log, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len)
 {
     std::string value;
     std::vector<std::string> values;
@@ -472,10 +493,7 @@ void displayMappingTable(AppLog& log, std::vector<std::string>&s_columns, std::v
 	* We can also expand/contract based on the number of columns imported.
     */
     const int TEXT_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
-    static int display_rows = 15;
-    ImGui::SetNextItemWidth(100);
-    ImGui::SliderInt("Slide to show more rows", &display_rows, 10, 100);
-	ImGui::BeginChild("DestinationColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ TEXT_HEIGHT * display_rows), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
+	ImGui::BeginChild("DestinationColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ TEXT_HEIGHT * table_len), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
     if (ImGui::BeginTable("DestinationMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
     {
         ImGui::TableSetupColumn(" Table Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
@@ -557,7 +575,7 @@ void displayMappingTable(AppLog& log, std::vector<std::string>&s_columns, std::v
 	// End destination column mapping child window
     ImGui::EndChild();
     ImGui::SameLine();
-    ImGui::BeginChild("SourceColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ TEXT_HEIGHT * display_rows), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
+    ImGui::BeginChild("SourceColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ TEXT_HEIGHT * table_len), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
     if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX))
     {
         ImGui::TableSetupColumn(" Source Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
@@ -645,13 +663,10 @@ std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<in
 /// <param name="d_columns_index"> - vector containing index positions of each column that was mapped.</param>
 /// <param name="rows"> - vector containing data that was read in from the CSV. By this point it should be reduced to only contain data from columns we have mapped to.</param>
 /// <param name="rows_index"> - vector containing index positions from the CSV of data columns to track which SQL column it shoudl belong in.</param>
-void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index)
+void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index, int& table_len)
 {
     const int TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
-    static int display_data_rows = 10;
-    ImGui::SetNextItemWidth(100);
-    ImGui::SliderInt("Slide to lengthen table", &display_data_rows, 10, 100);
-    ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * display_data_rows);
+    ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * table_len);
 
     ImGui::SeparatorText("Staging Area");                                           // Create some space between column mapping and staging table
     // Begin table for displaying and editing actual data, as well as showing it was mapped correctly.

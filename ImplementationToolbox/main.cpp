@@ -543,7 +543,7 @@ int main(int, char**)
             health_check_posy = 20,
 
             // Module button window size & pos
-            module_buttons_x = getting_started_x,
+            module_buttons_x = ImGui::GetWindowWidth(),
             module_buttons_y = 430,
             module_buttons_posx = getting_started_posx,
             module_buttons_posy = getting_started_y + getting_started_posy,
@@ -579,9 +579,9 @@ int main(int, char**)
             modulePos = ImVec2(module_window_posx, module_window_posy),
             // Window Size and Position for module buttons
             moduleButtonSize = ImVec2(module_buttons_x, module_buttons_y),
-            moduleButtonPos = ImVec2(module_buttons_posx, module_buttons_posy),
+            moduleButtonPos = ImVec2(module_buttons_posx, module_buttons_posy);
             // Size of module buttons to select from
-            moduleSelectionSize = ImVec2(module_button_size_x, module_button_size_y);
+            //moduleSelectionSize = ImVec2(module_button_size_x, module_button_size_y);
 
 
         static std::string directory_path = "C:\\ImplementationToolbox\\";
@@ -673,46 +673,47 @@ int main(int, char**)
 
         if(show_modules)
         {
+            ImVec2 moduleSelectionSize = ImVec2(ImGui::GetWindowWidth(), module_button_size_y);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, (ImVec2(0, 4.5)));
-            ImGui::Begin("Module Selection", &show_modules, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+            ImGui::Begin("Module Selection", &show_modules);
             
             // Show generic export generator button 
             ImGui::SeparatorText("RMS/JMS");
             if (!show_generic_export_window)
             {
-                if (ImGui::Button(genExprtLabel, moduleSelectionSize))
+                if (ImGui::Button(genExprtLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
                     show_generic_export_window = true;
                 }
             }
             else
             {
-                showDisabledButton(genExprtLabel, moduleSelectionSize);
+                showDisabledButton(genExprtLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
             // Show one button refresh button 
             if (!show_one_button_refresh_window)
             {
-                if (ImGui::Button(oneBttnLabel, moduleSelectionSize))
+                if (ImGui::Button(oneBttnLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
                     show_one_button_refresh_window = true;
                 }
             }
             else
             {
-                showDisabledButton(oneBttnLabel, moduleSelectionSize);
+                showDisabledButton(oneBttnLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
 
             ImGui::SeparatorText("CAD");
             if (!show_servlog_viewer)
             {
-                if (ImGui::Button(servlogLabel, moduleSelectionSize))
+                if (ImGui::Button(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
                     show_servlog_viewer = true;
                 }
             }
             else
             {
-                showDisabledButton(servlogLabel, moduleSelectionSize);
+                showDisabledButton(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
             /*
             * Deprecated modules removed from program after replacing with generic importer
@@ -742,25 +743,25 @@ int main(int, char**)
             // Show sql query builder button 
             if (!show_sql_query_builder_window)
             {
-                if (ImGui::Button(sqlQryLabel, moduleSelectionSize))
+                if (ImGui::Button(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
                     show_sql_query_builder_window = true;
                 }
             }
             else
             {
-                showDisabledButton(sqlQryLabel, moduleSelectionSize);
+                showDisabledButton(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
             if (!show_generic_import_data_window)
             {
-                if (ImGui::Button(genericDataImportLabel, moduleSelectionSize))
+                if (ImGui::Button(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
                     show_generic_import_data_window = true;
                 }
             }
             else
             {
-                showDisabledButton(genericDataImportLabel, moduleSelectionSize);
+                showDisabledButton(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
 
             // End Module Selection window
