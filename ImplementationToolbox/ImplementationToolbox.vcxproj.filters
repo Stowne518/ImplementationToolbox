@@ -97,6 +97,15 @@
     <ClCompile Include="servlogViewer.cpp">
       <Filter>CAD source files</Filter>
     </ClCompile>
+    <ClCompile Include="UserSettings.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="systemFunctions.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui_stdlib.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fieldOrderTable.h">
@@ -191,6 +200,15 @@
     </ClInclude>
     <ClInclude Include="servlogViewer.h">
       <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserSettings.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="AppLog.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\imgui_stdlib.h">
+      <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
