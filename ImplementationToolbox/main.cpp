@@ -210,7 +210,7 @@ int main(int, char**)
     }
 
     // Darken the input text boxes -- MADE CHANGES TO StyleColorsLight(); directly
-    //static ImGuiStyle& style = ImGui::GetStyle();
+    static ImGuiStyle& style = ImGui::GetStyle();
     //style.Colors[ImGuiCol_FrameBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.7f); // Darker gray for input box background
     //style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f); // Slightly darker gray when hovered
     //style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); // Even darker gray when active
@@ -239,9 +239,11 @@ int main(int, char**)
 
     // Try to load an Arial font from windows directory
     if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size));
+    if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size + 2));
     // If we can't find it use the default one
     else (io.Fonts->AddFontDefault());
 
+    ImFont* current_font = ImGui::GetFont();
 
     // Our state
     bool show_demo_window = false;
@@ -409,7 +411,7 @@ int main(int, char**)
                 if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
                 if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
 				if (ImGui::MenuItem("Debug Log", NULL, &show_log));
-                ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();
+                /*ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();*/
                 if (ImGui::MenuItem("Demo Window", NULL, &show_demo_window));
 
                 // End View menu
@@ -431,6 +433,19 @@ int main(int, char**)
             }
             if (ImGui::BeginMenu("Settings"))
             {
+                //if (ImGui::BeginMenu("Fonts"))
+                //{
+                //    ImGuiIO& io = ImGui::GetIO();
+
+                //    for (ImFont* font : io.Fonts->Fonts)
+                //    {
+                //        ImGui::PushID((void*)font);
+                //        if(ImGui::MenuItem(font->GetDebugName(), NULL, &current_font));
+                //        ImGui::PopID();
+                //    }
+                //    // End Font Menu
+                //    ImGui::EndMenu();
+                //}
                 // Open popup for SQL settings
                 if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
                 if(connectionStrings.size() > 0)
@@ -661,7 +676,7 @@ int main(int, char**)
             ImGui::End();
         }
 
-        ImGui::SetNextWindowSize(gettingStartedSize);
+        //ImGui::SetNextWindowSize(gettingStartedSize);
         //ImGui::SetNextWindowPos(gettingStartedPos);
         if (open_getting_started) {
             ImGui::Begin("Getting Started", &open_getting_started, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
@@ -788,87 +803,124 @@ int main(int, char**)
         // End window padding style
         ImGui::PopStyleVar();
 
+        //Start windows if the option is selected
+        if (show_generic_export_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::Begin(genExprtLabel, &show_generic_export_window);
+            showGenericExportWindow(&show_generic_export_window, sql, log);
+            ImGui::End();
+        }
+        if (show_one_button_refresh_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::Begin(oneBttnLabel, &show_one_button_refresh_window);
+            showOneButtonRefreshWindow(&show_one_button_refresh_window, log);
+            ImGui::End();
+        }
+        if (show_servlog_viewer)
+        {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::Begin(servlogLabel, &show_servlog_viewer);
+            servlogViewer(&show_servlog_viewer, sql, log);
+            ImGui::End();
+        }
+        if (show_sql_query_builder_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::Begin(sqlQryLabel, &show_sql_query_builder_window);
+            showSqlQueryBuilderWindow(&show_sql_query_builder_window, log);
+            ImGui::End();
+        }
+        if (show_generic_import_data_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::Begin(genericDataImportLabel, &show_generic_import_data_window);
+            genericDataImport(&show_generic_import_data_window, sql, log, directory_path);
+            ImGui::End();
+        }
+
         // Set modules in designated area with tabs
         //ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
         //ImGui::SetNextWindowSize(moduleSize);
-        ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_generic_import_data_window && !show_servlog_viewer) 
-        {
-            ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
-        }
-        else 
-        {
-            if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) 
-            {
-                if (ImGui::BeginTabItem(genExprtLabel, &show_generic_export_window, ImGuiTabItemFlags_None)) 
-                {
-                    showGenericExportWindow(&show_generic_export_window, sql);
+    //    ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+    //    if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_generic_import_data_window && !show_servlog_viewer) 
+    //    {
+    //        ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
+    //    }
+    //    else 
+    //    {
+    //        if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) 
+    //        {
+    //            if (ImGui::BeginTabItem(genExprtLabel, &show_generic_export_window, ImGuiTabItemFlags_None)) 
+    //            {
+    //                showGenericExportWindow(&show_generic_export_window, sql);
 
-                    // End Generic export generator tab
-                    ImGui::EndTabItem();
-                }
-                // Add tab for one button refresh window
-                if (ImGui::BeginTabItem(oneBttnLabel, &show_one_button_refresh_window, ImGuiTabItemFlags_None)) 
-                {
-                    showOneButtonRefreshWindow(&show_one_button_refresh_window);
+    //                // End Generic export generator tab
+    //                ImGui::EndTabItem();
+    //            }
+    //            // Add tab for one button refresh window
+    //            if (ImGui::BeginTabItem(oneBttnLabel, &show_one_button_refresh_window, ImGuiTabItemFlags_None)) 
+    //            {
+    //                showOneButtonRefreshWindow(&show_one_button_refresh_window);
 
-                    // End Refresh tab
-                    ImGui::EndTabItem();
-                }
-                // Add tab for servlog viewer
-				if (ImGui::BeginTabItem(servlogLabel, &show_servlog_viewer, ImGuiTabItemFlags_None))
-				{
-					servlogViewer(&show_servlog_viewer);
-					// End servlog viewer tab
-					ImGui::EndTabItem();
-				}
-                // Add tab for sql generator
-                if (ImGui::BeginTabItem(sqlQryLabel, &show_sql_query_builder_window, ImGuiTabItemFlags_None)) 
-                {
-                    showSqlQueryBuilderWindow(&show_sql_query_builder_window);
+    //                // End Refresh tab
+    //                ImGui::EndTabItem();
+    //            }
+    //            // Add tab for servlog viewer
+				//if (ImGui::BeginTabItem(servlogLabel, &show_servlog_viewer, ImGuiTabItemFlags_None))
+				//{
+				//	servlogViewer(&show_servlog_viewer);
+				//	// End servlog viewer tab
+				//	ImGui::EndTabItem();
+				//}
+    //            // Add tab for sql generator
+    //            if (ImGui::BeginTabItem(sqlQryLabel, &show_sql_query_builder_window, ImGuiTabItemFlags_None)) 
+    //            {
+    //                showSqlQueryBuilderWindow(&show_sql_query_builder_window);
 
-                    // End sql query builder tab
-                    ImGui::EndTabItem();
-                }
-                // Tab for XML parser module
-                //if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) 
-                //{
-                //    xmlParser(directory_path);
+    //                // End sql query builder tab
+    //                ImGui::EndTabItem();
+    //            }
+    //            // Tab for XML parser module
+    //            //if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) 
+    //            //{
+    //            //    xmlParser(directory_path);
 
-                //    // End XML Parser
-                //    ImGui::EndTabItem();
-                //}
-                // Map Import for CAD   -- DEPRECATED
-                //if (ImGui::BeginTabItem(mapDataImportLabel, &show_map_import_window, ImGuiTabItemFlags_None))
-                //{
-                //    mapImport(sql, directory_path);
+    //            //    // End XML Parser
+    //            //    ImGui::EndTabItem();
+    //            //}
+    //            // Map Import for CAD   -- DEPRECATED
+    //            //if (ImGui::BeginTabItem(mapDataImportLabel, &show_map_import_window, ImGuiTabItemFlags_None))
+    //            //{
+    //            //    mapImport(sql, directory_path);
 
-                //    // End Map Import tab
-                //    ImGui::EndTabItem();
-                //}
-                //// Unit Import for CAD    -- DEPRECATED
-                //if (ImGui::BeginTabItem(unitImportLabel, &show_unit_import_window, ImGuiTabItemFlags_None)) 
-                //{
-                //    unitBuilder(&show_unit_import_window, sql, units_directory_path);
+    //            //    // End Map Import tab
+    //            //    ImGui::EndTabItem();
+    //            //}
+    //            //// Unit Import for CAD    -- DEPRECATED
+    //            //if (ImGui::BeginTabItem(unitImportLabel, &show_unit_import_window, ImGuiTabItemFlags_None)) 
+    //            //{
+    //            //    unitBuilder(&show_unit_import_window, sql, units_directory_path);
 
-                //    // End Unit Import Window
-                //    ImGui::EndTabItem();
-                //}                
-                if (ImGui::BeginTabItem(genericDataImportLabel, &show_generic_import_data_window, ImGuiTabItemFlags_None))
-                {
-					genericDataImport(sql, log, directory_path);
+    //            //    // End Unit Import Window
+    //            //    ImGui::EndTabItem();
+    //            //}                
+    //            if (ImGui::BeginTabItem(genericDataImportLabel, &show_generic_import_data_window, ImGuiTabItemFlags_None))
+    //            {
+				//	genericDataImport(sql, log, directory_path);
 
-					// End Generic Data Import tab
-					ImGui::EndTabItem();
-                }
+				//	// End Generic Data Import tab
+				//	ImGui::EndTabItem();
+    //            }
 
-                // End Modules tab
-                ImGui::EndTabBar();
-            }
-        }
+    //            // End Modules tab
+    //            ImGui::EndTabBar();
+    //        }
+    //    }
 
-        // End modules child window
-        ImGui::End();
+    //    // End modules child window
+    //    ImGui::End();
         
 //<<<<<<< Updated upstream
 //        if (ImGui::BeginMainMenuBar()) 

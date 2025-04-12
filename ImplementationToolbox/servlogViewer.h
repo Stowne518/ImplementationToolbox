@@ -1,2 +1,4 @@
 #pragma once
-void servlogViewer(bool*);
+class Sql;
+class AppLog;
+void servlogViewer(bool*, Sql&, AppLog&);
