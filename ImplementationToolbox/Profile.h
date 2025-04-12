@@ -182,7 +182,6 @@ public:
                     i++;
                 }
             }
-
             if (std::getline(importProfile, line))
                 p->setRmsDb(line.c_str());
             if (std::getline(importProfile, line))
@@ -233,14 +232,6 @@ public:
     // Create profiles.txt if it doesn't exist, then write all profile data to it
     // Append the profile details if it already exists
     void exportProfiles(Profile* p) {
-        // static int orderSize = IM_ARRAYSIZE(order);
-        //std::vector<int> selectedLabels;
-        //for (int i = 0; i < sizeof(order); i++)
-        //{
-        //    // Populate vector with order that fields were selected in
-        //    if(order[i+1] != 0)
-        //        selectedLabels.push_back(getOrder(i));
-        //}
 
         // Open profile.txt
         std::ofstream exportProfile;
