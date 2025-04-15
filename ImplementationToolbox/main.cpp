@@ -477,7 +477,7 @@ int main(int, char**)
                                         {
                                             log.AddLog("[INFO] Successfully connected to: %s\n", sql._GetSource().c_str());
                                             // Set the connection string in the SQL class
-                                            sql._SetConnectionString();
+                                            // sql._SetConnectionString();
                                         }
                                     }
                                     catch (std::exception& e)
@@ -807,7 +807,7 @@ int main(int, char**)
         if (show_generic_export_window)
         {
             ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
-            ImGui::Begin(genExprtLabel, &show_generic_export_window);
+            ImGui::Begin(genExprtLabel, &show_generic_export_window, ImGuiWindowFlags_HorizontalScrollbar);
             showGenericExportWindow(&show_generic_export_window, sql, log);
             ImGui::End();
         }
