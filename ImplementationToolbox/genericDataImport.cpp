@@ -3,6 +3,8 @@
 #include "AppLog.h"
 #include "imgui_stdlib.h"
 #include <iostream>
+#include <algorithm>
+
 
 void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 {
@@ -29,7 +31,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     static bool confirm_data = false;
     static bool cleanup = false;
     static bool data_mapped_check = false;              //  Set to true when a buffer column is mapped to something. Reset to false if they are all blank
-    static bool* allow_nulls;
+    static bool allow_nulls[256] = {};
     static int display_column_rows = 10;
     static int display_data_rows = 10;
 
@@ -157,7 +159,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 	}
     ImGui::EndGroup();
     ImGui::SameLine();
-    if (ImGui::Button("Cancel Mapping", ImVec2(150, 0)))
+    if (ImGui::Button("Cancel Import", ImVec2(150, 0)))
     {
         // Clear all vectors
         source_columns.clear();
@@ -184,6 +186,8 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 
     if (ImGui::BeginPopup("WindowOptions"))
     {
+        ImGui::Text("Display Settings");
+        ImGui::Separator();
         ImGui::SeparatorText("Mapping display style:");
         if (ImGui::RadioButton("Expanded", &button_style, Button_Comp)); ImGui::SameLine(); if (ImGui::RadioButton("Compact", &button_style, Button_Expand));
         if (button_style == Button_Comp) 
@@ -237,6 +241,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 
         if (ImGui::BeginMenuBar())
         {
+            ImGui::Text("Column Mapping");
             if(load_columns && loaded_csv)
             {
                 // Quickly check if any buffer column has a value if we haven't already
@@ -288,10 +293,17 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     if (mapoverview)
     {
         // Create new window for mapping overview
-        (ImGui::BeginChild("Mapping Overview", ImVec2(175, ImGui::GetContentRegionAvail().y - 275), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders /*| ImGuiChildFlags_ResizeX | ImGuiChildFlags_ResizeY*/, ImGuiWindowFlags_HorizontalScrollbar));
+        (ImGui::BeginChild("Mapping Overview", ImVec2(175, ImGui::GetContentRegionAvail().y - 275), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders /*| ImGuiChildFlags_ResizeX | ImGuiChildFlags_ResizeY*/, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar));
         ImVec2 overview_window_size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::GetTextLineHeightWithSpacing() * 2));
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::Text("Mapping Overview");
+
+            // End Mapping overview menu bar
+            ImGui::EndMenuBar();
+        }
         // Display an overview of the mapping
-        ImGui::SeparatorText("Mapping Overview");
+        //ImGui::SeparatorText("Mapping Overview");
         if (ImGui::BeginTable("Overview", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX, overview_window_size))
         {
             ImGui::TableSetupScrollFreeze(0, 1);
@@ -402,6 +414,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         ImGui::BeginChild("Data Staging", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - 275), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {
+            ImGui::Text("Data Staging");
             if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data))
             {
                 insert_window = true;
@@ -435,7 +448,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     // Generate insert queries and store them in vector
     if (confirm_data && insert_rows.size() < data_rows.size())
     {
-        insert_rows = buildInsertQuery(table_name, destination_columns_index, destination_columns, data_rows, data_rows_index, log);
+        insert_rows = buildInsertQuery(table_name, destination_columns_index, destination_columns, data_rows, data_rows_index, allow_nulls, log);
     }
     
     if(insert_window)
@@ -443,6 +456,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         ImGui::BeginChild("Insert Rows", ImVec2(ImGui::GetContentRegionAvail().x, 250), /*ImGuiChildFlags_AlwaysAutoResize |*/ ImGuiChildFlags_ResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_Border, ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {
+            ImGui::Text("Insert Review");
             if (ImGui::MenuItem("Confirm Insert statements"));
             if (ImGui::MenuItem("Reject Insert statements"));
 
@@ -600,7 +614,7 @@ std::string displayTableNames(Sql& sql)
 	return chosenName;
 }
 
-void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool nulls)
+void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls)
 {
     std::string value;
     std::vector<std::string> values;
@@ -650,7 +664,7 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
 
     
 	ImGui::BeginChild("DestinationColumnMapping", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
-    if (ImGui::BeginTable("DestinationMappingTable", 3, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
+    if (ImGui::BeginTable("DestinationMappingTable", 3, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
     {
         ImGui::TableSetupColumn("Null", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Table Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
@@ -661,7 +675,9 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::PushID(i);
-            ImGui::Checkbox("##nulls", &allow_nulls[i]); 
+            ImGui::Checkbox("##nulls", &nulls[i]);
+            ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns[i]);
+            log.logStateChange(("%s", d_columns[i] + " allows nulls").c_str(), nulls[i]);
             // ImGui::AlignTextToFramePadding();
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("  %s", d_columns[i]);
@@ -735,7 +751,7 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("SourceColumnMapping", ImVec2(0,0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
-    if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX))
+    if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX))
     {
         ImGui::TableSetupColumn(" Source Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Sample data", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
@@ -766,7 +782,7 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
     ImGui::EndChild();
 }
 
-std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, AppLog& log)
+std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, bool* nulls, AppLog& log)
 {
 	// TODO: Add multi-threading for large files to prevent UI from freezing and allow each insert to print to log as it's written
     // DONE: Changing logic here to only grab mapped data
@@ -801,7 +817,15 @@ std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<in
                 }
                 for (int i = 0; i < d_columns_index.size(); i++)
                 {
-                    query += "'" + values[i] + "'";
+                    // Convert value to uppercase for comparison
+                    std::string upper_value = values[i];
+                    std::transform(upper_value.begin(), upper_value.end(), upper_value.begin(), ::toupper);
+                    if (upper_value == "NULL")                                  // Handle any NULL values passed with correct SQL syntax. Need to ignore case and catch all nulls
+                        query += "NULL";
+                    else if (nulls[d_columns_index[i]] && values[i] == "")      // If we marked a column as null requried while mapping and it has a blank fill in NULL instead
+                        query += "NULL";
+                    else
+                        query += "'" + values[i] + "'";
                     if (i != d_columns_index.size() - 1)
                         query += ",";
                 }

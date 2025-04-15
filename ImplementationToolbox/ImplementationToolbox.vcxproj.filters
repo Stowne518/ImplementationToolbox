@@ -1,19 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="genericexport_window.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="fieldOrderTable.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Profile.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="readFieldList.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="sqlQueryBuilder.cpp">
@@ -43,9 +31,6 @@
     <ClCompile Include="..\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="oneButtonRefresh_window.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="Sql.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -54,45 +39,6 @@
     </ClCompile>
     <ClCompile Include="genericDataImport.cpp">
       <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Agencies.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="agencyImport.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="AgencyUnit.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="Beat.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="beatImport.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="Beats.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="Group.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="groupImport.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="Groups.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="mapImport.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="Unit.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="unitbuilder.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
-    <ClCompile Include="unitImport.cpp">
-      <Filter>CAD source files</Filter>
     </ClCompile>
     <ClCompile Include="servlogViewer.cpp">
       <Filter>CAD source files</Filter>
@@ -106,23 +52,23 @@
     <ClCompile Include="..\imgui_stdlib.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="genericexport_window.cpp">
+      <Filter>RMS source files</Filter>
+    </ClCompile>
+    <ClCompile Include="oneButtonRefresh_window.cpp">
+      <Filter>RMS source files</Filter>
+    </ClCompile>
+    <ClCompile Include="readFieldList.cpp">
+      <Filter>RMS source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile.cpp">
+      <Filter>RMS source files</Filter>
+    </ClCompile>
+    <ClCompile Include="fieldOrderTable.cpp">
+      <Filter>RMS source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="fieldOrderTable.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="genericexport_window.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="oneButtonRefresh_window.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Profile.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="readFieldList.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="sqlQueryBuilder.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -153,50 +99,8 @@
     <ClInclude Include="popups.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="beatImport.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="genericDataImport.h">
       <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="Units.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="unitImport.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="unitbuilder.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="Unit.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="mapImport.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="Groups.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="groupImport.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="Group.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="Beats.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="Beat.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="AgencyUnit.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="agencyImport.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
-    <ClInclude Include="Agencies.h">
-      <Filter>CAD header files</Filter>
     </ClInclude>
     <ClInclude Include="servlogViewer.h">
       <Filter>CAD header files</Filter>
@@ -209,6 +113,21 @@
     </ClInclude>
     <ClInclude Include="..\imgui_stdlib.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile.h">
+      <Filter>RMS header files</Filter>
+    </ClInclude>
+    <ClInclude Include="readFieldList.h">
+      <Filter>RMS header files</Filter>
+    </ClInclude>
+    <ClInclude Include="genericexport_window.h">
+      <Filter>RMS header files</Filter>
+    </ClInclude>
+    <ClInclude Include="oneButtonRefresh_window.h">
+      <Filter>RMS header files</Filter>
+    </ClInclude>
+    <ClInclude Include="fieldOrderTable.h">
+      <Filter>RMS header files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -235,6 +154,12 @@
     </Filter>
     <Filter Include="CAD header files">
       <UniqueIdentifier>{04957380-52d5-4211-b4a5-9e19422fef45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RMS header files">
+      <UniqueIdentifier>{66ea465c-b3cf-45ea-b71f-461e7668c4e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RMS source files">
+      <UniqueIdentifier>{64879471-7945-4ec0-b97e-9912bb5f019d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
