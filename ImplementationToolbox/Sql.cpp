@@ -73,18 +73,29 @@ void Sql::DisplaySqlConfigWindow(bool* p_open, std::string dir, AppLog& log) {
             ImGui::EndTable();
         }
 
+        /* 
+        Found bug where using the new quick connect feature to connect and then later coming back and opening SQL connection screen would cause crashing
+        This was due to us updating values with these buffers as soon as the screen is open, wasn't an issue when we didn't have that option, but it was blanking out
+        the db name and then in generic import it would crash trying to use the current db name and finding it blank after opening connection screen.
+        Moved these inside of test connection so it wouldn't break just from opening that.*/
+
         // Set all obj variables to buffer values
-        _SetSource(std::string(serverNameBuffer));
+        /*_SetSource(std::string(serverNameBuffer));
         _SetDatabase(std::string(databaseNameBuffer));
         _SetUsername(std::string(usernameBuffer));
-        _SetPassword(std::string(passwordBuffer));
+        _SetPassword(std::string(passwordBuffer));*/
 
         // Check that field have been filled out
         if(!checkrequiredInfo)
-            checkrequiredInfo = requiredInfo(_GetSource(), _GetDatabase(), _GetUsername(), _GetPassword());
+            checkrequiredInfo = requiredInfo(serverNameBuffer, databaseNameBuffer, usernameBuffer, passwordBuffer);
 
         if (!_GetConnected() && checkrequiredInfo || changed) {
             if (ImGui::Button("Test Connection", ImVec2(120, 60))) {
+                // Set all obj variables to buffer values
+                _SetSource(std::string(serverNameBuffer));
+                _SetDatabase(std::string(databaseNameBuffer));
+                _SetUsername(std::string(usernameBuffer));
+                _SetPassword(std::string(passwordBuffer));
 				log.AddLog("[INFO] Attempting to connect to SQL Server: %s\n", _GetSource().c_str());
                 _SetConnected(SqlConnectionHandler::sqlConnectionHandler(_GetSource(), _GetDatabase(), _GetUsername(), _GetPassword()));
                 if(_GetConnected())
