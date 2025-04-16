@@ -161,24 +161,26 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     ImGui::SameLine();
     if (ImGui::Button("Cancel Import", ImVec2(150, 0)))
     {
-        // Clear all vectors
-        source_columns.clear();
-        destination_columns.clear();
-        buffer_columns.clear();
-        table_name.clear();
-        data_rows.clear();
-        insert_rows.clear();
-		source_columns_index.clear();
-		destination_columns_index.clear();
-		data_rows_index.clear();
-		buffer_columns_index.clear();
-		// Reset all flags
-        loaded_csv = false;
-        load_tables = false;
-        load_columns = false;
-        confirm_mapping = false;
-        filepath.clear();
-    }
+        clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls, confirm_data);
+  //      // Clear all vectors
+  //      source_columns.clear();
+  //      destination_columns.clear();
+  //      buffer_columns.clear();
+  //      table_name.clear();
+  //      data_rows.clear();
+  //      insert_rows.clear();
+		//source_columns_index.clear();
+		//destination_columns_index.clear();
+		//data_rows_index.clear();
+		//buffer_columns_index.clear();
+		//// Reset all flags
+  //      loaded_csv = false;
+  //      load_tables = false;
+  //      load_columns = false;
+  //      confirm_mapping = false;
+  //      confirm_data = false;
+  //      filepath.clear();
+        }
     if(ImGui::Button("Display"))
     {
         ImGui::OpenPopup("WindowOptions");
@@ -241,7 +243,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 
         if (ImGui::BeginMenuBar())
         {
-            ImGui::Text("Column Mapping");
+            ImGui::Text("< Column Mapping >");
             if(load_columns && loaded_csv)
             {
                 // Quickly check if any buffer column has a value if we haven't already
@@ -264,7 +266,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             }
             if (ImGui::MenuItem("Cancel Mapping", NULL, false, (loaded_csv && load_columns)))
             {
-                clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls);
+                clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls, confirm_data);
             }
 
             // End column mapping menu bar
@@ -297,7 +299,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         ImVec2 overview_window_size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::GetTextLineHeightWithSpacing() * 2));
         if (ImGui::BeginMenuBar())
         {
-            ImGui::Text("Mapping Overview");
+            ImGui::Text("< Mapping Overview >");
 
             // End Mapping overview menu bar
             ImGui::EndMenuBar();
@@ -414,7 +416,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         ImGui::BeginChild("Data Staging", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - 275), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {
-            ImGui::Text("Data Staging");
+            ImGui::Text("< Data Staging >");
             if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data))
             {
                 insert_window = true;
@@ -456,7 +458,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         ImGui::BeginChild("Insert Rows", ImVec2(ImGui::GetContentRegionAvail().x, 250), /*ImGuiChildFlags_AlwaysAutoResize |*/ ImGuiChildFlags_ResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_Border, ImGuiWindowFlags_MenuBar);
         if (ImGui::BeginMenuBar())
         {
-            ImGui::Text("Insert Review");
+            ImGui::Text("< Insert Review >");
             if (ImGui::MenuItem("Confirm Insert statements"));
             if (ImGui::MenuItem("Reject Insert statements"));
 
@@ -622,12 +624,20 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
     static bool copied = false;
     ImVec2 button_style = ds.getButtonStyle();
 
+    // Fix for issue #14: Clear out buffer if clear button has been clicked and we clear out the source columns from the CSV
+    if (s_columns.size() == 0)
+    {
+        s_columns_buf.clear();
+        copied = false;
+    }
+    // Located issue causing reset to not display any source columns
+    // Can't clear it out each frame due to display issues keeping the same value there always
     if(!copied && s_columns.size() > 0)
     {
         s_columns_buf = s_columns;
         copied = true;
     }
-	// Populate vector with first row of data for preview
+    // Populate vector with first row of data for preview
     for (int i = 0; i < rows.size(); i++)
     {
         std::stringstream ss(rows[i]);
@@ -776,7 +786,7 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
         
 		// End source column mapping table
         ImGui::EndTable();
-    }
+    }     
     
     // End Source column mapping
     ImGui::EndChild();
@@ -944,7 +954,7 @@ bool insertMappedData(Sql& sql, std::string query)
 	return success;
 }
 
-void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::string>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls)
+void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::string>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls, bool& confirm_data)
 {
     // Clear null flags
     for (int i = 0; i < destination_columns.size(); i++)
@@ -968,6 +978,7 @@ void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::v
     load_tables = false;
     load_columns = false;
     confirm_mapping = false;
+    confirm_data = false;
     filepath.clear();
 
     // Log the clearing action
