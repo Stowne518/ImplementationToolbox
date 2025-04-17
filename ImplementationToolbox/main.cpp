@@ -599,6 +599,9 @@ int main(int, char**)
             // Size of module buttons to select from
             //moduleSelectionSize = ImVec2(module_button_size_x, module_button_size_y);
 
+        // Window constraint min/max for module windows
+        const ImVec2 window_min = ImVec2(600, 400);
+        const ImVec2 window_max = ImVec2(1920, 1080);
 
         static std::string directory_path = "C:\\ImplementationToolbox\\";
         static std::string units_directory_path = directory_path + "Units\\";
@@ -615,7 +618,6 @@ int main(int, char**)
 
         // End orange color
         ImGui::PopStyleColor();
-
         
         // Open the SQL configuration window if the menu item is selected
         if (show_sql_conn_window)
@@ -666,6 +668,7 @@ int main(int, char**)
                 }
                 else {
                     DisplayColoredText("\tSQL Connection Succeeded!", true);
+                    ImGui::SetItemTooltip("Connection info:\nServer: %s\nDatabase: %s\nUsername: %s", sql._GetSource(), sql._GetDatabase(), sql._GetUsername());
                 }
 
                 // End health check table
@@ -803,39 +806,40 @@ int main(int, char**)
 
         // End window padding style
         ImGui::PopStyleVar();
+        
 
         //Start windows if the option is selected
         if (show_generic_export_window)
         {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(genExprtLabel, &show_generic_export_window, ImGuiWindowFlags_HorizontalScrollbar);
             showGenericExportWindow(&show_generic_export_window, sql, log);
             ImGui::End();
         }
         if (show_one_button_refresh_window)
         {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(oneBttnLabel, &show_one_button_refresh_window);
             showOneButtonRefreshWindow(&show_one_button_refresh_window, log);
             ImGui::End();
         }
         if (show_servlog_viewer)
         {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(servlogLabel, &show_servlog_viewer);
             servlogViewer(&show_servlog_viewer, sql, log);
             ImGui::End();
         }
         if (show_sql_query_builder_window)
         {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(sqlQryLabel, &show_sql_query_builder_window);
             showSqlQueryBuilderWindow(&show_sql_query_builder_window, log);
             ImGui::End();
         }
         if (show_generic_import_data_window)
         {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(1920, 1080));
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(genericDataImportLabel, &show_generic_import_data_window);
             genericDataImport(&show_generic_import_data_window, sql, log, directory_path);
             ImGui::End();
@@ -921,77 +925,7 @@ int main(int, char**)
     //    }
 
     //    // End modules child window
-    //    ImGui::End();
-        
-//<<<<<<< Updated upstream
-//        if (ImGui::BeginMainMenuBar()) 
-//        {
-//            if (ImGui::BeginMenu("File")) 
-//            {
-//                if (ImGui::MenuItem("Close Application")) 
-//                {
-//                    return 0;
-//                }
-//                // End File menu
-//                ImGui::EndMenu();
-//            }
-//            if (ImGui::BeginMenu("View")) 
-//            {
-//                if (ImGui::MenuItem("Getting Started",NULL, &open_getting_started));
-//                if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
-//                if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
-//                ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();
-//                if (ImGui::MenuItem("Demo Window", NULL, &show_demo_window));
-//
-//                // End View menu
-//                ImGui::EndMenu();
-//            }
-//            if (ImGui::BeginMenu("Settings")) 
-//            {
-//                // Open popup for SQL settings
-//                if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
-//
-//                // End settings menu
-//                ImGui::EndMenu();
-//            }
-//            if (show_generic_export_window) 
-//            {
-//                if (ImGui::BeginMenu("Generic Export Generator Options")) 
-//                {
-//                    // Center window when it opens
-//                    ImVec2 screen_center = ImGui::GetMainViewport()->GetCenter();
-//                    ImGui::SetNextWindowPos(screen_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-//                    if (ImGui::MenuItem("Information", NULL, &gen_export_info));
-//                    if (ImGui::MenuItem("Help"));
-//
-//                    // End Gen Exprt Gen menu options
-//                    ImGui::EndMenu();
-//                }                
-//            }
-//            if (isDarkMode)
-//            {
-//                if (ImGui::Button("Light Mode"))
-//                {
-//                    ImGui::StyleColorsLight();
-//                    isDarkMode = false;
-//                }
-//            }
-//            else
-//            {
-//                if (ImGui::Button("Dark Mode"))
-//                {
-//                    ImGui::StyleColorsDark();
-//                    isDarkMode = true;
-//                }
-//            }
-//            // saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
-//            ImGui::EndMainMenuBar();
-//        }
-//=======
-//        
-//>>>>>>> Stashed changes
-
-        
+    //    ImGui::End();        
 
         if (gen_export_info) { genExportInfoModPop(&gen_export_info); }
 
