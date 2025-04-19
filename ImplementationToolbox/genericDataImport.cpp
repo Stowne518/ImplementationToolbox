@@ -4,6 +4,8 @@
 #include "imgui_stdlib.h"
 #include <iostream>
 #include <algorithm>
+#include <atomic>
+#include <thread>
 
 
 void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
@@ -19,6 +21,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     static std::vector<std::string> data_rows;
     static std::vector<int> data_rows_index;
 	static std::vector<std::string> insert_rows;
+    static std::vector<std::vector<std::string>>data_parsed_final;      // Store data broken apart into individual strings
 	static std::string table_name;
 	ImGui::Text("Select a file to import: "); ImGui::SameLine();
 	std::string filepath = displayDataFiles(dir + "DataImport\\");
@@ -31,7 +34,8 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     static bool confirm_data = false;
     static bool cleanup = false;
     static bool data_mapped_check = false;              //  Set to true when a buffer column is mapped to something. Reset to false if they are all blank
-    static bool allow_nulls[256] = {};
+    static bool allow_nulls[1000] = {};
+    static bool restrict_duplicates[1000] = {};
     static int display_column_rows = 10;
     static int display_data_rows = 10;
 
@@ -274,7 +278,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         }
         if (load_columns && !confirm_mapping && loaded_csv)
         {
-            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls);
+            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
             if (confirm_mapping)
             {
                 data_window = true;
@@ -283,7 +287,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         else
         {
             ImGui::BeginDisabled();
-            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls);
+            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
             ImGui::EndDisabled();
         }
         // End Column Mapping window
@@ -384,12 +388,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             }
             for (int j = 0; j < destination_columns_index.size(); j++)                  // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
             {
-                // If the last position is a comma it means we ended with an empty string
-                /*if (j == destination_columns_index.size() - 1 && data_rows[i].end()[0] == ',')
-                {
-                    data_tmp.push_back("");
-                }*/
-                // If we get an empty cell we just push back an empty string
+                // If we get an empty cell we push back an empty string
                 if (values[data_rows_index[j]] == "")
                 {
                     data_tmp.push_back("");
@@ -399,6 +398,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                     data_tmp.push_back(values[data_rows_index[j]]);
                 }
             }
+            data_parsed_final.push_back(data_tmp);                                   // Push vector of parsed out strings into data_parsed_final to use each data piece of only selected data
             data_rows[i] = "";                                                          // Clear out the row in the original data_row vector
             for (int k = 0; k < data_tmp.size(); k++)                                   // Loop over newly constructed row of data and concantate it into a single string to push back to data_rows
             {
@@ -416,9 +416,18 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         if (ImGui::BeginMenuBar())
         {
             ImGui::Text("< Data Staging >");
-            if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data))
+            if(confirm_mapping)
             {
-                insert_window = true;
+                if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data))
+                {
+                    insert_window = true;
+                }
+            }
+            else
+            {
+                ImGui::BeginDisabled();
+                ImGui::MenuItem("Confirm Data", NULL, &confirm_data);
+                ImGui::EndDisabled();
             }
 
             // End data staging menu bar
@@ -445,69 +454,152 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         // End Staging area window
         ImGui::EndChild();
     }
-
+    
+    static bool dup_check = false;
     // Generate insert queries and store them in vector
-    if (confirm_data && insert_rows.size() < data_rows.size())
+    if (!dup_check && confirm_data && insert_rows.size() < data_rows.size())
     {
         insert_rows = buildInsertQuery(table_name, destination_columns_index, destination_columns, data_rows, data_rows_index, allow_nulls, log);
     }
     
+    // Display insert queries that are generated in a new window. Display queries removed as duplicates afterward.
     if(insert_window)
     {
+        // Begin child window for inserts that the user can review before pressing the button to run all inserts, as well as choose settings for the inserts
         ImGui::BeginChild("Insert Rows", ImVec2(ImGui::GetContentRegionAvail().x, 250), /*ImGuiChildFlags_AlwaysAutoResize |*/ ImGuiChildFlags_ResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_Border, ImGuiWindowFlags_MenuBar);
-        if (ImGui::BeginMenuBar())
-        {
-            ImGui::Text("< Insert Review >");
-            if (ImGui::MenuItem("Confirm Insert statements"));
-            if (ImGui::MenuItem("Reject Insert statements"));
-
-            // End insert menu bar
-            ImGui::EndMenuBar();
-        }
         static std::vector<std::string> query_results;
+        static std::vector<std::string> dup_rows;
         static std::vector<bool> inserted;
+        // Populate vector with bools for tracking when they are inserted into SQL or not
         while (inserted.size() < insert_rows.size())
         {
             inserted.push_back(false);
         }
-        if (insert_rows.size() >= 1)
+        if (ImGui::BeginMenuBar())
         {
-            // Begin child window for inserts that the user can review before pressing the button to run all inserts, as well as choose settings for the inserts
-            ImGui::Text("Review insert statements generated by tool before running insert into SQL");
-            for (int i = 0; i < insert_rows.size(); i++)
+            ImGui::Text("< Insert Review >");
+            if(confirm_data)
             {
-                ImGui::PushID(i);
-                ImGui::Text("#%i: %s", i, insert_rows[i].c_str()); ImGui::SameLine();
-                // Create button to allow individual lines to be submittedd to SQL after it's generated
-                if(!inserted[i])
+                if(!dup_check)
                 {
-                    if (ImGui::Button("SQL"))
+                    // Loop through each row to insert data
+                    for (int i = 0; i < inserted.size(); i++)
                     {
-                        try
+                        int duplicate_count = 0;
+                        // Loop over each column to check if we need to be concerned with duplicates
+                        for (int j = 0; j < destination_columns_index.size(); j++)
                         {
-                            query_results.push_back("Insert Successful for insert #" + std::to_string(i));
-                            inserted[i] = true;
-                            /*if (insertMappedData(sql, insert_rows[i]))
+                            // Check for duplicate restricted columns
+                            if (restrict_duplicates[destination_columns_index[j]])
                             {
-                                query_results.push_back("Insert Successful for insert #" + std::to_string(i));
-                                inserted[i] = true;
-                            }*/
-                        }
-                        catch (std::exception& e)
-                        {
-                            query_results.push_back(e.what());
+                                if (duplicate_count = sql.returnRecordCount(table_name, destination_columns[destination_columns_index[j]], data_parsed_final[i][j]) > 0)
+                                {
+                                    log.AddLog("[WARN] Duplicate value detected when inserting on column: '%s', which was marked to restrict duplicates. No data inserted.\n", destination_columns[destination_columns_index[j]]);
+                                    // Add row to new vector for rows that contain illegal duplicate data
+                                    dup_rows.push_back(insert_rows[i]);
+                                    // Set insert row to blank for deleting later
+                                    insert_rows[i] = "";
+                                    // Break loop since we've already found a duplicate in a column marked to restrict duplicates and go to next row
+                                    break;
+                                }
+                            }
                         }
                     }
+                    // Delete rows that are blank from vector
+                    for (int i = insert_rows.size() - 1; i >= 0; i--)
+                    {
+                        if (insert_rows[i] == "")
+                            insert_rows.erase(insert_rows.begin() + i);
+                    }
+                    // Mark that we've checked for duplicates
+                    dup_check = true;
                 }
-                else
+                if (ImGui::MenuItem("Insert all data"))
                 {
-                    ImGui::BeginDisabled();
-                    ImGui::Button("SQL");
-                    ImGui::SetItemTooltip("Inserted successfully!");
-                    ImGui::EndDisabled();
-                }
+                    try
+                    {
+                        for (int i = 0; i < insert_rows.size(); i++)
+                        {
+                            if(!inserted[i])
+                            {
+                                // Start new threads for each insert statement to help with performance
+                                std::thread(insertMappedData, sql, insert_rows[i]).detach();
+                                log.AddLog("[INFO] Successfully inserted data into SQL!");
+                                inserted[i] = true;
+                                query_results.push_back("Insert successful for row: " + std::to_string(i));
+                            }
+                            else
+                            {
+                                query_results.push_back("Row #" + std::to_string(i) + " already inserted into SQL!");
+                                log.AddLog("[WARN] Row %i was already inserted into SQL\n", i);
 
-                ImGui::PopID();
+                            }
+                        }
+                    }
+                    catch (std::exception& e)
+                    {
+                        log.AddLog("[ERROR] Could not insert SQL statement: %s", e.what());
+                    }
+
+                }
+            }
+            else
+            {
+                ImGui::BeginDisabled();
+                ImGui::MenuItem("Insert all data");
+                ImGui::EndDisabled();
+            }
+
+            // End insert menu bar
+            ImGui::EndMenuBar();
+        }
+        if(confirm_data)
+        {
+            if (insert_rows.size() >= 1)
+            {
+                ImGui::Text("Review insert statements generated by tool before running insert into SQL");
+                for (int i = 0; i < insert_rows.size(); i++)
+                {
+                    ImGui::PushID(i);
+                    ImGui::Text("#%i: %s", i, insert_rows[i].c_str()); ImGui::SameLine();
+                    // Create button to allow individual lines to be submittedd to SQL after it's generated
+                    if (!inserted[i])
+                    {
+                        if (ImGui::Button("SQL"))
+                        {
+                            try
+                            {
+                                if (insertMappedData(sql, insert_rows[i]))
+                                {
+                                    query_results.push_back("Insert Successful for insert #" + std::to_string(i));
+                                    inserted[i] = true;
+                                }
+                            }
+                            catch (std::exception& e)
+                            {
+                                query_results.push_back(e.what());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ImGui::BeginDisabled();
+                        ImGui::Button("SQL");
+                        ImGui::SetItemTooltip("Inserted successfully!");
+                        ImGui::EndDisabled();
+                    }
+                    // Pop row ID value
+                    ImGui::PopID();
+                }
+            }
+            else
+            {
+                ImGui::Text("No valid data for entry! Check duplicate restrictions and try again.");
+            }
+            ImGui::Text("Data that was found to be duplicated and removed from insert list:");
+            for (int i = 0; i < dup_rows.size(); i++)
+            {
+                ImGui::Text(dup_rows[i].c_str());
             }
             for (int i = 0; i < query_results.size(); i++)
             {
@@ -629,7 +721,7 @@ std::string displayTableNames(Sql& sql)
 		tableNameCStr.push_back(name.c_str());
 	}
 
-	// Display the Combo box if we find a profile has been created otherwise we show text instead
+	// Display the Combo box if we find sql tables otherwise we show text instead
 	static int currentItem = 0;
 	if (!tableNameCStr.empty() && ImGui::BeginCombo("##Select table", tableNameCStr[currentItem])) {
         ImGui::SetNextItemWidth(100);
@@ -656,7 +748,7 @@ std::string displayTableNames(Sql& sql)
 	return chosenName;
 }
 
-void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls)
+void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls, bool* duplicate)
 {
     std::string value;
     std::vector<std::string> values;
@@ -670,8 +762,7 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
         s_columns_buf.clear();
         copied = false;
     }
-    // Located issue causing reset to not display any source columns
-    // Can't clear it out each frame due to display issues keeping the same value there always
+    // Copy current source columns to source column buffer
     if(!copied && s_columns.size() > 0)
     {
         s_columns_buf = s_columns;
@@ -714,9 +805,10 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
 
     
 	ImGui::BeginChild("DestinationColumnMapping", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
-    if (ImGui::BeginTable("DestinationMappingTable", 3, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
+    if (ImGui::BeginTable("DestinationMappingTable", 4, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
     {
         ImGui::TableSetupColumn("Null", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
+        ImGui::TableSetupColumn("Dup", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Table Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Mapped Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableHeadersRow();
@@ -728,10 +820,13 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
             ImGui::Checkbox("##nulls", &nulls[i]);
             ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns[i]);
             log.logStateChange(("%s", d_columns[i] + " allows nulls").c_str(), nulls[i]);
-            // ImGui::AlignTextToFramePadding();
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("  %s", d_columns[i]);
+            ImGui::Checkbox("##Dups", &duplicate[i]);
+            ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", d_columns[i]);
+            log.logStateChange(("%s", d_columns[i] + " restricts duplicates on insert.").c_str(), duplicate[i]);
             ImGui::TableSetColumnIndex(2);
+            ImGui::Text("  %s", d_columns[i]);
+            ImGui::TableSetColumnIndex(3);
             ImGui::Button(b_columns[i].c_str(), button_style);
             ImGui::PopID();
             if (ImGui::BeginDragDropTarget())
@@ -908,7 +1003,6 @@ void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vec
     const int TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
     ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * table_len);
 
-    ImGui::SeparatorText("Staging Area");                                           // Create some space between column mapping and staging table
     // Begin table for displaying and editing actual data, as well as showing it was mapped correctly.
 	// DONE fix table display for large imports, fix display for mapping overview to not be in the way(maybe make it it's own window?)
     if (ImGui::BeginTable("DataStaging", d_columns_index.size(), ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV, outer_size))
