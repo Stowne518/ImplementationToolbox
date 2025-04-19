@@ -68,7 +68,7 @@ std::string displayDataFiles(std::string dir);
 
 std::string displayTableNames(Sql& sql);
 
-void displayMappingTable(AppLog&, DisplaySettings& ds, std::vector<std::string>& s_columns, std::vector<std::string>& d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_columns_index, std::vector<int>&, std::vector<int>&, int&, bool* nulls);
+void displayMappingTable(AppLog&, DisplaySettings& ds, std::vector<std::string>& s_columns, std::vector<std::string>& d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_columns_index, std::vector<int>&, std::vector<int>&, int&, bool* nulls, bool* duplicates);
 
 std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, bool* nulls, AppLog& log);
 
