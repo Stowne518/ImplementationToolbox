@@ -149,10 +149,10 @@ int main(int, char**)
     static bool show_modules = usrsettings.getModules();
 
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.6.4";
-    const char* currVersion = "Implementation Toolbox v0.6.4";
-    const std::string version_number = "v0.6.4";
-    const char* lastUpdate = "4/2/25";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.5";
+    const char* currVersion = "Implementation Toolbox v0.6.5";
+    const std::string version_number = "v0.6.5";
+    const char* lastUpdate = "4/21/25";
 
     // Button labels
     static char genExprtLabel[] = "Generic Export Generator";
