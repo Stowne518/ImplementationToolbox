@@ -17,6 +17,7 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
+#include "AppLog.h"
 #if !defined(_MSC_VER) || _MSC_VER >= 1800
 #include <inttypes.h>       // PRId64/PRIu64, not avail in some MinGW headers.
 #endif
@@ -105,7 +106,7 @@
 Code to display generic export generator and options
 Use this to get around application and perform all functions
 */
-void showSqlQueryBuilderWindow(bool* p_open) {
+void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
     static bool no_titlebar = false;
     static bool no_scrollbar = false;
     static bool no_menu = false;

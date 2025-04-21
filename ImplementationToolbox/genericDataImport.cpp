@@ -1,10 +1,17 @@
 #include "genericDataImport.h"
 #include "Sql.h"
 #include "AppLog.h"
+#include "imgui_stdlib.h"
 #include <iostream>
+#include <algorithm>
+#include <atomic>
+#include <thread>
 
-void genericDataImport(Sql sql, AppLog& log, std::string dir)
+
+void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 {
+
+    static DisplaySettings display_settings;                // Init struct for display settings to maintain user settings
 	static std::vector<std::string> source_columns;
     static std::vector<int> source_columns_index;
 	static std::vector<std::string> destination_columns;
@@ -14,6 +21,7 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
     static std::vector<std::string> data_rows;
     static std::vector<int> data_rows_index;
 	static std::vector<std::string> insert_rows;
+    static std::vector<std::vector<std::string>>data_parsed_final;      // Store data broken apart into individual strings
 	static std::string table_name;
 	ImGui::Text("Select a file to import: "); ImGui::SameLine();
 	std::string filepath = displayDataFiles(dir + "DataImport\\");
@@ -23,6 +31,25 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
     static bool load_columns = false;
     static bool confirm_mapping = false;
 	static bool ready_to_import = false;
+    static bool confirm_data = false;
+    static bool cleanup = false;
+    static bool data_mapped_check = false;              //  Set to true when a buffer column is mapped to something. Reset to false if they are all blank
+    static bool allow_nulls[1000] = {};
+    static bool restrict_duplicates[1000] = {};
+    static int display_column_rows = 10;
+    static int display_data_rows = 10;
+
+    static int button_style = 0;
+    static bool column_window = display_settings.getColumnWindow();
+    static bool data_window = display_settings.getDataWindow();
+    static bool insert_window = display_settings.getInsertWindow();
+    static bool mapoverview = display_settings.getMappingOverview();
+
+    enum ButtonStyle
+    {
+        Button_Comp,
+        Button_Expand
+    };
 
 	log.logStateChange("loaded_csv", loaded_csv);
 	log.logStateChange("load_tables", load_tables);
@@ -54,7 +81,6 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
                 for (int i = 0; i < source_columns.size(); i++)
                 {
                     log.AddLog("[INFO] CSV Column Successfully loaded: %s\n", source_columns[i]);
-                    buffer_columns.push_back("");
                 }
                 loaded_csv = true;
 			}
@@ -111,20 +137,13 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
             ImGui::SetNextItemWidth(175);
             table_name = displayTableNames(sql);
         }
-        if (load_columns)
+        if (load_columns || table_name.empty())
         {
             ImGui::SameLine();
             ImGui::BeginDisabled();
             ImGui::Button("Load Columns");
-            ImGui::SetItemTooltip("Columns loaded!");
-            ImGui::EndDisabled();
-        }
-        else if (table_name.empty())
-        {
-            ImGui::SameLine();
-            ImGui::BeginDisabled();
-            ImGui::Button("Load Columns");
-            ImGui::SetItemTooltip("Select a table to proceed.");
+            if (load_columns) ImGui::SetItemTooltip("Columns loaded!");
+            else ImGui::SetItemTooltip("Select a table to load columns.");
             ImGui::EndDisabled();
         }
         else
@@ -144,66 +163,453 @@ void genericDataImport(Sql sql, AppLog& log, std::string dir)
 	}
     ImGui::EndGroup();
     ImGui::SameLine();
-    if (ImGui::Button("Cancel Mapping", ImVec2(150, 0)))
+    if (ImGui::Button("Cancel Import", ImVec2(150, 0)))
     {
-        // Clear all vectors
-        source_columns.clear();
-        destination_columns.clear();
-        buffer_columns.clear();
-        table_name.clear();
-        data_rows.clear();
-        insert_rows.clear();
-		source_columns_index.clear();
-		destination_columns_index.clear();
-		data_rows_index.clear();
-		buffer_columns_index.clear();
-		// Reset all flags
-        loaded_csv = false;
-        load_tables = false;
-        load_columns = false;
-        confirm_mapping = false;
-    }
-    if (ImGui::CollapsingHeader("Column Mapping", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        if (load_columns && !confirm_mapping && loaded_csv)
-        {
-            displayMappingTable(source_columns, destination_columns, buffer_columns, data_rows, data_rows_index, source_columns_index, destination_columns_index);
-            ImGui::SameLine();
-            if (ImGui::Button("Confirm Mapping", ImVec2(150, 75)))
-            {
-                // Confirm mapping and import data
-                confirm_mapping = true;
-            }
-            
+        clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls, confirm_data);
+  //      // Clear all vectors
+  //      source_columns.clear();
+  //      destination_columns.clear();
+  //      buffer_columns.clear();
+  //      table_name.clear();
+  //      data_rows.clear();
+  //      insert_rows.clear();
+		//source_columns_index.clear();
+		//destination_columns_index.clear();
+		//data_rows_index.clear();
+		//buffer_columns_index.clear();
+		//// Reset all flags
+  //      loaded_csv = false;
+  //      load_tables = false;
+  //      load_columns = false;
+  //      confirm_mapping = false;
+  //      confirm_data = false;
+  //      filepath.clear();
         }
-        if (confirm_mapping && insert_rows.size() == 0)
+    if(ImGui::Button("Display"))
+    {
+        ImGui::OpenPopup("WindowOptions");
+    }
+
+    if (ImGui::BeginPopup("WindowOptions"))
+    {
+        ImGui::Text("Display Settings");
+        ImGui::Separator();
+        ImGui::SeparatorText("Mapping display style:");
+        if (ImGui::RadioButton("Expanded", &button_style, Button_Comp)); ImGui::SameLine(); if (ImGui::RadioButton("Compact", &button_style, Button_Expand));
+        if (button_style == Button_Comp) 
+        { 
+            display_settings.setButtonStyle(false); 
+        }
+        else 
+        { 
+            display_settings.setButtonStyle(true); 
+        }
+        ImGui::SeparatorText("Windows");
+        if (ImGui::Checkbox("Display Column Mapping", &column_window));
+        if (ImGui::Checkbox("Display mapping overview", &mapoverview));
+        if (ImGui::Checkbox("Display Data Staging", &data_window));
+        if (ImGui::Checkbox("Display Insert Window", &insert_window));
+
+        display_settings.setColumnWindow(column_window);
+        display_settings.setDataWindow(data_window);
+        display_settings.setInsertWindow(insert_window);
+        display_settings.setMappingOverview(mapoverview);
+        log.logStateChange("mapoverview", mapoverview);
+        log.logStateChange("column_window", &column_window);
+        log.logStateChange("data_window", &data_window);
+        log.logStateChange("insert_window", &insert_window);
+
+        // End windowoptions popup
+        ImGui::EndPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Table Settings"))
+    {
+        ImGui::OpenPopup("TableSettings");
+    }
+    if (ImGui::BeginPopup("TableSettings"))
+    {
+        ImGui::Text("Table Settings");
+        ImGui::Separator();
+        ImGui::SetNextItemWidth(100);
+        ImGui::SliderInt("Mapping Table Length", &display_column_rows, 10, 100);
+        ImGui::SetItemTooltip("This slider adjusts the maximum length of the column mapping source and destination tables.\nThis allows you to show or hide more rows of the mapping table.");
+        ImGui::SetNextItemWidth(100);
+        ImGui::SliderInt("Data Staging Table Length", &display_data_rows, 10, 100);
+        ImGui::SetItemTooltip("This slider adjusts the maximum length of the data mapping table.\nThis allows you to show or hide more rows of the data table.");
+        // End Table settings popup
+        ImGui::EndPopup();
+    }
+    if (column_window)
+    {
+        /*ImGui::SetNextWindowSizeConstraints(ImVec2(410, 150), ImVec2(1920, 1080));*/
+        ImGui::BeginChild("Column Mapping", ImVec2(500.0f, ImGui::GetContentRegionAvail().y - 275), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
+
+        if (ImGui::BeginMenuBar())
         {
-            // Map out buffer index values from source column index positions
-            // Loop over each buffer field to get it's matching source column index
-            for(int i = 0; i < buffer_columns.size(); i++)
+            ImGui::Text("< Column Mapping >");
+            if(load_columns && loaded_csv)
             {
-                // Loop over each source column to compare the buffer value
-                for (int j = 0; j < source_columns.size(); j++)
+                // Quickly check if any buffer column has a value if we haven't already
+                for (int i = 0; i < buffer_columns.size(); i++)
                 {
-					// When we match store source index position in buffer index columns vector
-					if (buffer_columns[i] == source_columns[j])
-					{
-						// Store index position from source columns vector to use in insert query builder
-                        // This index will match the destination columns to the respective data rows
-						buffer_columns_index.push_back(j);
-						log.AddLog("[INFO] Buffer column %s mapped to source column %s. SQL Column will be: %s\n", buffer_columns[i].c_str(), source_columns[j].c_str(), destination_columns[i]);
-                        // break this loop since we can only map one column to one buffer, there's no need to go over the rest when we find our match
+                    if (buffer_columns[i] != "")
+                    {
+                        data_mapped_check = true;                   // set true and break loop if we find a label in buffer
                         break;
-					}
+                    }
+                    else
+                    {
+                        data_mapped_check = false;                  // keep setting to false until we find one and break so we don't end up back here
+                    }
                 }
             }
-            // Generate insert queries and store them in vector
-            for (int i = 0; i < data_rows.size(); i++)
+            if (ImGui::MenuItem("Confirm Mapping", NULL, &confirm_mapping, (loaded_csv && load_columns && data_mapped_check && !confirm_mapping)))
             {
-                insert_rows = buildInsertQuery(table_name, buffer_columns_index, destination_columns, data_rows, log);
+                data_window = true;
+            }
+            if (ImGui::MenuItem("Cancel Mapping", NULL, false, (loaded_csv && load_columns)))
+            {
+                clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls, confirm_data);
+            }
+
+            // End column mapping menu bar
+            ImGui::EndMenuBar();
+        }
+        if (load_columns && !confirm_mapping && loaded_csv)
+        {
+            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
+            if (confirm_mapping)
+            {
+                data_window = true;
             }
         }
+        else
+        {
+            ImGui::BeginDisabled();
+            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
+            ImGui::EndDisabled();
+        }
+        // End Column Mapping window
+        ImGui::EndChild();
+
+        ImGui::SameLine();
     }
+    if (mapoverview)
+    {
+        // Create new window for mapping overview
+        (ImGui::BeginChild("Mapping Overview", ImVec2(175, ImGui::GetContentRegionAvail().y - 275), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders /*| ImGuiChildFlags_ResizeX | ImGuiChildFlags_ResizeY*/, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar));
+        ImVec2 overview_window_size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::GetTextLineHeightWithSpacing() * 2));
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::Text("< Mapping Overview >");
+
+            // End Mapping overview menu bar
+            ImGui::EndMenuBar();
+        }
+        // Display an overview of the mapping
+        //ImGui::SeparatorText("Mapping Overview");
+        if (ImGui::BeginTable("Overview", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX, overview_window_size))
+        {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableSetupColumn("Destination");
+            ImGui::TableSetupColumn("=");
+            ImGui::TableSetupColumn("Source");
+            ImGui::TableHeadersRow();
+            for (int i = 0; i < destination_columns.size(); i++)
+            {
+                if (!buffer_columns[i].empty())
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", destination_columns[i]);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("=");
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", buffer_columns[i]);
+                }
+            }   // End Mapping overview
+
+            // End Mapping overview table
+            ImGui::EndTable();
+        }
+
+        // End Mapping overview window
+        ImGui::EndChild();
+    
+        ImGui::SameLine();
+    }
+    
+    if (!cleanup && confirm_mapping)
+    {
+        // Map out buffer index values from source column index positions
+        // Clean up buffer index and remove -1's since we don't need them.
+        for (int i = 0; i < buffer_columns_index.size(); i++)
+        {
+            if (buffer_columns_index[i] != -1)
+            {
+                destination_columns_index.push_back(i);                 // Map SQL table columns in order they were mapped
+                data_rows_index.push_back(buffer_columns_index[i]);     // Get index position of data that matches columns to the SQL tables they were mapped to
+            }
+        }
+        // Log index values for debugging
+        log.AddLog("[DEBUG] destination_column_index positions =  ");
+        for (int i = 0; i < destination_columns_index.size(); i++)
+        {
+            if (i == destination_columns_index.size() - 1)
+                log.AddLog("%i", destination_columns_index[i]);
+            else
+                log.AddLog("%i, ", destination_columns_index[i]);
+        }
+        log.AddLog("\n");
+        log.AddLog("[DEBUG] data_rows_index =  ");
+        for (int i = 0; i < data_rows_index.size(); i++)
+        {
+            if (i == data_rows_index.size() - 1)
+                log.AddLog("%i", data_rows_index[i]);
+            else
+                log.AddLog("%i, ", data_rows_index[i]);
+        }
+        log.AddLog("\n");
+        // Remove values from data_rows that aren't mapped to a column in SQL
+        for (int i = 0; i < data_rows.size(); i++)
+        {
+            std::vector<std::string>data_tmp;
+            std::string value;
+            std::vector<std::string>values;
+            std::stringstream ss(data_rows[i]);
+            while (std::getline(ss, value, ','))                                        // Read each line of data in data_rows
+            {
+                values.push_back(value);                                                // Add data to the vector containing the separated data elements
+            }
+            if (data_rows[i].back() == ',')
+            {
+                values.push_back("");                                                   // If last value is a comma push back an extra blank string to show we ended on a blank
+            }
+            for (int j = 0; j < destination_columns_index.size(); j++)                  // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
+            {
+                // If we get an empty cell we push back an empty string
+                if (values[data_rows_index[j]] == "")
+                {
+                    data_tmp.push_back("");
+                }
+                else
+                {
+                    data_tmp.push_back(values[data_rows_index[j]]);
+                }
+            }
+            data_parsed_final.push_back(data_tmp);                                   // Push vector of parsed out strings into data_parsed_final to use each data piece of only selected data
+            data_rows[i] = "";                                                          // Clear out the row in the original data_row vector
+            for (int k = 0; k < data_tmp.size(); k++)                                   // Loop over newly constructed row of data and concantate it into a single string to push back to data_rows
+            {
+                data_rows[i] += data_tmp[k];
+                if (k != data_tmp.size() - 1)
+                    data_rows[i] += ",";                                                // Separate each value by a comma if we're not next to the end position yet
+            }
+        }
+        cleanup = true;                                                                 // Tell application cleanup has been completed and we won't revist this section
+    }
+    if(data_window)
+    {
+        // Display newly mapped rows as a table
+        ImGui::BeginChild("Data Staging", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - 275), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::Text("< Data Staging >");
+            if(confirm_mapping)
+            {
+                if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data))
+                {
+                    insert_window = true;
+                }
+            }
+            else
+            {
+                ImGui::BeginDisabled();
+                ImGui::MenuItem("Confirm Data", NULL, &confirm_data);
+                ImGui::EndDisabled();
+            }
+
+            // End data staging menu bar
+            ImGui::EndMenuBar();
+        }
+        if (confirm_mapping && !confirm_data)
+        {
+            displayDataTable(log, destination_columns, destination_columns_index, data_rows, data_rows_index, display_data_rows);
+            /*if (ImGui::Button("Confirm Data"))
+            {
+                confirm_data = true;
+                insert_window = true;
+            }
+            ImGui::SetItemTooltip("When data is mapped to your liking, click this to generate SQL queries");*/
+        }
+        else if (confirm_mapping && confirm_data)
+        {
+            ImGui::BeginDisabled();
+            displayDataTable(log, destination_columns, destination_columns_index, data_rows, data_rows_index, display_data_rows);
+            /*ImGui::Button("Confirm Data");*/
+            ImGui::EndDisabled();
+            insert_window = true;
+        }
+        // End Staging area window
+        ImGui::EndChild();
+    }
+    
+    static bool dup_check = false;
+    // Generate insert queries and store them in vector
+    if (!dup_check && confirm_data && insert_rows.size() < data_rows.size())
+    {
+        insert_rows = buildInsertQuery(table_name, destination_columns_index, destination_columns, data_rows, data_rows_index, allow_nulls, log);
+    }
+    
+    // Display insert queries that are generated in a new window. Display queries removed as duplicates afterward.
+    if(insert_window)
+    {
+        // Begin child window for inserts that the user can review before pressing the button to run all inserts, as well as choose settings for the inserts
+        ImGui::BeginChild("Insert Rows", ImVec2(ImGui::GetContentRegionAvail().x, 250), /*ImGuiChildFlags_AlwaysAutoResize |*/ ImGuiChildFlags_ResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_Border, ImGuiWindowFlags_MenuBar);
+        static std::vector<std::string> query_results;
+        static std::vector<std::string> dup_rows;
+        static std::vector<bool> inserted;
+        // Populate vector with bools for tracking when they are inserted into SQL or not
+        while (inserted.size() < insert_rows.size())
+        {
+            inserted.push_back(false);
+        }
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::Text("< Insert Review >");
+            if(confirm_data)
+            {
+                if(!dup_check)
+                {
+                    // Loop through each row to insert data
+                    for (int i = 0; i < inserted.size(); i++)
+                    {
+                        int duplicate_count = 0;
+                        // Loop over each column to check if we need to be concerned with duplicates
+                        for (int j = 0; j < destination_columns_index.size(); j++)
+                        {
+                            // Check for duplicate restricted columns
+                            if (restrict_duplicates[destination_columns_index[j]])
+                            {
+                                if (duplicate_count = sql.returnRecordCount(table_name, destination_columns[destination_columns_index[j]], data_parsed_final[i][j]) > 0)
+                                {
+                                    log.AddLog("[WARN] Duplicate value detected when inserting on column: '%s', which was marked to restrict duplicates. No data inserted.\n", destination_columns[destination_columns_index[j]]);
+                                    // Add row to new vector for rows that contain illegal duplicate data
+                                    dup_rows.push_back(insert_rows[i]);
+                                    // Set insert row to blank for deleting later
+                                    insert_rows[i] = "";
+                                    // Break loop since we've already found a duplicate in a column marked to restrict duplicates and go to next row
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // Delete rows that are blank from vector
+                    for (int i = insert_rows.size() - 1; i >= 0; i--)
+                    {
+                        if (insert_rows[i] == "")
+                            insert_rows.erase(insert_rows.begin() + i);
+                    }
+                    // Mark that we've checked for duplicates
+                    dup_check = true;
+                }
+                if (ImGui::MenuItem("Insert all data"))
+                {
+                    try
+                    {
+                        for (int i = 0; i < insert_rows.size(); i++)
+                        {
+                            if(!inserted[i])
+                            {
+                                // Start new threads for each insert statement to help with performance
+                                std::thread(insertMappedData, sql, insert_rows[i]).detach();
+                                log.AddLog("[INFO] Successfully inserted data into SQL!");
+                                inserted[i] = true;
+                                query_results.push_back("Insert successful for row: " + std::to_string(i));
+                            }
+                            else
+                            {
+                                query_results.push_back("Row #" + std::to_string(i) + " already inserted into SQL!");
+                                log.AddLog("[WARN] Row %i was already inserted into SQL\n", i);
+
+                            }
+                        }
+                    }
+                    catch (std::exception& e)
+                    {
+                        log.AddLog("[ERROR] Could not insert SQL statement: %s", e.what());
+                    }
+
+                }
+            }
+            else
+            {
+                ImGui::BeginDisabled();
+                ImGui::MenuItem("Insert all data");
+                ImGui::EndDisabled();
+            }
+
+            // End insert menu bar
+            ImGui::EndMenuBar();
+        }
+        if(confirm_data)
+        {
+            if (insert_rows.size() >= 1)
+            {
+                ImGui::Text("Review insert statements generated by tool before running insert into SQL");
+                for (int i = 0; i < insert_rows.size(); i++)
+                {
+                    ImGui::PushID(i);
+                    ImGui::Text("#%i: %s", i, insert_rows[i].c_str()); ImGui::SameLine();
+                    // Create button to allow individual lines to be submittedd to SQL after it's generated
+                    if (!inserted[i])
+                    {
+                        if (ImGui::Button("SQL"))
+                        {
+                            try
+                            {
+                                if (insertMappedData(sql, insert_rows[i]))
+                                {
+                                    query_results.push_back("Insert Successful for insert #" + std::to_string(i));
+                                    inserted[i] = true;
+                                }
+                            }
+                            catch (std::exception& e)
+                            {
+                                query_results.push_back(e.what());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ImGui::BeginDisabled();
+                        ImGui::Button("SQL");
+                        ImGui::SetItemTooltip("Inserted successfully!");
+                        ImGui::EndDisabled();
+                    }
+                    // Pop row ID value
+                    ImGui::PopID();
+                }
+            }
+            else
+            {
+                ImGui::Text("No valid data for entry! Check duplicate restrictions and try again.");
+            }
+            ImGui::Text("Data that was found to be duplicated and removed from insert list:");
+            for (int i = 0; i < dup_rows.size(); i++)
+            {
+                ImGui::Text(dup_rows[i].c_str());
+            }
+            for (int i = 0; i < query_results.size(); i++)
+            {
+                ImGui::Text(query_results[i].c_str());
+            }
+        }
+        // End Insert statment rows display
+        ImGui::EndChild();
+    }
+    
 
 	// Default return
 	// return false;
@@ -297,12 +703,16 @@ std::string displayDataFiles(std::string dir)
 
 std::string displayTableNames(Sql& sql)
 {
-    // TODO: add keyboard capture to get a letter while combobox is active, then move the displayed position to that letter. use ImGui to see if ItemIsActive, if so start an IO monitor, when a key is pressed we do a find in the list and maybe a get position for the value in the box
+    // DONE: add keyboard capture to get a letter while combobox is active, then move the displayed position to that letter. use ImGui to see if ItemIsActive, if so start an IO monitor, when a key is pressed we do a find in the list and maybe a get position for the value in the box -- solved with text filter
     static std::vector<std::string> tableNames;
 	static ImGuiTextFilter filter;
-	if (tableNames.empty())
+    static std::string tmp_db = "";
+    static std::string tmp_source = "";
+	if (tableNames.empty() || tmp_db != sql._GetDatabase() || tmp_source != sql._GetSource())           // update tables if the connection string changes
     {
         tableNames = sql.getTableNames(sql._GetConnectionString(), sql._GetDatabase());
+        tmp_db = sql._GetDatabase();
+        tmp_source = sql._GetSource();
     }
 	static std::string chosenName;
 	// Convert std::vector<std::string> to array of const char* for ImGui display
@@ -311,7 +721,7 @@ std::string displayTableNames(Sql& sql)
 		tableNameCStr.push_back(name.c_str());
 	}
 
-	// Display the Combo box if we find a profile has been created otherwise we show text instead
+	// Display the Combo box if we find sql tables otherwise we show text instead
 	static int currentItem = 0;
 	if (!tableNameCStr.empty() && ImGui::BeginCombo("##Select table", tableNameCStr[currentItem])) {
         ImGui::SetNextItemWidth(100);
@@ -338,18 +748,27 @@ std::string displayTableNames(Sql& sql)
 	return chosenName;
 }
 
-void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_column_index, std::vector<int>& d_column_index)
+void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls, bool* duplicate)
 {
     std::string value;
     std::vector<std::string> values;
     static std::vector<std::string>s_columns_buf;
     static bool copied = false;
-    if(!copied)
+    ImVec2 button_style = ds.getButtonStyle();
+
+    // Fix for issue #14: Clear out buffer if clear button has been clicked and we clear out the source columns from the CSV
+    if (s_columns.size() == 0)
+    {
+        s_columns_buf.clear();
+        copied = false;
+    }
+    // Copy current source columns to source column buffer
+    if(!copied && s_columns.size() > 0)
     {
         s_columns_buf = s_columns;
         copied = true;
     }
-	// Populate vector with first row of data for preview
+    // Populate vector with first row of data for preview
     for (int i = 0; i < rows.size(); i++)
     {
         std::stringstream ss(rows[i]);
@@ -366,6 +785,14 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
             values.push_back("");
         }
     }
+	// Prepopulate b_column_index with -1 to show no mapping has been done yet
+	if (b_column_index.size() < b_columns.size())
+    {
+        for (int i = 0; i < b_columns.size(); i++)
+        {
+            b_column_index.push_back(-1);
+        }
+    }
     /*
     * Created flexible mapping tables
 	* We check the number of columns imported from the source and destination tables
@@ -373,9 +800,15 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
     * This way we don't blow up if the column numbers aren't exactly the same.
 	* We can also expand/contract based on the number of columns imported.
     */
-	ImGui::BeginChild("DestinationColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ ImGui::GetContentRegionAvail().y), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
-    if (ImGui::BeginTable("DestinationMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
+    static bool allow_nulls[256] = {};
+    const int TEXT_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+
+    
+	ImGui::BeginChild("DestinationColumnMapping", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
+    if (ImGui::BeginTable("DestinationMappingTable", 4, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX))
     {
+        ImGui::TableSetupColumn("Null", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
+        ImGui::TableSetupColumn("Dup", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Table Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Mapped Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableHeadersRow();
@@ -383,11 +816,18 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
         {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("  %s", d_columns[i]);
-            ImGui::TableSetColumnIndex(1);
             ImGui::PushID(i);
-            ImGui::Button(b_columns[i].c_str(), ImVec2(120, 40));
+            ImGui::Checkbox("##nulls", &nulls[i]);
+            ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns[i]);
+            log.logStateChange(("%s", d_columns[i] + " allows nulls").c_str(), nulls[i]);
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Checkbox("##Dups", &duplicate[i]);
+            ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", d_columns[i]);
+            log.logStateChange(("%s", d_columns[i] + " restricts duplicates on insert.").c_str(), duplicate[i]);
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("  %s", d_columns[i]);
+            ImGui::TableSetColumnIndex(3);
+            ImGui::Button(b_columns[i].c_str(), button_style);
             ImGui::PopID();
             if (ImGui::BeginDragDropTarget())
             {
@@ -395,55 +835,68 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
                 {
                     IM_ASSERT(payload->DataSize == sizeof(int));
                     int payload_n = *(const int*)payload->Data;
-                    // Going to try a different approach with a swap method and see if it is any better.
+                    // Using a swap method to manage column labels
                     const std::string tmp = b_columns[i];
-                    b_columns[i] = s_columns_buf[payload_n];
-					s_columns_buf[payload_n] = tmp;
-                    // Swap works well, just need to track where the source columns index positions were when building queries.
+                    b_columns[i] = s_columns_buf[payload_n];                    
                     // If source column[0] swaps with buffer [1] we need to know that column [0] from source maps to column [1] for SQL columns
-                    // Perhaps use a buffer vector for source columns that way we don't mangle the original order and we can refer back to it when mapping is complete
+                    // Use this to set the source column index position to the buffer button it swapped places with
+					// Verify against the s_column vector at the end and correct any mismatched values
+                    if(s_columns_buf[payload_n] != "")
+                    {
+                        b_column_index[i] = payload_n;
+                        log.AddLog("[INFO] Source column index added to buffer column index %i = %i\n", i, payload_n);
+                    }
+                    else
+                    {
+                        b_column_index[i] = -1;                 // Set buffer back to -1 to indicate no mapping if we swap with a source column that is blank
+                    }
 
+                    s_columns_buf[payload_n] = tmp;             // Moving s_column swap after we store the index location to buffer column
 
-                    // Insert source column index into buffer column index list
-                    
-                    // If we find the most recently pushed back payload_n value in the b_columns_index already, erase the earlier index value to keep list current
-                    // Remove the old index if it exists
-       //             auto it = std::find(b_column_index.begin(), b_column_index.end(), payload_n);
-       //             if (it != b_column_index.end())
-       //             {
-       //                 // clear previous buffer column
-       //                 if(i < *it)
-       //                 {
-       //                     //auto find_label = std::find(b_columns.rbegin(), b_columns.rend(), s_columns[payload_n]); // Need way to get distance from end of array if new buffer index is less than the old
-       //                     // if i < find_label set b_columns[find_label] = "" and erase b_column_index[find_label]
-       //                     auto find_label = std::find(b_columns.begin(), b_columns.end(), s_columns[payload_n]);
-       //                     if (find_label != b_columns.end()) {
-       //                         b_columns[std::distance(b_columns.begin(), find_label)] = "";
-       //                     }
-       //                 }
-       //                 else
-       //                 {
-							//auto find_label = std::find(b_columns.begin(), b_columns.end(), s_columns[payload_n]); // Need way to get distance from end of array if new buffer index is less than the old
-							//if (find_label != b_columns.end()) {
-							//	b_columns[std::distance(b_columns.begin(), find_label)] = "";
-							//}
-       //                 }
-       //                 b_column_index.erase(it);
-       //             }
-       //             // Use this to swap buffer columns for table columns on the sql insert generation
-       //             b_column_index.push_back(payload_n);
+                    // Verify newly assigned buffer index against untouched source index
+                    log.AddLog("[DEBUG] Verifying buffer index position against source columns index...\n");
+                    for (int j = 0; j < b_column_index.size(); j++)
+                    {
+                        if (b_columns[j] == "")
+                        {
+                            // if label is blank do nothing
+                        }
+                        else if (b_columns[j] != s_columns[b_column_index[j]])
+                        {
+                            // If the buffer label isn't equal to the source label we know the source buffer has been misaligned.
+                            // Correct buffer label by comparing to source labels and use that position
+                            log.AddLog("[WARN] Detected mismatched indexes! Attempting to match now...\n");
+							auto it = std::find(s_columns.begin(), s_columns.end(), b_columns[j]);          // Find label value of buffer column at position j within the source column vector
+							int s_col = std::distance(s_columns.begin(), it);                               // Find distance to label located before and return position number
+                            b_column_index[j] = s_col;                                                      // Update buffer column to have correct index from source vector
+                            log.AddLog("[DEBUG] Buffer column index matched %i set to source column index %i\n", j, s_col);
+                        }
+                    }
+                    log.AddLog("[DEBUG] Buffer column index positions verified against source columns index successfully.\n");
+                    // Display final b_column_index values, when we're done it should match the order and source index of each column added
+                    log.AddLog("[DEBUG] b_column_index positions =  ");
+                    for (int i = 0; i < b_column_index.size(); i++)
+                    {
+                        if (i == b_column_index.size() - 1)
+                            log.AddLog("%i", b_column_index[i]);
+                        else
+                            log.AddLog("%i, ", b_column_index[i]);
+                    }
+					log.AddLog("\n");
                 }
+                
                 ImGui::EndDragDropTarget();
             }
         }
         // End column mapping
         ImGui::EndTable();
     }
+    
 	// End destination column mapping child window
     ImGui::EndChild();
     ImGui::SameLine();
-    ImGui::BeginChild("SourceColumnMapping", ImVec2(0,/*ImGui::GetContentRegionAvail().x / 2,*/ ImGui::GetContentRegionAvail().y), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX/* | ImGuiChildFlags_Border*/);
-    if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_NoPadOuterX/* | ImGuiTableFlags_NoPadInnerX*/))
+    ImGui::BeginChild("SourceColumnMapping", ImVec2(0,0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
+    if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX))
     {
         ImGui::TableSetupColumn(" Source Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Sample data", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
@@ -453,86 +906,79 @@ void displayMappingTable(std::vector<std::string>&s_columns, std::vector<std::st
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::PushID(i);
-            ImGui::Button(("%s", s_columns_buf[i]).c_str(), ImVec2(120, 40));
+            ImGui::Button((s_columns_buf[i]).c_str(), button_style);
 			ImGui::PopID();
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
                 ImGui::SetDragDropPayload("DND_Column", &i, sizeof(int));
                 // Display prevew
-                ImGui::Text("Mapping column %s", s_columns[i]);
+                ImGui::Text("Mapping column %s", s_columns_buf[i]);
                 ImGui::EndDragDropSource();
             }
             ImGui::TableNextColumn();
-			ImGui::Text(("%s\n%s", s_columns[i], values[i]).c_str());
+			ImGui::Text("%s", /*s_columns[i].c_str(),*/ values[i].c_str());
         }
+        
 		// End source column mapping table
         ImGui::EndTable();
-    }
+    }     
+    
     // End Source column mapping
     ImGui::EndChild();
-    ImGui::SameLine();
-	// Display an overview of the mapping
-    ImGui::BeginGroup();
-    ImGui::Text("Mapping Overview:\n(Destination field = Source field)");
-    for (int i = 0; i < d_columns.size(); i++)
-    {
-        if (!b_columns[i].empty())
-        {
-            ImGui::Text("%s = %s", d_columns[i], b_columns[i]);
-        }
-    }
-
-    // End Mapping overview display group
-    ImGui::EndGroup();
 }
 
-std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& b_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, AppLog& log)
+std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, bool* nulls, AppLog& log)
 {
 	// TODO: Add multi-threading for large files to prevent UI from freezing and allow each insert to print to log as it's written
-    // Changing logic here to only grab mapped data
+    // DONE: Changing logic here to only grab mapped data
     // Added integer vectors for tracking index positions of columns mapped, and columns from the table.
-	// Using these index positions we can selectively choose from the table columns and map them to the source columns
     std::vector<std::string> queries;
-    std::string value;
-    std::vector<std::string> values;
+    
     try
     {
-        for (int i = 0; i < rows.size(); i++)
+        do
         {
-            std::string query = "INSERT INTO " + table_name + " (";
-            // This should be d_columns, not b_columns
-            for (int i = 0; i < b_columns_index.size(); i++)
+            for (int i = 0; i < rows.size(); i++)
             {
-                query += d_columns[b_columns_index[i]];
-                if (i != b_columns_index.size() - 1)
-                    query += ", ";
-            }
-            query += ") VALUES (";
-            /*for (int i = 0; i < rows.size(); i++)
-            {
+                std::string value;
+                std::vector<std::string> values;
+                std::string query = "INSERT INTO " + table_name + " (";
+                // This should be d_columns, not b_columns
+                for (int i = 0; i < d_columns_index.size(); i++)
+                {
+                    query += d_columns[d_columns_index[i]];
+                    if (i != d_columns_index.size() - 1)
+                        query += ", ";
+                }
+                query += ") VALUES (";
                 std::stringstream ss(rows[i]);
                 while (std::getline(ss, value, ','))
                 {
                     values.push_back(value);
                 }
-            }*/
-            // Remove for loop. We're doing a while loop here that will get all values for that row. 
-            // Now we just need to only get the data from columns that were selected in the correct order
-            std::stringstream ss(rows[i]);
-            while (std::getline(ss, value, ','))
-            {
-                values.push_back(value);
+                if (rows[i].back() == ',')
+                {
+                    values.push_back("");           // Push a blank string back on the end if last value is a comma
+                }
+                for (int i = 0; i < d_columns_index.size(); i++)
+                {
+                    // Convert value to uppercase for comparison
+                    std::string upper_value = values[i];
+                    std::transform(upper_value.begin(), upper_value.end(), upper_value.begin(), ::toupper);
+                    if (upper_value == "NULL")                                  // Handle any NULL values passed with correct SQL syntax. Need to ignore case and catch all nulls
+                        query += "NULL";
+                    else if (nulls[d_columns_index[i]] && values[i] == "")      // If we marked a column as null requried while mapping and it has a blank fill in NULL instead
+                        query += "NULL";
+                    else
+                        query += "'" + values[i] + "'";
+                    if (i != d_columns_index.size() - 1)
+                        query += ",";
+                }
+                query += ");";
+                queries.push_back(query);
+                log.AddLog("[INFO] Insert query generated: %s\n", query.c_str());
             }
-            for (int i = 0; i < b_columns_index.size(); i++)
-            {
-                query += "'" + values[i] + "'";
-                if (i != b_columns_index.size() - 1)
-                    query += ", ";
-            }
-            query += ");";
-            queries.push_back(query);
-            log.AddLog("[INFO] Insert query generated: %s\n", query.c_str());
-        }
+        } while (queries.size() < rows.size());
 
         return queries;
     }
@@ -541,7 +987,98 @@ std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<in
 		log.AddLog("[ERROR] Failed to build insert query: %s\n", e.what());
         return {};
 	}
-    return {};
+    // return {};
+}
+
+/// <summary>
+/// Uses data collected from an imported CSV and mapped column headers to build the table where we display the data we mapped and the order it was mapped in.
+/// </summary>
+/// <param name="log"> - Pass your AppLog object to allow the ability to write log lines as the data is processed for debugging</param>
+/// <param name="d_columns"> - vector containing all column headers pulled from the loaded SQL table.</param>
+/// <param name="d_columns_index"> - vector containing index positions of each column that was mapped.</param>
+/// <param name="rows"> - vector containing data that was read in from the CSV. By this point it should be reduced to only contain data from columns we have mapped to.</param>
+/// <param name="rows_index"> - vector containing index positions from the CSV of data columns to track which SQL column it shoudl belong in.</param>
+void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index, int& table_len)
+{
+    const int TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+    ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * table_len);
+
+    // Begin table for displaying and editing actual data, as well as showing it was mapped correctly.
+	// DONE fix table display for large imports, fix display for mapping overview to not be in the way(maybe make it it's own window?)
+    if (ImGui::BeginTable("DataStaging", d_columns_index.size(), ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV, outer_size))
+    {
+        std::string value;                                                          // String to store each individual value while we parse row lines
+        std::vector<std::string> tmp_rows;                                          // Vector to hold each value from a row
+        static std::vector<std::vector<std::string>> values;                        // Vector to store the rows together - this is what we'll edit and update the rows vector with
+        while(values.size() < rows.size())                                          // Added while loop so we only populate values once
+        {
+            for (int i = 0; i < rows.size(); i++)                                   // Loop through rows to parse out data from each one - need to do this only once after reading data into these buffer variables
+            {
+                std::stringstream ss(rows[i]);                                      // Get each value from original data_rows vector
+                while (std::getline(ss, value, ','))
+                {
+                    tmp_rows.push_back(value);                                      // Push back value into tmp_rows
+                }
+                if (value == "")                                                    // Empty string handle
+                {
+                    tmp_rows.push_back("");
+                }
+                values.push_back(tmp_rows);                                         // Push new tmp_rows into values
+                tmp_rows.clear();                                                   // Clear the tmp rows to start again with the next row
+            }
+        }
+        // Setup mapped columns as headers
+        ImGui::TableSetupScrollFreeze(0, 1);                                        // Make headers row always visible
+        for (int i = 0; i < d_columns_index.size(); i++)
+        {
+			ImGui::TableSetupColumn(d_columns[d_columns_index[i]].c_str());         // Use mapped column names from the SQL table to set up the headers
+			// log.AddLog("[INFO] Table header %s identified\n", d_columns[d_columns_index[i]].c_str());
+        }
+		ImGui::TableHeadersRow();                                                   // Tells UI this will be our headers for the table
+
+        // Set up data rows
+        for (int i = 0; i < rows.size(); i++)                                       // Begin looping through each row of data
+        {
+			ImGui::TableNextRow();                                                  // Start new row each loop
+            // Push row ID to each row
+            ImGui::PushID(i);
+			for (int k = 0; k < d_columns_index.size(); k++)                        // Begin looping through the columns to populate data in each one
+			{
+				ImGui::TableSetColumnIndex(k);                                      // Set the next columns index up
+                // Push value ID of k to each value
+                ImGui::PushID(k);
+                // DONE: Fix blank row editing probably need to append column name as well as index pos to field
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                std::string tmp = values[i][k];                                     // Store current value of field before edits are made for logging
+                if(ImGui::InputText("", &values[i][k], ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_EnterReturnsTrue))          // Create box for input lines to apppear in. This displays imported data and allows edits to be made before sending it
+                {
+                    log.AddLog("[DEBUG] Modified row %i, column %s. Old value: %s; New value: %s;\n", i, d_columns[d_columns_index[k]], tmp, values[i][k]);
+                }
+                // Pop value ID of k
+                ImGui::PopID();
+			}
+            // Pop row ID of i
+            ImGui::PopID();
+        }
+        // Update referenced rows vector with modified data and then set rows vector equal to tmp_rows to update the reference vector
+        for (int i = 0; i < rows.size(); i++)
+        {
+            // Blank out current row value to replace with new data from values
+            rows[i] = "";
+            for (int j = 0; j < d_columns_index.size(); j++)
+            {
+                rows[i] += values[i][j];
+                if (values[i][j] == "")
+                {
+                    rows[i] += "";
+                }
+                if (j < d_columns_index.size() - 1 || d_columns_index.size() == 1 && rows.size() > 1 && i < rows.size() - 1)
+                    rows[i] += ',';
+            }
+        }
+        // End data table
+        ImGui::EndTable();
+    }
 }
 
 bool insertMappedData(Sql& sql, std::string query)
@@ -549,4 +1086,35 @@ bool insertMappedData(Sql& sql, std::string query)
 	// Execute the query to insert the data
 	bool success = sql.executeQuery(query);
 	return success;
+}
+
+void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::string>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls, bool& confirm_data)
+{
+    // Clear null flags
+    for (int i = 0; i < destination_columns.size(); i++)
+    {
+        nulls[i] = false;
+    }
+    // Clear all vectors
+    source_columns.clear();
+    destination_columns.clear();
+    buffer_columns.clear();
+    table_name.clear();
+    data_rows.clear();
+    insert_rows.clear();
+    source_columns_index.clear();
+    destination_columns_index.clear();
+    data_rows_index.clear();
+    buffer_columns_index.clear();
+    
+    // Reset all flags
+    loaded_csv = false;
+    load_tables = false;
+    load_columns = false;
+    confirm_mapping = false;
+    confirm_data = false;
+    filepath.clear();
+
+    // Log the clearing action
+    log.AddLog("[INFO] All vectors and flags have been cleared.\n");
 }

@@ -9,13 +9,12 @@
 /*
 *****Author: Alex Towne
 *****Date: Began on 2/1/24
-*****Last Updated: 1/30/2025
+*****Last Updated: 4/09/25
 *****Purpose: This program is built in the ImGui framework to add UI wrapping to C++ code.
 * The plan is to continually update with tools/utilities that assist the Professional services department with rapid completion of installs/tasks
 * Will be expanded in the future to assist the tech team with migrations by integrating directly with file share systems and SQL servers via ODBC connections to automate file moving and SQL migration 
 
 */
-
 #include "imgui.h"
 #include "imgui_impl_dx9.h"
 #include "imgui_impl_win32.h"
@@ -40,6 +39,7 @@
 #include <Windows.h>
 #include "genericDataImport.h"
 #include "AppLog.h"
+
 
 
 // Get center of monitor from Windows API
@@ -124,7 +124,7 @@ int main(int, char**)
 {
 	static float w_width, w_height, wx_pos, wy_pos;
     static int w_darkmode;
-	static bool getting_started, recent_update, health_check, debug_log;
+	static bool getting_started, recent_update, health_check, debug_log, modules;
     std::string conn_str;
     
     // Initialize AppLog
@@ -146,25 +146,32 @@ int main(int, char**)
     static bool open_recent_updates = usrsettings.getRecentUpdates();
     static bool open_health_check = usrsettings.getHealthCheck();
     static bool show_log = usrsettings.getDebugLog();
-    // Save the file path to the connection string file saved in the system
-    // Going with a list of connection string files instead of only the last loaded one.
-    /*if (sql._GetConnected() && sql._GetSavedString() || usrsettings.getConnectString() == "")
-    {
-		usrsettings.setConnectString("C:\\ImplementationToolbox\\ConnectionStrings\\" + sql._GetSource() + "_" + sql._GetDatabase() + ".str");
-	}
-    else
-    {
-        usrsettings.setConnectString("");
-    }*/
+    static bool show_modules = usrsettings.getModules();
 
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
     const wchar_t* versionNum = L"Implementation Toolbox v0.6.4";
     const char* currVersion = "Implementation Toolbox v0.6.4";
+    const std::string version_number = "v0.6.4";
     const char* lastUpdate = "4/2/25";
+
+    // Button labels
+    static char genExprtLabel[] = "Generic Export Generator";
+    static char oneBttnLabel[] = "One Button Database Refresh";
+    static char sqlQryLabel[] = "SQL Query Builder";
+    // static char unitImportLabel[] = "Unit Bulk Import";              -- DEPRECATED
+    // static char mapDataImportLabel[] = "Map Data Import";            -- DEPRECATED
+    static char servlogLabel[] = "Servlog Viewer";
+    static char genericDataImportLabel[] = "Generic Data Import";
 
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, versionNum, nullptr };
+
+    // Load the icons
+    wc.hIcon = (HICON)LoadImage(NULL, _T("Images/CST_LOGO_icon_64x64.ico"), IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+    wc.hIconSm = (HICON)LoadImage(NULL, _T("Images/CST_LOGO_icon_32x32.ico"), IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+    
+    // Create window
     ::RegisterClassExW(&wc);
     HWND hwnd = ::CreateWindowW(wc.lpszClassName, versionNum, WS_OVERLAPPEDWINDOW, START_X, START_Y, WIDTH, HEIGHT, nullptr, nullptr, wc.hInstance, nullptr);
 
@@ -203,11 +210,11 @@ int main(int, char**)
         ImGui::StyleColorsLight();
     }
 
-    // Darken the input text boxes
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.7f); // Darker gray for input box background
-    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f); // Slightly darker gray when hovered
-    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); // Even darker gray when active
+    // Darken the input text boxes -- MADE CHANGES TO StyleColorsLight(); directly
+    static ImGuiStyle& style = ImGui::GetStyle();
+    //style.Colors[ImGuiCol_FrameBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.7f); // Darker gray for input box background
+    //style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f); // Slightly darker gray when hovered
+    //style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); // Even darker gray when active
 
     // Setup Platform/Renderer backends
     ImGui_ImplWin32_Init(hwnd);
@@ -233,9 +240,11 @@ int main(int, char**)
 
     // Try to load an Arial font from windows directory
     if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size));
+    if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size + 2));
     // If we can't find it use the default one
     else (io.Fonts->AddFontDefault());
 
+    ImFont* current_font = ImGui::GetFont();
 
     // Our state
     bool show_demo_window = false;
@@ -251,7 +260,6 @@ int main(int, char**)
     bool show_servlog_viewer = false;
 	bool show_generic_import_data_window = false;
     bool show_sql_conn_window = false;
-    bool show_modules = true;
 
     // Popup window states
     bool gen_export_info = false;
@@ -327,23 +335,25 @@ int main(int, char**)
         log.logStateChange("open_health_check", open_health_check);
         log.logStateChange("isDarkMode", isDarkMode);
 		log.logStateChange("show_log", show_log);
+        log.logStateChange("show_modules", show_modules);
 
         // Start the Dear ImGui frame
         ImGui_ImplDX9_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-		w_darkmode = usrsettings.getDarkMode(); // Load dark mode setting for comparison
-		w_width = usrsettings.getWindowWidth(); // Load window width for comparison
-		w_height = usrsettings.getWindowHeight(); // Load window height for comparison
-		wx_pos = usrsettings.getWindowPosX(); // Load window x position for comparison
-		wy_pos = usrsettings.getWindowPosY(); // Load window y position for comparison
-		getting_started = usrsettings.getGettingStarted(); // Load getting started window state for comparison
-		recent_update = usrsettings.getRecentUpdates(); // Load recent updates window state for comparison
-		health_check = usrsettings.getHealthCheck(); // Load health check window state for comparison
-		debug_log = usrsettings.getDebugLog(); // Load debug log window state for comparison
+		w_darkmode = usrsettings.getDarkMode();                 // Load dark mode setting for comparison
+		w_width = usrsettings.getWindowWidth();                 // Load window width for comparison
+		w_height = usrsettings.getWindowHeight();               // Load window height for comparison
+		wx_pos = usrsettings.getWindowPosX();                   // Load window x position for comparison
+		wy_pos = usrsettings.getWindowPosY();                   // Load window y position for comparison
+		getting_started = usrsettings.getGettingStarted();      // Load getting started window state for comparison
+		recent_update = usrsettings.getRecentUpdates();         // Load recent updates window state for comparison
+		health_check = usrsettings.getHealthCheck();            // Load health check window state for comparison
+		debug_log = usrsettings.getDebugLog();                  // Load debug log window state for comparison
+        modules = usrsettings.getModules();                     // Load module window state
 
-		// Check if the window has been moved or resized
+		// Check if any settings have changed that we save to the file
 		if (
             w_width != getWindowSize(hwnd).x 
             || w_height != getWindowSize(hwnd).y 
@@ -353,7 +363,9 @@ int main(int, char**)
             || getting_started != open_getting_started 
             || recent_update != open_recent_updates 
             || health_check != open_health_check 
-            || debug_log != show_log )
+            || debug_log != show_log
+            || modules != show_modules
+            )
 		{
 			// Save the new window size and position
 			usrsettings.setWindowHeight(getWindowSize(hwnd).y);
@@ -365,6 +377,7 @@ int main(int, char**)
 			if (open_health_check) usrsettings.setHealthCheck('Y'); else usrsettings.setHealthCheck('N');
 			if (open_recent_updates) usrsettings.setRecentUpdates('Y'); else usrsettings.setRecentUpdates('N');
 			if (show_log) usrsettings.setDebugLog('Y'); else usrsettings.setDebugLog('N');
+            if (show_modules) usrsettings.setModules('Y'); else usrsettings.setModules('N');
 			usrsettings.saveSettings(settings_filename, log);
             sql._SetSavedString(false); // Reset saved string if we save new one to file
 		}
@@ -395,17 +408,45 @@ int main(int, char**)
             if (ImGui::BeginMenu("View"))
             {
                 if (ImGui::MenuItem("Getting Started", NULL, &open_getting_started));
+                if (ImGui::MenuItem("Modules", NULL, &show_modules));
                 if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
                 if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
 				if (ImGui::MenuItem("Debug Log", NULL, &show_log));
-                ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();
+                /*ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();*/
                 if (ImGui::MenuItem("Demo Window", NULL, &show_demo_window));
 
                 // End View menu
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("Modules"))
+            {
+                ImGui::SeparatorText("RMS/JMS");
+                if (ImGui::MenuItem(genExprtLabel, NULL, &show_generic_export_window));
+                if (ImGui::MenuItem(oneBttnLabel, NULL, &show_one_button_refresh_window));
+                ImGui::SeparatorText("CAD");
+                if (ImGui::MenuItem(servlogLabel, NULL, &show_servlog_viewer));
+                ImGui::SeparatorText("SQL");
+                if (ImGui::MenuItem(sqlQryLabel, NULL, &show_sql_query_builder_window));
+                if (ImGui::MenuItem(genericDataImportLabel, NULL, &show_generic_import_data_window));
+
+                // End Modules menu
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Settings"))
             {
+                //if (ImGui::BeginMenu("Fonts"))
+                //{
+                //    ImGuiIO& io = ImGui::GetIO();
+
+                //    for (ImFont* font : io.Fonts->Fonts)
+                //    {
+                //        ImGui::PushID((void*)font);
+                //        if(ImGui::MenuItem(font->GetDebugName(), NULL, &current_font));
+                //        ImGui::PopID();
+                //    }
+                //    // End Font Menu
+                //    ImGui::EndMenu();
+                //}
                 // Open popup for SQL settings
                 if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
                 if(connectionStrings.size() > 0)
@@ -437,7 +478,7 @@ int main(int, char**)
                                         {
                                             log.AddLog("[INFO] Successfully connected to: %s\n", sql._GetSource().c_str());
                                             // Set the connection string in the SQL class
-                                            sql._SetConnectionString();
+                                            // sql._SetConnectionString();
                                         }
                                     }
                                     catch (std::exception& e)
@@ -518,7 +559,7 @@ int main(int, char**)
             health_check_posy = 20,
 
             // Module button window size & pos
-            module_buttons_x = getting_started_x,
+            module_buttons_x = ImGui::GetWindowWidth(),
             module_buttons_y = 430,
             module_buttons_posx = getting_started_posx,
             module_buttons_posy = getting_started_y + getting_started_posy,
@@ -554,10 +595,13 @@ int main(int, char**)
             modulePos = ImVec2(module_window_posx, module_window_posy),
             // Window Size and Position for module buttons
             moduleButtonSize = ImVec2(module_buttons_x, module_buttons_y),
-            moduleButtonPos = ImVec2(module_buttons_posx, module_buttons_posy),
+            moduleButtonPos = ImVec2(module_buttons_posx, module_buttons_posy);
             // Size of module buttons to select from
-            moduleSelectionSize = ImVec2(module_button_size_x, module_button_size_y);
+            //moduleSelectionSize = ImVec2(module_button_size_x, module_button_size_y);
 
+        // Window constraint min/max for module windows
+        const ImVec2 window_min = ImVec2(600, 400);
+        const ImVec2 window_max = ImVec2(1920, 1080);
 
         static std::string directory_path = "C:\\ImplementationToolbox\\";
         static std::string units_directory_path = directory_path + "Units\\";
@@ -574,7 +618,6 @@ int main(int, char**)
 
         // End orange color
         ImGui::PopStyleColor();
-
         
         // Open the SQL configuration window if the menu item is selected
         if (show_sql_conn_window)
@@ -625,6 +668,7 @@ int main(int, char**)
                 }
                 else {
                     DisplayColoredText("\tSQL Connection Succeeded!", true);
+                    ImGui::SetItemTooltip("Connection info:\nServer: %s\nDatabase: %s\nUsername: %s", sql._GetSource(), sql._GetDatabase(), sql._GetUsername());
                 }
 
                 // End health check table
@@ -636,7 +680,7 @@ int main(int, char**)
             ImGui::End();
         }
 
-        ImGui::SetNextWindowSize(gettingStartedSize);
+        //ImGui::SetNextWindowSize(gettingStartedSize);
         //ImGui::SetNextWindowPos(gettingStartedPos);
         if (open_getting_started) {
             ImGui::Begin("Getting Started", &open_getting_started, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
@@ -646,111 +690,105 @@ int main(int, char**)
             ImGui::End();
         }
 
-        // Module Buttons
-        //ImGui::SetNextWindowSize(moduleButtonSize);
-        //ImGui::SetNextWindowPos(moduleButtonPos);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, (ImVec2(0, 4.5)));
-        ImGui::Begin("Module Selection", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-        // Button labels
-        static char genExprtLabel[] = "Generic Export Generator";
-        static char oneBttnLabel[] = "One Button Database Refresh";
-        static char sqlQryLabel[] = "SQL Query Builder";
-        // static char unitImportLabel[] = "Unit Bulk Import";              -- DEPRECATED
-        // static char mapDataImportLabel[] = "Map Data Import";            -- DEPRECATED
-		static char servlogLabel[] = "Servlog Viewer";
-		static char genericDataImportLabel[] = "Generic Data Import";
-        // Show generic export generator button 
-        ImGui::SeparatorText("RMS/JMS");
-        if (!show_generic_export_window)
+        if(show_modules)
         {
-            if (ImGui::Button(genExprtLabel, moduleSelectionSize))
+            ImVec2 moduleSelectionSize = ImVec2(ImGui::GetWindowWidth(), module_button_size_y);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, (ImVec2(0, 4.5)));
+            ImGui::Begin("Module Selection", &show_modules);
+            
+            // Show generic export generator button 
+            ImGui::SeparatorText("RMS/JMS");
+            if (!show_generic_export_window)
             {
-                show_generic_export_window = true;
+                if (ImGui::Button(genExprtLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
+                {
+                    show_generic_export_window = true;
+                }
             }
-        }
-        else
-        {
-            showDisabledButton(genExprtLabel, moduleSelectionSize);
-        }
-        // Show one button refresh button 
-        if (!show_one_button_refresh_window)
-        {
-            if (ImGui::Button(oneBttnLabel, moduleSelectionSize))
+            else
             {
-                show_one_button_refresh_window = true;
+                showDisabledButton(genExprtLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
-        }
-        else
-        {
-            showDisabledButton(oneBttnLabel, moduleSelectionSize);
-        }        
-        
-        ImGui::SeparatorText("CAD");
-        if (!show_servlog_viewer)
-        {
-			if (ImGui::Button(servlogLabel, moduleSelectionSize))
-			{
-				show_servlog_viewer = true;
-			}
-		}
-        else
-        {
-            showDisabledButton(servlogLabel, moduleSelectionSize);
-        }
-        /*
-        * Deprecated modules removed from program after replacing with generic importer
-        if (!show_map_import_window)
-        {
-            if (ImGui::Button(mapDataImportLabel, moduleSelectionSize))
+            // Show one button refresh button 
+            if (!show_one_button_refresh_window)
             {
-                show_map_import_window = true;
+                if (ImGui::Button(oneBttnLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
+                {
+                    show_one_button_refresh_window = true;
+                }
             }
-        }
-        else
-        {
-            showDisabledButton(mapDataImportLabel, moduleSelectionSize);
-        }
-        if (!show_unit_import_window) 
-        {
-            if (ImGui::Button(unitImportLabel, moduleSelectionSize)) 
+            else
             {
-                show_unit_import_window = true;
+                showDisabledButton(oneBttnLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
-        }
-        else 
-        {
-            showDisabledButton(unitImportLabel, moduleSelectionSize);
-        }*/
-        ImGui::SeparatorText("SQL");
-        // Show sql query builder button 
-        if (!show_sql_query_builder_window)
-        {
-            if (ImGui::Button(sqlQryLabel, moduleSelectionSize)) 
-            {
-                show_sql_query_builder_window = true;
-            }
-        }
-        else 
-        {
-            showDisabledButton(sqlQryLabel, moduleSelectionSize);
-        }
-		if (!show_generic_import_data_window)
-		{
-			if (ImGui::Button(genericDataImportLabel, moduleSelectionSize))
-			{
-				show_generic_import_data_window = true;
-			}
-		}
-		else
-		{
-			showDisabledButton(genericDataImportLabel, moduleSelectionSize);
-		}
 
-        // End Module Selection window
-        ImGui::End();
+            ImGui::SeparatorText("CAD");
+            if (!show_servlog_viewer)
+            {
+                if (ImGui::Button(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
+                {
+                    show_servlog_viewer = true;
+                }
+            }
+            else
+            {
+                showDisabledButton(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
+            }
+            /*
+            * Deprecated modules removed from program after replacing with generic importer
+            if (!show_map_import_window)
+            {
+                if (ImGui::Button(mapDataImportLabel, moduleSelectionSize))
+                {
+                    show_map_import_window = true;
+                }
+            }
+            else
+            {
+                showDisabledButton(mapDataImportLabel, moduleSelectionSize);
+            }
+            if (!show_unit_import_window)
+            {
+                if (ImGui::Button(unitImportLabel, moduleSelectionSize))
+                {
+                    show_unit_import_window = true;
+                }
+            }
+            else
+            {
+                showDisabledButton(unitImportLabel, moduleSelectionSize);
+            }*/
+            ImGui::SeparatorText("SQL");
+            // Show sql query builder button 
+            if (!show_sql_query_builder_window)
+            {
+                if (ImGui::Button(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
+                {
+                    show_sql_query_builder_window = true;
+                }
+            }
+            else
+            {
+                showDisabledButton(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
+            }
+            if (!show_generic_import_data_window)
+            {
+                if (ImGui::Button(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
+                {
+                    show_generic_import_data_window = true;
+                }
+            }
+            else
+            {
+                showDisabledButton(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
+            }
 
-        // End no window padding
-        ImGui::PopStyleVar();
+            // End Module Selection window
+            ImGui::End();
+
+            // End no window padding
+            ImGui::PopStyleVar();
+        }
 
         // Recent Updates window
         //ImGui::SetNextWindowSize(recentUpdateSize);
@@ -768,159 +806,126 @@ int main(int, char**)
 
         // End window padding style
         ImGui::PopStyleVar();
+        
+
+        //Start windows if the option is selected
+        if (show_generic_export_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
+            ImGui::Begin(genExprtLabel, &show_generic_export_window, ImGuiWindowFlags_HorizontalScrollbar);
+            showGenericExportWindow(&show_generic_export_window, sql, log);
+            ImGui::End();
+        }
+        if (show_one_button_refresh_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
+            ImGui::Begin(oneBttnLabel, &show_one_button_refresh_window);
+            showOneButtonRefreshWindow(&show_one_button_refresh_window, log);
+            ImGui::End();
+        }
+        if (show_servlog_viewer)
+        {
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
+            ImGui::Begin(servlogLabel, &show_servlog_viewer);
+            servlogViewer(&show_servlog_viewer, sql, log);
+            ImGui::End();
+        }
+        if (show_sql_query_builder_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
+            ImGui::Begin(sqlQryLabel, &show_sql_query_builder_window);
+            showSqlQueryBuilderWindow(&show_sql_query_builder_window, log);
+            ImGui::End();
+        }
+        if (show_generic_import_data_window)
+        {
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
+            ImGui::Begin(genericDataImportLabel, &show_generic_import_data_window);
+            genericDataImport(&show_generic_import_data_window, sql, log, directory_path);
+            ImGui::End();
+        }
 
         // Set modules in designated area with tabs
-        // Future idea: Make buttons that open modules as tabs and make tabs able to be closed as needed
         //ImGui::SetNextWindowPos(modulePos, ImGuiCond_Always);
         //ImGui::SetNextWindowSize(moduleSize);
-        ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_generic_import_data_window && !show_servlog_viewer) 
-        {
-            ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
-        }
-        else 
-        {
-            if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) 
-            {
-                if (ImGui::BeginTabItem(genExprtLabel, &show_generic_export_window, ImGuiTabItemFlags_None)) 
-                {
-                    showGenericExportWindow(&show_generic_export_window, sql);
+    //    ImGui::Begin("Modules", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+    //    if (!show_generic_export_window && !show_one_button_refresh_window && !show_sql_query_builder_window && !show_generic_import_data_window && !show_servlog_viewer) 
+    //    {
+    //        ImGui::Text("Click a button to open that module here. You can have multiple modules open at once.");
+    //    }
+    //    else 
+    //    {
+    //        if (ImGui::BeginTabBar("Modules"), ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs) 
+    //        {
+    //            if (ImGui::BeginTabItem(genExprtLabel, &show_generic_export_window, ImGuiTabItemFlags_None)) 
+    //            {
+    //                showGenericExportWindow(&show_generic_export_window, sql);
 
-                    // End Generic export generator tab
-                    ImGui::EndTabItem();
-                }
-                // Add tab for one button refresh window
-                if (ImGui::BeginTabItem(oneBttnLabel, &show_one_button_refresh_window, ImGuiTabItemFlags_None)) 
-                {
-                    showOneButtonRefreshWindow(&show_one_button_refresh_window);
+    //                // End Generic export generator tab
+    //                ImGui::EndTabItem();
+    //            }
+    //            // Add tab for one button refresh window
+    //            if (ImGui::BeginTabItem(oneBttnLabel, &show_one_button_refresh_window, ImGuiTabItemFlags_None)) 
+    //            {
+    //                showOneButtonRefreshWindow(&show_one_button_refresh_window);
 
-                    // End Refresh tab
-                    ImGui::EndTabItem();
-                }
-                // Add tab for servlog viewer
-				if (ImGui::BeginTabItem(servlogLabel, &show_servlog_viewer, ImGuiTabItemFlags_None))
-				{
-					servlogViewer(&show_servlog_viewer);
-					// End servlog viewer tab
-					ImGui::EndTabItem();
-				}
-                // Add tab for sql generator
-                if (ImGui::BeginTabItem(sqlQryLabel, &show_sql_query_builder_window, ImGuiTabItemFlags_None)) 
-                {
-                    showSqlQueryBuilderWindow(&show_sql_query_builder_window);
+    //                // End Refresh tab
+    //                ImGui::EndTabItem();
+    //            }
+    //            // Add tab for servlog viewer
+				//if (ImGui::BeginTabItem(servlogLabel, &show_servlog_viewer, ImGuiTabItemFlags_None))
+				//{
+				//	servlogViewer(&show_servlog_viewer);
+				//	// End servlog viewer tab
+				//	ImGui::EndTabItem();
+				//}
+    //            // Add tab for sql generator
+    //            if (ImGui::BeginTabItem(sqlQryLabel, &show_sql_query_builder_window, ImGuiTabItemFlags_None)) 
+    //            {
+    //                showSqlQueryBuilderWindow(&show_sql_query_builder_window);
 
-                    // End sql query builder tab
-                    ImGui::EndTabItem();
-                }
-                // Tab for XML parser module
-                //if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) 
-                //{
-                //    xmlParser(directory_path);
+    //                // End sql query builder tab
+    //                ImGui::EndTabItem();
+    //            }
+    //            // Tab for XML parser module
+    //            //if (ImGui::BeginTabItem("XML Parser", &show_xml_parser_window, ImGuiTabItemFlags_None)) 
+    //            //{
+    //            //    xmlParser(directory_path);
 
-                //    // End XML Parser
-                //    ImGui::EndTabItem();
-                //}
-                // Map Import for CAD   -- DEPRECATED
-                //if (ImGui::BeginTabItem(mapDataImportLabel, &show_map_import_window, ImGuiTabItemFlags_None))
-                //{
-                //    mapImport(sql, directory_path);
+    //            //    // End XML Parser
+    //            //    ImGui::EndTabItem();
+    //            //}
+    //            // Map Import for CAD   -- DEPRECATED
+    //            //if (ImGui::BeginTabItem(mapDataImportLabel, &show_map_import_window, ImGuiTabItemFlags_None))
+    //            //{
+    //            //    mapImport(sql, directory_path);
 
-                //    // End Map Import tab
-                //    ImGui::EndTabItem();
-                //}
-                //// Unit Import for CAD    -- DEPRECATED
-                //if (ImGui::BeginTabItem(unitImportLabel, &show_unit_import_window, ImGuiTabItemFlags_None)) 
-                //{
-                //    unitBuilder(&show_unit_import_window, sql, units_directory_path);
+    //            //    // End Map Import tab
+    //            //    ImGui::EndTabItem();
+    //            //}
+    //            //// Unit Import for CAD    -- DEPRECATED
+    //            //if (ImGui::BeginTabItem(unitImportLabel, &show_unit_import_window, ImGuiTabItemFlags_None)) 
+    //            //{
+    //            //    unitBuilder(&show_unit_import_window, sql, units_directory_path);
 
-                //    // End Unit Import Window
-                //    ImGui::EndTabItem();
-                //}                
-                if (ImGui::BeginTabItem(genericDataImportLabel, &show_generic_import_data_window, ImGuiTabItemFlags_None))
-                {
-					genericDataImport(sql, log, directory_path);
+    //            //    // End Unit Import Window
+    //            //    ImGui::EndTabItem();
+    //            //}                
+    //            if (ImGui::BeginTabItem(genericDataImportLabel, &show_generic_import_data_window, ImGuiTabItemFlags_None))
+    //            {
+				//	genericDataImport(sql, log, directory_path);
 
-					// End Generic Data Import tab
-					ImGui::EndTabItem();
-                }
+				//	// End Generic Data Import tab
+				//	ImGui::EndTabItem();
+    //            }
 
-                // End Modules tab
-                ImGui::EndTabBar();
-            }
-        }
+    //            // End Modules tab
+    //            ImGui::EndTabBar();
+    //        }
+    //    }
 
-        // End modules child window
-        ImGui::End();
-        
-//<<<<<<< Updated upstream
-//        if (ImGui::BeginMainMenuBar()) 
-//        {
-//            if (ImGui::BeginMenu("File")) 
-//            {
-//                if (ImGui::MenuItem("Close Application")) 
-//                {
-//                    return 0;
-//                }
-//                // End File menu
-//                ImGui::EndMenu();
-//            }
-//            if (ImGui::BeginMenu("View")) 
-//            {
-//                if (ImGui::MenuItem("Getting Started",NULL, &open_getting_started));
-//                if (ImGui::MenuItem("Recent Updates", NULL, &open_recent_updates));
-//                if (ImGui::MenuItem("Health Check", NULL, &open_health_check));
-//                ImGui::BeginDisabled(); if (ImGui::MenuItem("XML Parser", NULL, &show_xml_parser_window)); ImGui::EndDisabled();
-//                if (ImGui::MenuItem("Demo Window", NULL, &show_demo_window));
-//
-//                // End View menu
-//                ImGui::EndMenu();
-//            }
-//            if (ImGui::BeginMenu("Settings")) 
-//            {
-//                // Open popup for SQL settings
-//                if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
-//
-//                // End settings menu
-//                ImGui::EndMenu();
-//            }
-//            if (show_generic_export_window) 
-//            {
-//                if (ImGui::BeginMenu("Generic Export Generator Options")) 
-//                {
-//                    // Center window when it opens
-//                    ImVec2 screen_center = ImGui::GetMainViewport()->GetCenter();
-//                    ImGui::SetNextWindowPos(screen_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-//                    if (ImGui::MenuItem("Information", NULL, &gen_export_info));
-//                    if (ImGui::MenuItem("Help"));
-//
-//                    // End Gen Exprt Gen menu options
-//                    ImGui::EndMenu();
-//                }                
-//            }
-//            if (isDarkMode)
-//            {
-//                if (ImGui::Button("Light Mode"))
-//                {
-//                    ImGui::StyleColorsLight();
-//                    isDarkMode = false;
-//                }
-//            }
-//            else
-//            {
-//                if (ImGui::Button("Dark Mode"))
-//                {
-//                    ImGui::StyleColorsDark();
-//                    isDarkMode = true;
-//                }
-//            }
-//            // saveDarkModeSettings("ImplementationToolbox.ini", isDarkMode);
-//            ImGui::EndMainMenuBar();
-//        }
-//=======
-//        
-//>>>>>>> Stashed changes
-
-        
+    //    // End modules child window
+    //    ImGui::End();        
 
         if (gen_export_info) { genExportInfoModPop(&gen_export_info); }
 

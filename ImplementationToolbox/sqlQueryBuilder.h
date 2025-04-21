@@ -1,6 +1,7 @@
 #include "imgui.h"
+class AppLog;
 
-void showSqlQueryBuilderWindow(bool*);
+void showSqlQueryBuilderWindow(bool*, AppLog&);
 
 /// <summary>
 /// Used to format a comma separated list to be used with an 'IN' operator in SQL by adding single quotes around each value in the list

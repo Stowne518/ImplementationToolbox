@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <iostream>
 #include <cstdio>
+#include "AppLog.h"
 #endif
 
 // Visual Studio warnings
@@ -308,7 +309,7 @@ void clearSelectedFields() {
 Code to display generic export generator and options
 Use this to get around application and perform all functions
 */
-void showGenericExportWindow(bool* p_open, Sql& sql) {
+void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
     static bool no_titlebar = false;
     static bool no_scrollbar = false;
     static bool no_menu = false;
@@ -384,7 +385,7 @@ void showGenericExportWindow(bool* p_open, Sql& sql) {
                     std::strncpy(exportName, profile.getExportName(), MAX_CHAR_SIZE);
                     std::strncpy(sftpUser, profile.getSftpUser(), MAX_CHAR_SIZE);
                     std::strncpy(sftpPass, profile.getSftpPass(), MAX_CHAR_SIZE);
-                    std::strncpy(sftpIp, profile.getSftpUser(), LONG_CHAR_SIZE);
+                    std::strncpy(sftpIp, profile.getSftpIp(), LONG_CHAR_SIZE);
                     std::strncpy(sftpTargetDir, profile.getSftpTargetDir(), MAX_CHAR_SIZE);
                     std::strncpy(agency, profile.getAgency(), 5);
                     std::strncpy(filePrefix, profile.getFilePrefix(), MAX_CHAR_SIZE);
