@@ -6,7 +6,8 @@
 #include <algorithm>
 #include <atomic>
 #include <thread>
-
+#include <future>
+#include <chrono>
 
 void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 {
@@ -45,6 +46,25 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     static bool insert_window = display_settings.getInsertWindow();
     static bool mapoverview = display_settings.getMappingOverview();
 
+    // Forward thread processing declarations
+    static std::future<std::vector<std::string>> columnFuture;
+    static std::future<std::vector<std::string>> rowFuture;
+    static std::future<std::vector<std::string>> destinationFuture;
+    static std::future<std::vector<std::string>> insertFuture;
+    static std::future<void> processFuture;
+    static std::future<void> insertBuilderFuture;
+    static bool
+        isGettingRows = false,
+        isLoadingColumns = false,
+        isLoadingCSV = false,
+        isLoadingData = false,
+        isProcessingData = false,
+        isLoadingInserts = false,
+        dataProcessed = false,
+        isBuildingInserts = false;
+
+    std::mutex sqlMutex;
+
     enum ButtonStyle
     {
         Button_Comp,
@@ -54,6 +74,11 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 	log.logStateChange("loaded_csv", loaded_csv);
 	log.logStateChange("load_tables", load_tables);
 	log.logStateChange("load_columns", load_columns);
+    log.logStateChange("isLoadingCSV", isLoadingCSV);
+    log.logStateChange("isLoadingColumns", isLoadingColumns);
+    log.logStateChange("isLoadingData", isLoadingData);
+    log.logStateChange("isProcessingData", isProcessingData);
+    log.logStateChange("dataProcessed", dataProcessed);
 	log.logStateChange("confirm_mapping", confirm_mapping);
 	log.logStateChange("ready_to_import", ready_to_import);
     ImGui::SameLine();
@@ -69,20 +94,27 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     {
         if (ImGui::Button("Load CSV"))
         {
+            
             try 
             {
-                getColumns(std::filesystem::path(dir + "DataImport\\" + filepath), source_columns);
-                for (int i = 0; i < source_columns.size(); i++)
-                {
-                    source_columns_index.push_back(i);
-                }
-                getRows(std::filesystem::path(dir + "DataImport\\" + filepath), data_rows);
+                // Start asynchronous thread to populate columns so we don't freeze program on larger file imports --#13
+                columnFuture = std::async(
+                    std::launch::async,
+                    getColumns,
+                    std::filesystem::path(dir + "DataImport\\" + filepath) // Pass the correct argument
+                );
+                isLoadingCSV = true;    // Flag the process of loading CSV has started
+
+                // Start asynchronous thread to populate rows so we don't freeze program on larger file imports --#13
+                rowFuture = std::async(
+                    std::launch::async, 
+                    getRows, 
+                    std::filesystem::path(dir + "DataImport\\" + filepath)
+                );
+                isLoadingData = true;
+
                 log.AddLog("[INFO] File selected: %s\n", filepath.c_str());
-                for (int i = 0; i < source_columns.size(); i++)
-                {
-                    log.AddLog("[INFO] CSV Column Successfully loaded: %s\n", source_columns[i]);
-                }
-                loaded_csv = true;
+                // rowFuture.get();
 			}
 			catch (const std::ifstream::failure& e)
 			{
@@ -105,7 +137,63 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                 ImGui::SetItemTooltip("Unknown error occurred.");
             }
         }
-        
+        // Poll the future to see if CSV columns have finished loading
+        if (isLoadingCSV)
+        {
+            // Check if future is ready without blocking
+            if (columnFuture.valid() && columnFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+            {
+                try
+                {
+                   // Retrieve the result
+                   source_columns = columnFuture.get();
+                   
+                    // Log the loaded columns
+                    for (const auto& column : source_columns)
+                    {
+                        log.AddLog("[INFO] CSV Table Column loaded: %s\n", column.c_str());
+                    }
+
+                    // Get count and index position of loaded columns
+                    for (int i = 0; i < source_columns.size(); i++)
+                    {
+                        source_columns_index.push_back(i);
+                        log.AddLog("[INFO] Source column index added: %i\n", i);
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    log.AddLog("[ERROR] Failed to load CSV columns: %s\n", e.what());
+                    ImGui::SetItemTooltip("Failed to load CSV columns.");
+                }
+            }
+
+            // Check if rowFuture is ready without blocking
+            if (rowFuture.valid() && rowFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+            {
+                try
+                {
+                    // Retrieve the result
+                    data_rows = rowFuture.get();
+
+                    // Log the loaded rows
+                    log.AddLog("[INFO] CSV rows loaded: %zu rows\n", data_rows.size());
+                }
+                catch (const std::exception& e)
+                {
+                    log.AddLog("[ERROR] Failed to load CSV rows: %s\n", e.what());
+                    ImGui::SetItemTooltip("Failed to load CSV rows.");
+                }
+            }
+            // If both futures are done, reset the loading flag
+            if (!columnFuture.valid() && !rowFuture.valid())
+            {
+                isLoadingCSV = false; // Reset the loading flag
+                isLoadingData = false;
+                loaded_csv = true;      // Set loaded flag
+                log.AddLog("[INFO] Columns and rows loading finished.\n");
+            }
+        }
     }
     ImGui::EndGroup();
     ImGui::SameLine();
@@ -149,15 +237,76 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         else
         {
             ImGui::SameLine();
+
+            
+
             if (ImGui::Button("Load Columns"))
             {
-                destination_columns = sql.getTableColumns(sql._GetConnectionString(), table_name);
-                for (int i = 0; i < destination_columns.size(); i++)
+                log.AddLog("[DEBUG] Connection string before lambda %s\n", sql._GetConnectionString().c_str());
+                try
                 {
-                    log.AddLog("[INFO] SQL Table Column loaded: %s\n", destination_columns[i].c_str());
-                    buffer_columns.push_back("");
+                    // Capture the current value of table_name by value
+                    std::string curr_table_name = table_name;
+                    std::string connectionString;
+                    sql._SetConnectionString();
+
+                    {
+                        // Lock the mutex to safely access sql object
+                        std::lock_guard<std::mutex> lock(sqlMutex);
+                        connectionString = sql._GetConnectionString();  // After locking sqlMutex get connection string value to protect from changes
+                        curr_table_name = table_name;                   // After locking sqlMutex get table name to protect from changes while processing
+                    }
+                    // Start the asynchronous operation
+                    destinationFuture = std::async(
+                        std::launch::async,
+                        [&sql, connectionString, curr_table_name]() {
+                            //sql._SetConnectionString();
+                            
+                            return sql.getTableColumns(connectionString, curr_table_name);
+                        }
+                    );
+                    log.AddLog("[DEBUG] Connection string after lambda %s\n", sql._GetConnectionString().c_str());
+                    isLoadingColumns = true; // Indicate that the columns are being loaded
                 }
-                load_columns = true;
+                catch (const std::exception& e)
+                {
+                    log.AddLog("[ERROR] Failed to start loading SQL columns: %s\n", e.what());
+                    ImGui::SetItemTooltip("Failed to start loading SQL columns.");
+                }
+                catch (...)
+                {
+                    log.AddLog("[ERROR] Unknown error occurred while loading SQL tables.\n");
+                    ImGui::SetItemTooltip("Unknown error occurred.");
+                }
+            }
+            // Poll the future to see if columns have finished loading
+            if (isLoadingColumns)
+            {
+                // Check if future is ready without blocking
+                if (destinationFuture.valid() && destinationFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+                {
+                    try
+                    {
+                        // Retrieve the result
+                        destination_columns = destinationFuture.get();
+
+                        // Log the loaded columns
+                        for (const auto& column : destination_columns)
+                        {
+                            log.AddLog("[INFO] SQL Table Column loaded: %s\n", column.c_str());
+                            buffer_columns.push_back("");
+                        }
+
+                        load_columns = true;
+                        isLoadingColumns = false; // Reset the loading flag
+                    }
+                    catch (const std::exception& e)
+                    {
+                        log.AddLog("[ERROR] Failed to load SQL columns: %s\n", e.what());
+                        ImGui::SetItemTooltip("Failed to load SQL columns.");
+                        isLoadingColumns = false; // Reset the loading flag
+                    }
+                }
             }
         }
 	}
@@ -247,8 +396,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 
         if (ImGui::BeginMenuBar())
         {
-            ImGui::Text("< Column Mapping >");
-            if(load_columns && loaded_csv)
+            if (load_columns && loaded_csv)
             {
                 // Quickly check if any buffer column has a value if we haven't already
                 for (int i = 0; i < buffer_columns.size(); i++)
@@ -264,15 +412,32 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                     }
                 }
             }
-            if (ImGui::MenuItem("Confirm Mapping", NULL, &confirm_mapping, (loaded_csv && load_columns && data_mapped_check && !confirm_mapping)))
+            if(ImGui::BeginMenu("Column Mapping"))
             {
-                data_window = true;
+                if (ImGui::MenuItem("Confirm Mapping", NULL, &confirm_mapping, (loaded_csv && load_columns && data_mapped_check && !confirm_mapping)))
+                {
+                    data_window = true;
+                }
+                if (ImGui::MenuItem("Cancel Mapping", NULL, false, (loaded_csv && load_columns)))
+                {
+                    clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls, confirm_data);
+                }
+                // End Column Mapping menu
+                ImGui::EndMenu();
             }
-            if (ImGui::MenuItem("Cancel Mapping", NULL, false, (loaded_csv && load_columns)))
+            ImGui::Text("| Status:");
+            if (isLoadingColumns || isLoadingCSV)
             {
-                clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls, confirm_data);
+                ImGui::Text("Loading Columns...");
             }
-
+            else if (destination_columns.size() > 0 && source_columns.size() > 0)
+            {
+                ImGui::Text("All Columns loaded!");
+            }
+            else
+            {
+                ImGui::Text("Idle...");
+            }
             // End column mapping menu bar
             ImGui::EndMenuBar();
         }
@@ -282,6 +447,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             if (confirm_mapping)
             {
                 data_window = true;
+
             }
         }
         else
@@ -340,75 +506,78 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         ImGui::SameLine();
     }
     
-    if (!cleanup && confirm_mapping)
-    {
-        // Map out buffer index values from source column index positions
-        // Clean up buffer index and remove -1's since we don't need them.
-        for (int i = 0; i < buffer_columns_index.size(); i++)
-        {
-            if (buffer_columns_index[i] != -1)
-            {
-                destination_columns_index.push_back(i);                 // Map SQL table columns in order they were mapped
-                data_rows_index.push_back(buffer_columns_index[i]);     // Get index position of data that matches columns to the SQL tables they were mapped to
-            }
-        }
-        // Log index values for debugging
-        log.AddLog("[DEBUG] destination_column_index positions =  ");
-        for (int i = 0; i < destination_columns_index.size(); i++)
-        {
-            if (i == destination_columns_index.size() - 1)
-                log.AddLog("%i", destination_columns_index[i]);
-            else
-                log.AddLog("%i, ", destination_columns_index[i]);
-        }
-        log.AddLog("\n");
-        log.AddLog("[DEBUG] data_rows_index =  ");
-        for (int i = 0; i < data_rows_index.size(); i++)
-        {
-            if (i == data_rows_index.size() - 1)
-                log.AddLog("%i", data_rows_index[i]);
-            else
-                log.AddLog("%i, ", data_rows_index[i]);
-        }
-        log.AddLog("\n");
-        // Remove values from data_rows that aren't mapped to a column in SQL
-        for (int i = 0; i < data_rows.size(); i++)
-        {
-            std::vector<std::string>data_tmp;
-            std::string value;
-            std::vector<std::string>values;
-            std::stringstream ss(data_rows[i]);
-            while (std::getline(ss, value, ','))                                        // Read each line of data in data_rows
-            {
-                values.push_back(value);                                                // Add data to the vector containing the separated data elements
-            }
-            if (data_rows[i].back() == ',')
-            {
-                values.push_back("");                                                   // If last value is a comma push back an extra blank string to show we ended on a blank
-            }
-            for (int j = 0; j < destination_columns_index.size(); j++)                  // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
-            {
-                // If we get an empty cell we push back an empty string
-                if (values[data_rows_index[j]] == "")
-                {
-                    data_tmp.push_back("");
-                }
-                else
-                {
-                    data_tmp.push_back(values[data_rows_index[j]]);
-                }
-            }
-            data_parsed_final.push_back(data_tmp);                                   // Push vector of parsed out strings into data_parsed_final to use each data piece of only selected data
-            data_rows[i] = "";                                                          // Clear out the row in the original data_row vector
-            for (int k = 0; k < data_tmp.size(); k++)                                   // Loop over newly constructed row of data and concantate it into a single string to push back to data_rows
-            {
-                data_rows[i] += data_tmp[k];
-                if (k != data_tmp.size() - 1)
-                    data_rows[i] += ",";                                                // Separate each value by a comma if we're not next to the end position yet
-            }
-        }
-        cleanup = true;                                                                 // Tell application cleanup has been completed and we won't revist this section
-    }
+    // Perform data clean up
+    // This involves taking all data from the CSV, then trimming it down so only data from columns that were mapped is prepared for import
+    // Later, displayDataTable lines up the data with the correct order that the sql columns are listed in based on the column mapped to it using data_rows_index.
+    //if (!cleanup && confirm_mapping)
+    //{
+    //    // Map out buffer index values from source column index positions
+    //    // Clean up buffer index and remove -1's since we don't need them.
+    //    for (int i = 0; i < buffer_columns_index.size(); i++)
+    //    {
+    //        if (buffer_columns_index[i] != -1)
+    //        {
+    //            destination_columns_index.push_back(i);                 // Map SQL table columns in order they were mapped
+    //            data_rows_index.push_back(buffer_columns_index[i]);     // Get index position of data that matches columns to the SQL tables they were mapped to
+    //        }
+    //    }
+    //    // Log index values for debugging
+    //    log.AddLog("[DEBUG] destination_column_index positions =  ");
+    //    for (int i = 0; i < destination_columns_index.size(); i++)
+    //    {
+    //        if (i == destination_columns_index.size() - 1)
+    //            log.AddLog("%i", destination_columns_index[i]);
+    //        else
+    //            log.AddLog("%i, ", destination_columns_index[i]);
+    //    }
+    //    log.AddLog("\n");
+    //    log.AddLog("[DEBUG] data_rows_index =  ");
+    //    for (int i = 0; i < data_rows_index.size(); i++)
+    //    {
+    //        if (i == data_rows_index.size() - 1)
+    //            log.AddLog("%i", data_rows_index[i]);
+    //        else
+    //            log.AddLog("%i, ", data_rows_index[i]);
+    //    }
+    //    log.AddLog("\n");
+    //    // Remove values from data_rows that aren't mapped to a column in SQL
+    //    for (int i = 0; i < data_rows.size(); i++)
+    //    {
+    //        std::vector<std::string>data_tmp;
+    //        std::string value;
+    //        std::vector<std::string>values;
+    //        std::stringstream ss(data_rows[i]);
+    //        while (std::getline(ss, value, ','))                                        // Read each line of data in data_rows
+    //        {
+    //            values.push_back(value);                                                // Add data to the vector containing the separated data elements
+    //        }
+    //        if (data_rows[i].back() == ',')
+    //        {
+    //            values.push_back("");                                                   // If last value is a comma push back an extra blank string to show we ended on a blank
+    //        }
+    //        for (int j = 0; j < destination_columns_index.size(); j++)                  // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
+    //        {
+    //            // If we get an empty cell we push back an empty string
+    //            if (values[data_rows_index[j]] == "")
+    //            {
+    //                data_tmp.push_back("");
+    //            }
+    //            else
+    //            {
+    //                data_tmp.push_back(values[data_rows_index[j]]);
+    //            }
+    //        }
+    //        data_parsed_final.push_back(data_tmp);                                      // Push vector of parsed out strings into data_parsed_final to use each data piece of only selected data
+    //        data_rows[i] = "";                                                          // Clear out the row in the original data_row vector
+    //        for (int k = 0; k < data_tmp.size(); k++)                                   // Loop over newly constructed row of data and concantate it into a single string to push back to data_rows
+    //        {
+    //            data_rows[i] += data_tmp[k];
+    //            if (k != data_tmp.size() - 1)
+    //                data_rows[i] += ",";                                                // Separate each value by a comma if we're not next to the end position yet
+    //        }
+    //    }
+    //    cleanup = true;                                                                 // Tell application cleanup has been completed and we won't revist this section
+    //}
     if(data_window)
     {
         // Display newly mapped rows as a table
@@ -435,13 +604,44 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         }
         if (confirm_mapping && !confirm_data)
         {
-            displayDataTable(log, destination_columns, destination_columns_index, data_rows, data_rows_index, display_data_rows);
-            /*if (ImGui::Button("Confirm Data"))
+            // Only process(formerly clean) data if:
+            // isLoadingCSV is complete (aka column headers are loaded and the thread is closed)
+            // confirm_mapping - flag set from the menu of column mapping to show the user is finished
+            // isLoadingData is complete (row data has been loaded into data_rows and thread is closed)
+            // dataProcessed is false - flag that is set when this thread is done and we confirm it's state is ready to indicate processing finished
+            // isProcessingData - if we're already running this thread don't start it a second time. Now, we wait until it's done
+            if (!isLoadingCSV && confirm_mapping && !isLoadingData &&!dataProcessed && !isProcessingData)
             {
-                confirm_data = true;
-                insert_window = true;
+                // Start asynchronous thread to process data
+                processFuture = std::async(
+                    std::launch::async,
+                    processData,
+                    std::ref(data_rows),
+                    std::ref(data_parsed_final),
+                    std::ref(buffer_columns_index),
+                    std::ref(destination_columns_index),
+                    std::ref(data_rows_index),
+                    std::ref(log),
+                    std::ref(cleanup)
+                );
+
+                isProcessingData = true; // Indicate that data processing has started
             }
-            ImGui::SetItemTooltip("When data is mapped to your liking, click this to generate SQL queries");*/
+            if (isProcessingData)
+            {
+                ImGui::Text("Cleaning up data and processing for editing...");
+                if (processFuture.valid() && processFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+                {
+                    isProcessingData = false; // Reset the loading flag
+                    dataProcessed = true;       // Set a compeletion flag since we access this function via a menu button
+                    log.AddLog("[INFO] Data processing completed successfully.\n");
+                }
+            }
+            // After data has processed make sure data_parsed_final is populated then show the table
+            if(dataProcessed && data_parsed_final.size() > 0)
+            {
+                displayDataTable(log, destination_columns, destination_columns_index, data_rows, data_rows_index, display_data_rows);
+            }
         }
         else if (confirm_mapping && confirm_data)
         {
@@ -459,7 +659,30 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     // Generate insert queries and store them in vector
     if (!dup_check && confirm_data && insert_rows.size() < data_rows.size())
     {
-        insert_rows = buildInsertQuery(table_name, destination_columns_index, destination_columns, data_rows, data_rows_index, allow_nulls, log);
+        if(!isBuildingInserts)
+        {
+            insertBuilderFuture = std::async(
+                std::launch::async,
+                buildInsertQuery,
+                std::ref(table_name),
+                std::ref(insert_rows),
+                std::ref(destination_columns_index),
+                std::ref(destination_columns),
+                std::ref(data_rows),
+                std::ref(data_rows_index),
+                std::ref(allow_nulls),
+                std::ref(log)
+            );
+
+            isBuildingInserts = true;
+        }
+        if (isBuildingInserts &&
+            insertBuilderFuture.valid() &&
+            insertBuilderFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+        {
+            isBuildingInserts = false;
+            log.AddLog("[INFO] Insert builder processed insert statements successfully.\n");
+        }
     }
     
     // Display insert queries that are generated in a new window. Display queries removed as duplicates afterward.
@@ -596,14 +819,23 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             {
                 ImGui::Text("No valid data for entry! Check duplicate restrictions and try again.");
             }
-            ImGui::Text("Data that was found to be duplicated and removed from insert list:");
-            for (int i = 0; i < dup_rows.size(); i++)
+            if (dup_rows.size() > 0)
             {
-                ImGui::Text(dup_rows[i].c_str());
+                ImGui::Text("Data that was found to be duplicated and removed from insert list:");
+                for (int i = 0; i < dup_rows.size(); i++)
+                {
+                    ImGui::Text(dup_rows[i].c_str());
+                }
             }
-            for (int i = 0; i < query_results.size(); i++)
+            else
+                ImGui::Text("No dupliate data found!");
+
+            if(query_results.size() > 0)
             {
-                ImGui::Text(query_results[i].c_str());
+                for (int i = 0; i < query_results.size(); i++)
+                {
+                    ImGui::Text(query_results[i].c_str());
+                }
             }
         }
         // End Insert statment rows display
@@ -615,36 +847,47 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 	// return false;
 }
 
-void getColumns(std::filesystem::path& dir, std::vector<std::string>& columns) 
+std::vector<std::string> getColumns(const std::filesystem::path& dir/*, std::vector<std::string>& columns*/) 
 {
 	std::ifstream dataImport;
+    std::vector<std::string> columns;
 
 	dataImport.open(dir);
-	std::string line;
-	std::getline(dataImport, line);
-	std::stringstream ss(line);
-	std::string token;
-	// Read comma separated ints into a single string, then parse them out with getline and pass each one individually to setSelected function
-	while (std::getline(ss, token, ',')) 
-	{
-		columns.push_back(token);
-	}
+    if (!dataImport.is_open())
+        throw std::runtime_error("Failed to open file: " + dir.string());
+    
+    std::string line;
+	if(std::getline(dataImport, line))
+    {
+        std::stringstream ss(line);
+        std::string token;
+        // Read comma separated ints into a single string, then parse them out with getline and pass each one individually to setSelected function
+        while (std::getline(ss, token, ','))
+        {
+            columns.push_back(token);
+        }
+    }
+
+    return columns;
 }
 
-void getRows(std::filesystem::path& dir, std::vector<std::string>& rows)
+std::vector<std::string> getRows(const std::filesystem::path& dir)
 {
     std::ifstream rowData;
+    std::vector<std::string> rowTmp;
     rowData.open(dir);
 
     if (!rowData)
-        return;
+        return rowTmp;
 	// Ignore first row in CSV, this is assumed to be the column headers
     rowData.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::string line;
     while (std::getline(rowData, line))
     {
-        rows.push_back(line);
+        rowTmp.push_back(line);
     }
+
+    return rowTmp;
 }
 
 /// <summary>
@@ -927,12 +1170,90 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
     ImGui::EndChild();
 }
 
-std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, bool* nulls, AppLog& log)
+// Function to process data after dependencies are completed
+void processData(std::vector<std::string>& data_rows,
+    std::vector<std::vector<std::string>>& data_parsed_final,
+    std::vector<int>& buffer_columns_index,
+    std::vector<int>& destination_columns_index,
+    std::vector<int>& data_rows_index,
+    AppLog& log, bool& cleanup)
+{
+    // Map out buffer index values from source column index positions
+    for (int i = 0; i < buffer_columns_index.size(); i++)
+    {
+        if (buffer_columns_index[i] != -1)
+        {
+            destination_columns_index.push_back(i);                 // Map SQL table columns in order they were mapped
+            data_rows_index.push_back(buffer_columns_index[i]);     // Get index position of data that matches columns to the SQL tables they were mapped to
+        }
+    }
+
+    // Log index values for debugging
+    log.AddLog("[DEBUG] destination_column_index positions =  ");
+    for (int i = 0; i < destination_columns_index.size(); i++)
+    {
+        if (i == destination_columns_index.size() - 1)
+            log.AddLog("%i", destination_columns_index[i]);
+        else
+            log.AddLog("%i, ", destination_columns_index[i]);
+    }
+    log.AddLog("\n");
+
+    log.AddLog("[DEBUG] data_rows_index =  ");
+    for (int i = 0; i < data_rows_index.size(); i++)
+    {
+        if (i == data_rows_index.size() - 1)
+            log.AddLog("%i", data_rows_index[i]);
+        else
+            log.AddLog("%i, ", data_rows_index[i]);
+    }
+    log.AddLog("\n");
+
+    // Remove values from data_rows that aren't mapped to a column in SQL
+    for (int i = 0; i < data_rows.size(); i++)
+    {
+        std::vector<std::string> data_tmp;
+        std::string value;
+        std::vector<std::string> values;
+        std::stringstream ss(data_rows[i]);
+        while (std::getline(ss, value, ',')) // Read each line of data in data_rows
+        {
+            values.push_back(value); // Add data to the vector containing the separated data elements
+        }
+        if (data_rows[i].back() == ',')
+        {
+            values.push_back(""); // If last value is a comma push back an extra blank string to show we ended on a blank
+        }
+        for (int j = 0; j < destination_columns_index.size(); j++) // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
+        {
+            // If we get an empty cell we push back an empty string
+            if (values[data_rows_index[j]] == "")
+            {
+                data_tmp.push_back("");
+            }
+            else
+            {
+                data_tmp.push_back(values[data_rows_index[j]]);
+            }
+        }
+        data_parsed_final.push_back(data_tmp); // Push vector of parsed out strings into data_parsed_final to use each data piece of only selected data
+        data_rows[i] = "";                     // Clear out the row in the original data_row vector
+        for (int k = 0; k < data_tmp.size(); k++) // Loop over newly constructed row of data and concatenate it into a single string to push back to data_rows
+        {
+            data_rows[i] += data_tmp[k];
+            if (k != data_tmp.size() - 1)
+                data_rows[i] += ","; // Separate each value by a comma if we're not next to the end position yet
+        }
+    }
+    cleanup = true; // Tell application cleanup has been completed and we won't revisit this section
+}
+
+void buildInsertQuery(std::string table_name, std::vector<std::string>& insert_rows, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, bool* nulls, AppLog& log)
 {
 	// TODO: Add multi-threading for large files to prevent UI from freezing and allow each insert to print to log as it's written
     // DONE: Changing logic here to only grab mapped data
     // Added integer vectors for tracking index positions of columns mapped, and columns from the table.
-    std::vector<std::string> queries;
+    // std::vector<std::string> queries;
     
     try
     {
@@ -975,17 +1296,14 @@ std::vector<std::string> buildInsertQuery(std::string table_name, std::vector<in
                         query += ",";
                 }
                 query += ");";
-                queries.push_back(query);
+                insert_rows.push_back(query);
                 log.AddLog("[INFO] Insert query generated: %s\n", query.c_str());
             }
-        } while (queries.size() < rows.size());
-
-        return queries;
+        } while (insert_rows.size() < rows.size());
     }
 	catch (const std::exception& e)
 	{
 		log.AddLog("[ERROR] Failed to build insert query: %s\n", e.what());
-        return {};
 	}
     // return {};
 }
