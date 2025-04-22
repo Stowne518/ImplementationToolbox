@@ -80,7 +80,7 @@ public:
 	void saveConnString(std::string dir, std::string name, int servertype);
 	int returnRecordCount(std::string table, std::string column);
 	int returnRecordCount(std::string table, std::string column, std::string value);
-	std::vector<std::string> getTableColumns(std::string connStr, std::string table);
+	std::vector<std::vector<std::string>> getTableColumns(std::string connStr, std::string table);
 	int returnTableCount(std::string connStr);
 	std::vector<std::string> getTableNames(std::string connStr, std::string database);
 	std::string displayConnectionName(const std::string& directory);

@@ -15,8 +15,12 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     static DisplaySettings display_settings;                // Init struct for display settings to maintain user settings
 	static std::vector<std::string> source_columns;
     static std::vector<int> source_columns_index;
-	static std::vector<std::string> destination_columns;
+	static std::vector<std::vector<std::string>> destination_columns;
     static std::vector<int> destination_columns_index;
+    static std::vector<std::string> destination_column_name;
+    static std::vector<std::string> destination_column_type;
+    static std::vector<std::string> destination_column_max;
+    static std::vector<std::string> destination_column_null;
     static std::vector<std::string> buffer_columns;
     static std::vector<int> buffer_columns_index;
     static std::vector<std::string> data_rows;
@@ -49,7 +53,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     // Forward thread processing declarations
     static std::future<std::vector<std::string>> columnFuture;
     static std::future<std::vector<std::string>> rowFuture;
-    static std::future<std::vector<std::string>> destinationFuture;
+    static std::future<std::vector<std::vector<std::string>>> destinationFuture;
     static std::future<std::vector<std::string>> insertFuture;
     static std::future<void> processFuture;
     static std::future<void> insertBuilderFuture;
@@ -79,6 +83,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     log.logStateChange("isLoadingData", isLoadingData);
     log.logStateChange("isProcessingData", isProcessingData);
     log.logStateChange("dataProcessed", dataProcessed);
+    log.logStateChange("isBuildingInserts", isBuildingInserts);
 	log.logStateChange("confirm_mapping", confirm_mapping);
 	log.logStateChange("ready_to_import", ready_to_import);
     ImGui::SameLine();
@@ -242,7 +247,6 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
 
             if (ImGui::Button("Load Columns"))
             {
-                log.AddLog("[DEBUG] Connection string before lambda %s\n", sql._GetConnectionString().c_str());
                 try
                 {
                     // Capture the current value of table_name by value
@@ -265,7 +269,6 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                             return sql.getTableColumns(connectionString, curr_table_name);
                         }
                     );
-                    log.AddLog("[DEBUG] Connection string after lambda %s\n", sql._GetConnectionString().c_str());
                     isLoadingColumns = true; // Indicate that the columns are being loaded
                 }
                 catch (const std::exception& e)
@@ -290,13 +293,15 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                         // Retrieve the result
                         destination_columns = destinationFuture.get();
 
-                        // Log the loaded columns
-                        for (const auto& column : destination_columns)
+                        for (int j = 0; j < destination_columns[0].size(); j++)
                         {
-                            log.AddLog("[INFO] SQL Table Column loaded: %s\n", column.c_str());
+                            destination_column_name.push_back(destination_columns[0][j]);
+                            destination_column_type.push_back(destination_columns[1][j]);
+                            destination_column_max.push_back(destination_columns[2][j]);
+                            destination_column_null.push_back(destination_columns[3][j]);
+                            log.AddLog("[INFO] SQL Table Column loaded: %s\n", destination_column_name[j]);  // Index 0 should be a list of column names
                             buffer_columns.push_back("");
                         }
-
                         load_columns = true;
                         isLoadingColumns = false; // Reset the loading flag
                     }
@@ -315,25 +320,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
     if (ImGui::Button("Cancel Import", ImVec2(150, 0)))
     {
         clearMappings(log, source_columns, source_columns_index, destination_columns, destination_columns_index, buffer_columns, buffer_columns_index, data_rows, data_rows_index, insert_rows, table_name, loaded_csv, load_tables, load_columns, confirm_mapping, filepath, allow_nulls, confirm_data);
-  //      // Clear all vectors
-  //      source_columns.clear();
-  //      destination_columns.clear();
-  //      buffer_columns.clear();
-  //      table_name.clear();
-  //      data_rows.clear();
-  //      insert_rows.clear();
-		//source_columns_index.clear();
-		//destination_columns_index.clear();
-		//data_rows_index.clear();
-		//buffer_columns_index.clear();
-		//// Reset all flags
-  //      loaded_csv = false;
-  //      load_tables = false;
-  //      load_columns = false;
-  //      confirm_mapping = false;
-  //      confirm_data = false;
-  //      filepath.clear();
-        }
+    }
     if(ImGui::Button("Display"))
     {
         ImGui::OpenPopup("WindowOptions");
@@ -443,17 +430,16 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         }
         if (load_columns && !confirm_mapping && loaded_csv)
         {
-            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
+            displayMappingTable(log, display_settings, source_columns, destination_column_name, destination_column_type, destination_column_max, destination_column_null, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
             if (confirm_mapping)
             {
                 data_window = true;
-
             }
         }
         else
         {
             ImGui::BeginDisabled();
-            displayMappingTable(log, display_settings, source_columns, destination_columns, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
+            displayMappingTable(log, display_settings, source_columns, destination_column_name, destination_column_type, destination_column_max, destination_column_null, buffer_columns, data_rows, buffer_columns_index, source_columns_index, destination_columns_index, display_column_rows, allow_nulls, restrict_duplicates);
             ImGui::EndDisabled();
         }
         // End Column Mapping window
@@ -482,13 +468,13 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             ImGui::TableSetupColumn("=");
             ImGui::TableSetupColumn("Source");
             ImGui::TableHeadersRow();
-            for (int i = 0; i < destination_columns.size(); i++)
+            for (int i = 0; i < destination_column_name.size(); i++)
             {
                 if (!buffer_columns[i].empty())
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::Text("%s", destination_columns[i]);
+                    ImGui::Text("%s", destination_column_name[i]);
                     ImGui::TableNextColumn();
                     ImGui::Text("=");
                     ImGui::TableNextColumn();
@@ -667,7 +653,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                 std::ref(table_name),
                 std::ref(insert_rows),
                 std::ref(destination_columns_index),
-                std::ref(destination_columns),
+                std::ref(destination_column_name),
                 std::ref(data_rows),
                 std::ref(data_rows_index),
                 std::ref(allow_nulls),
@@ -715,7 +701,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                             // Check for duplicate restricted columns
                             if (restrict_duplicates[destination_columns_index[j]])
                             {
-                                if (duplicate_count = sql.returnRecordCount(table_name, destination_columns[destination_columns_index[j]], data_parsed_final[i][j]) > 0)
+                                if (duplicate_count = sql.returnRecordCount(table_name, destination_columns[j][destination_columns_index[j]], data_parsed_final[i][j]) > 0)
                                 {
                                     log.AddLog("[WARN] Duplicate value detected when inserting on column: '%s', which was marked to restrict duplicates. No data inserted.\n", destination_columns[destination_columns_index[j]]);
                                     // Add row to new vector for rows that contain illegal duplicate data
@@ -991,7 +977,7 @@ std::string displayTableNames(Sql& sql)
 	return chosenName;
 }
 
-void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>&s_columns, std::vector<std::string>&d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls, bool* duplicate)
+void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>& s_columns, std::vector<std::string>& d_columns_name, std::vector<std::string>& d_columns_type, std::vector<std::string>& d_columns_max, std::vector<std::string>& d_columns_null, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls, bool* duplicate)
 {
     std::string value;
     std::vector<std::string> values;
@@ -1055,20 +1041,21 @@ void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::stri
         ImGui::TableSetupColumn(" Table Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Mapped Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableHeadersRow();
-        for (int i = 0; i < d_columns.size(); i++)
+        for (int i = 0; i < d_columns_name.size(); i++)
         {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::PushID(i);
             ImGui::Checkbox("##nulls", &nulls[i]);
-            ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns[i]);
-            log.logStateChange(("%s", d_columns[i] + " allows nulls").c_str(), nulls[i]);
+            ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns_name[i]);
+            log.logStateChange(("%s", d_columns_name[i] + " allows nulls").c_str(), nulls[i]);
             ImGui::TableSetColumnIndex(1);
             ImGui::Checkbox("##Dups", &duplicate[i]);
-            ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", d_columns[i]);
-            log.logStateChange(("%s", d_columns[i] + " restricts duplicates on insert.").c_str(), duplicate[i]);
+            ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", d_columns_name[i]);
+            log.logStateChange(("%s", d_columns_name[i] + " restricts duplicates on insert.").c_str(), duplicate[i]);
             ImGui::TableSetColumnIndex(2);
-            ImGui::Text("  %s", d_columns[i]);
+            ImGui::Text("  %s", d_columns_name[i]);
+            ImGui::SetItemTooltip("Data Type: %s\nMax Len: %s\nNullable: %s", d_columns_type[i].c_str(), d_columns_max[i].c_str(), d_columns_null[i].c_str());
             ImGui::TableSetColumnIndex(3);
             ImGui::Button(b_columns[i].c_str(), button_style);
             ImGui::PopID();
@@ -1176,7 +1163,8 @@ void processData(std::vector<std::string>& data_rows,
     std::vector<int>& buffer_columns_index,
     std::vector<int>& destination_columns_index,
     std::vector<int>& data_rows_index,
-    AppLog& log, bool& cleanup)
+    AppLog& log, 
+    bool& cleanup)
 {
     // Map out buffer index values from source column index positions
     for (int i = 0; i < buffer_columns_index.size(); i++)
@@ -1316,7 +1304,7 @@ void buildInsertQuery(std::string table_name, std::vector<std::string>& insert_r
 /// <param name="d_columns_index"> - vector containing index positions of each column that was mapped.</param>
 /// <param name="rows"> - vector containing data that was read in from the CSV. By this point it should be reduced to only contain data from columns we have mapped to.</param>
 /// <param name="rows_index"> - vector containing index positions from the CSV of data columns to track which SQL column it shoudl belong in.</param>
-void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index, int& table_len)
+void displayDataTable(AppLog& log, std::vector<std::vector<std::string>>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index, int& table_len)
 {
     const int TEXT_BASE_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
     ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * table_len);
@@ -1349,7 +1337,7 @@ void displayDataTable(AppLog& log, std::vector<std::string>& d_columns, std::vec
         ImGui::TableSetupScrollFreeze(0, 1);                                        // Make headers row always visible
         for (int i = 0; i < d_columns_index.size(); i++)
         {
-			ImGui::TableSetupColumn(d_columns[d_columns_index[i]].c_str());         // Use mapped column names from the SQL table to set up the headers
+			ImGui::TableSetupColumn(d_columns[0][d_columns_index[i]].c_str());         // Use mapped column names from the SQL table to set up the headers
 			// log.AddLog("[INFO] Table header %s identified\n", d_columns[d_columns_index[i]].c_str());
         }
 		ImGui::TableHeadersRow();                                                   // Tells UI this will be our headers for the table
@@ -1406,7 +1394,7 @@ bool insertMappedData(Sql& sql, std::string query)
 	return success;
 }
 
-void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::string>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls, bool& confirm_data)
+void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::vector<std::string>>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls, bool& confirm_data)
 {
     // Clear null flags
     for (int i = 0; i < destination_columns.size(); i++)

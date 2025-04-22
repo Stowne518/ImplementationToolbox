@@ -68,13 +68,13 @@ std::string displayDataFiles(std::string dir);
 
 std::string displayTableNames(Sql& sql);
 
-void displayMappingTable(AppLog&, DisplaySettings& ds, std::vector<std::string>& s_columns, std::vector<std::string>& d_columns, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_columns_index, std::vector<int>&, std::vector<int>&, int&, bool* nulls, bool* duplicates);
+void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>& s_columns, std::vector<std::string>& d_columns_name, std::vector<std::string>& d_columns_type, std::vector<std::string>& d_columns_max, std::vector<std::string>& d_columns_null, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls, bool* duplicate);
 
 void processData(std::vector<std::string>& data_rows, std::vector<std::vector<std::string>>& data_parsed_final, std::vector<int>& buffer_columns_index, std::vector<int>& destination_columns_index, std::vector<int>& data_rows_index, AppLog& log, bool& cleanup);
 
 void buildInsertQuery(std::string table_name, std::vector<std::string>& insert_rows, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, bool* nulls, AppLog& log);
 
-void displayDataTable(AppLog&, std::vector<std::string>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index, int&);
+void displayDataTable(AppLog&, std::vector<std::vector<std::string>>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index, int&);
 bool insertMappedData(Sql& sql, std::string query);
 
-void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::string>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls, bool& confirm_data);
+void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::vector<std::string>>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls, bool& confirm_data);

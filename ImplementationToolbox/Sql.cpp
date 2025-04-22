@@ -340,10 +340,20 @@ int Sql::returnRecordCount(std::string table, std::string column, std::string va
     return count = SqlConnectionHandler::getRecordCount(_GetConnectionString(), _GetDatabase(), table, column, value);
 }
 
-std::vector<std::string> Sql::getTableColumns(std::string connStr, std::string table)
+/// <summary>
+/// Used to get column names and their schema settings from the database table we're querying
+/// First value is the column name
+/// Second value is the data type
+/// Third value is the maximum field length
+/// Fourth value is nullable
+/// </summary>
+/// <param name="connStr">= Connection string to connect to the server for SQL</param>
+/// <param name="table">= Table name that will be passed to get column schema information from</param>
+/// <returns>Returns vector of vector of strings with the above values in their respective positions</returns>
+std::vector<std::vector<std::string>> Sql::getTableColumns(std::string connStr, std::string table)
 {
-    std::vector<std::string> table_columns = SqlConnectionHandler::getColumns(connStr, table);
-    return table_columns;
+    std::vector<std::vector<std::string>> table_columns_schema = SqlConnectionHandler::getColumns(connStr, table);
+    return table_columns_schema;
 }
 
 int Sql::returnTableCount(std::string connStr)
