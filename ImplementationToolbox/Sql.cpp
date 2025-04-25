@@ -327,6 +327,21 @@ bool Sql::readConnString(std::string filepath)
 	}
 }
 
+std::vector<std::string> Sql::returnStrQry(const std::string connectionstring, const std::string column, const std::string table, int quantity)
+{
+    return SqlConnectionHandler::returnStrQry(connectionstring, column, table, quantity);
+}
+
+std::vector<std::string> Sql::returnDtStrQry(const std::string connectionstring, const std::string column, const std::string table, int quantity)
+{
+    return SqlConnectionHandler::returnDtStrQry(connectionstring, column, table, quantity);
+}
+
+std::vector<int> Sql::returnIntQry(const std::string connectionstring, const std::string column, const std::string table, int quantity)
+{
+    return SqlConnectionHandler::returnIntQry(connectionstring, column, table, quantity);
+}
+
 int Sql::returnRecordCount(std::string table, std::string column) 
 {
     int count;

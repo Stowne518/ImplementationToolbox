@@ -86,6 +86,9 @@ public:
 	std::string displayConnectionName(const std::string& directory);
 	void readConnString(const std::string dir, char* source, char* db, char* un, char* pw, bool);
 	bool readConnString(const std::string);
+	std::vector<std::string> returnStrQry(const std::string connectionstring, const std::string column, const std::string table, int quantity);
+	std::vector<std::string> returnDtStrQry(const std::string connectionstring, const std::string column, const std::string table, int quantity);
+	std::vector<int> returnIntQry(const std::string connectionstring, const std::string column, const std::string table, int quantity);
 };
 
 #endif // SQL_H

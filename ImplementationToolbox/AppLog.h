@@ -55,12 +55,14 @@ struct AppLog
 		}
 
 		// Main Window
-		if (ImGui::Button("Options"))
-			ImGui::OpenPopup("Options");
-		ImGui::SameLine();
+		
 		bool clear = ImGui::Button("Clear");
 		ImGui::SameLine();
 		bool copy = ImGui::Button("Copy");
+		ImGui::Separator();
+		if (ImGui::Button("Options"))
+			ImGui::OpenPopup("Options");
+		ImGui::SameLine();
 		Filter.Draw("Filter", -100.0f);
 
 		ImGui::Separator();

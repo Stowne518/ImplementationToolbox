@@ -82,27 +82,6 @@ static POINT getWindowSize(HWND hwnd) {
 	return size;
 }
 
-//// Map to store previous states of boolean variables
-//std::map<std::string, bool> previousStates;
-//
-//// Function to log message only once when boolean state changes
-//void logStateChange(const std::string& varName, bool currentState, AppLog& log) 
-//{
-//    if (previousStates.find(varName) == previousStates.end()) 
-//    {
-//        // Initialize previous state if not found
-//        previousStates[varName] = !currentState;
-//    }
-//
-//    if (previousStates[varName] != currentState) 
-//    {
-//        // Log the message if state changes
-//        log.AddLog("[DEBUG] State of \'%s\' changed to \'%s\'\n", varName.c_str(), currentState ? "true" : "false");
-//        // Update the previous state
-//        previousStates[varName] = currentState;
-//    }
-//}
-
 constexpr auto settings_filename = "ImplementationToolbox.ini";
 static bool isDarkMode = false;
 
@@ -825,10 +804,12 @@ int main(int, char**)
         }
         if (show_servlog_viewer)
         {
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
             ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(servlogLabel, &show_servlog_viewer);
-            servlogViewer(&show_servlog_viewer, sql, log);
+            servlogViewer(&show_servlog_viewer, sql, log, usrsettings);
             ImGui::End();
+            ImGui::PopStyleVar();
         }
         if (show_sql_query_builder_window)
         {
