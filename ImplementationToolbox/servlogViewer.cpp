@@ -153,6 +153,11 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
 
    if(sql._GetConnected())
    {
+       if (ImGui::Button("Options"))
+       {
+           // Add query/filtering options here
+       }
+       ImGui::SameLine();
 	   // This will be the button to run the select query against servlog with any provided parameters
        if (ImGui::Button("View"))
        {
