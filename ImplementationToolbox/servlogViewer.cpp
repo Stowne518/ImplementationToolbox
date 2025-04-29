@@ -80,13 +80,6 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
     log.logStateChange("view", view);
     log.logStateChange("refresh", refresh.load());
     log.logStateChange("addwhere", addwhere);
-    /*log.logStateChange("servlogid_ord", servlogid_ord);
-    log.logStateChange("service_ord", service_ord);
-    log.logStateChange("product_ord", product_ord);
-    log.logStateChange("logtime_ord", logtime_ord);
-    log.logStateChange("logtype_ord", logtype_ord);
-    log.logStateChange("descrptn_ord", descriptn_ord);
-    log.logStateChange("computer_ord", computer_ord);*/
     log.logStateChange("servlogid_filt", servlogid_filt);
     log.logStateChange("service_filt", service_filt);
     log.logStateChange("product_filt", product_filt);
@@ -104,30 +97,8 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));  
    ImGui::BeginChild("servlogtop", ImVec2(ImGui::GetWindowSize().x, 0), ImGuiChildFlags_AlwaysUseWindowPadding | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize, ImGuiWindowFlags_MenuBar);
    
-   if (ImGui::BeginMenuBar())
-   {
-       if (ImGui::BeginMenu("File"))
-       {
-           
-           if (ImGui::BeginMenu("Save", !refresh))
-           {
-               if (ImGui::Selectable("Save to CSV"))
-               {
-                   SaveFilteredDataToCSV(servlogid, service, product, logtime, logtype, descriptn, computer, filter, log);
-               }
-               // End save menu
-               ImGui::EndMenu();
-           }
-           if (refresh)
-               ImGui::SetItemTooltip("Disable auto-refresh to enable save.");
-
-           // End File menu
-           ImGui::EndMenu();
-       }
-
-       // End Menu bar
-       ImGui::EndMenuBar();
-   }
+   // Show the menu bar across the top of the window
+   showMenuBar(servlogid, service, product, logtime, logtype, descriptn, computer, filter, log);
 
    // Int input for user to select row count returned
    ImGui::SetNextItemWidth(100);
@@ -244,15 +215,6 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         column_order = "servlogid";
         break;
     }
-    /*ImGui::Text("Order by:"); ImGui::SameLine();
-    ImGui::RadioButton("servlogid", &order_by, 1); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; } ImGui::SameLine();
-    ImGui::RadioButton("service", &order_by, 2); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; } ImGui::SameLine();
-    ImGui::RadioButton("product", &order_by, 3); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; } ImGui::SameLine();
-    ImGui::RadioButton("logtime", &order_by, 4); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; } ImGui::SameLine();
-    ImGui::RadioButton("logtype", &order_by, 5); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; } ImGui::SameLine();
-    ImGui::BeginDisabled(); ImGui::RadioButton("desriptn", &order_by, 6); ImGui::EndDisabled(); ImGui::SameLine();
-    ImGui::RadioButton("computer", &order_by, 7); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; }*/
-    
     switch (ascdesc)
     {
     case 0:
@@ -264,9 +226,6 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         if (changed) { frameskip = false; changed = false; }
         break;
     }
-    /*ImGui::RadioButton("Ascending", &ascdesc, 0); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); changed = true; } ImGui::SameLine();
-    ImGui::RadioButton("Descending", &ascdesc, 1); */
-
     if (ImGui::Button("WHERE"))
     {
         addwhere = true;
@@ -281,6 +240,7 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
     }
     if(ImGui::BeginPopup("OrderBy"))
     {
+        ImGui::BeginGroup();    // Group for column ordering
         ImGui::Text("Order By"); ImGui::Separator();
         ImGui::RadioButton("servlogid", &order_by, 1); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; }
         ImGui::RadioButton("service", &order_by, 2); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; }
@@ -289,21 +249,28 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         ImGui::RadioButton("logtype", &order_by, 5); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; }
         ImGui::BeginDisabled(); ImGui::RadioButton("desriptn", &order_by, 6); ImGui::EndDisabled();
         ImGui::RadioButton("computer", &order_by, 7); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); frameskip = false; }
-        ImGui::EndPopup();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("ASC/DESC"))
-    {
-        ImGui::OpenPopup("ascending");
-    }
-    if (ImGui::BeginPopup("ascending"))
-    {
+        ImGui::EndGroup();      // End column ordering group
+        ImGui::SameLine();
+        ImGui::BeginGroup();    // Group for ascending/descending
+        ImGui::Text("ASC/DESC");
         ImGui::RadioButton("Ascending", &ascdesc, 0); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); changed = true; }
         ImGui::RadioButton("Descending", &ascdesc, 1);
-
-        // End ASC/DESC popup
+        ImGui::EndGroup();      // End ascending/descending group
         ImGui::EndPopup();
     }
+    //ImGui::SameLine();
+    //if (ImGui::Button("ASC/DESC"))
+    //{
+    //    ImGui::OpenPopup("ascending");
+    //}
+    //if (ImGui::BeginPopup("ascending"))
+    //{
+    //    ImGui::RadioButton("Ascending", &ascdesc, 0); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); changed = true; }
+    //    ImGui::RadioButton("Descending", &ascdesc, 1);
+
+    //    // End ASC/DESC popup
+    //    ImGui::EndPopup();
+    //}
     
     if(where == "")
     {
@@ -919,6 +886,41 @@ void StartTimerThread(AppLog& log)
    });  
 }
 
+void showMenuBar(const std::vector<int>& servlogid,
+                const std::vector<std::string>& service,
+                const std::vector<std::string>& product,
+                const std::vector<std::string>& logtime,
+                const std::vector<std::string>& logtype,
+                const std::vector<std::string>& descriptn,
+                const std::vector<std::string>& computer,
+                const ImGuiTextFilter& filter,
+                AppLog& log)
+{
+   if (ImGui::BeginMenuBar())
+   {
+       if (ImGui::BeginMenu("File"))
+       {
+           if (ImGui::BeginMenu("Save", !refresh))
+           {
+               if (ImGui::Selectable("Save to CSV"))
+               {
+                   SaveFilteredDataToCSV(servlogid, service, product, logtime, logtype, descriptn, computer, filter, log);
+               }
+               // End save menu
+               ImGui::EndMenu();
+           }
+           if (refresh)
+               ImGui::SetItemTooltip("Disable auto-refresh to enable save.");
+
+           // End File menu
+           ImGui::EndMenu();
+       }
+
+       // End Menu bar
+       ImGui::EndMenuBar();
+   }
+}
+
 // Function to stop the timer thread
 void StopTimerThread(AppLog& log)
 {
@@ -970,23 +972,6 @@ std::vector<std::string> ServlogTable::getLogtime()
 {
 	return logtime;
 }
-
-//void ServlogTable::setLogtype(Sql& sql, int quant)  
-//{  
-//   // Convert string to char  
-//   std::vector<std::string> tmp = sql.returnStrQry(sql._GetConnectionString(), "logtype", "servlog", quant, 0);
-//   std::vector<char> char_vector_buff;  
-//
-//   for (const auto& str : tmp)  
-//   {  
-//       if (!str.empty())  
-//       {  
-//           char buff = str[0]; // Extract the first character of the string  
-//           char_vector_buff.push_back(buff);  
-//       }  
-//   }  
-//   logtype = char_vector_buff;
-//}
 
 std::vector<std::string> ServlogTable::getLogtype()
 {

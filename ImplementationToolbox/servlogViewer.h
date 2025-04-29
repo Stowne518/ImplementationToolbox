@@ -10,6 +10,8 @@ void servlogViewer(bool*, Sql&, AppLog&, UserSettings&);
 
 void StartTimerThread(AppLog& log);
 
+void showMenuBar(const std::vector<int>& servlogid, const std::vector<std::string>& service, const std::vector<std::string>& product, const std::vector<std::string>& logtime, const std::vector<std::string>& logtype, const std::vector<std::string>& descriptn, const std::vector<std::string>& computer, const ImGuiTextFilter& filter, AppLog& log);
+
 void StopTimerThread(AppLog& log);
 
 void SaveFilteredDataToCSV(const std::vector<int>& servlogid, const std::vector<std::string>& service, const std::vector<std::string>& product, const std::vector<std::string>& logtime, const std::vector<std::string>& logtype, const std::vector<std::string>& descriptn, const std::vector<std::string>& computer, const ImGuiTextFilter& filter, AppLog& log);
@@ -41,7 +43,6 @@ public:
 	void setLogtime(Sql& sql, int quant);
 	std::vector<std::string> getLogtime();
 
-	//void setLogtype(Sql& sql, int quant);
 	std::vector<std::string> getLogtype();
 
 	void setDescriptn(Sql& sql, int quant);
