@@ -344,23 +344,7 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
     if (no_decoration)      window_flags |= ImGuiWindowFlags_NoDecoration;
     if (no_close)           p_open = NULL; // Don't pass our bool* to Begin
 
-    static bool use_work_area = false;
-
-    // Set fullscreen options
-    // DONE: Fix the fullscreen option. Only works one way and cannot go back to a windowed view after setting fullscreen
-    //if (use_work_area)
-    //{        
-    //    ImGui::SetNextWindowPos(use_work_area ? main_viewport->WorkPos : main_viewport->Pos);
-    //    ImGui::SetNextWindowSize(use_work_area ? main_viewport->WorkSize : main_viewport->Size);
-    //}
-
-    //if(!use_work_area)
-    //{
-    //    // Center window when it opens
-    //    ImVec2 center_window = ImGui::GetMainViewport()->GetCenter();
-    //    ImGui::SetNextWindowPos(center_window, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    //    ImGui::SetNextWindowSize(ImVec2(display.x * .75, (display.y * .75)), ImGuiCond_Always);
-    //}        
+    static bool use_work_area = false;   
 
         // Open Import profile Window
         if (show_import_profile_window)
@@ -521,11 +505,6 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
         if (ImGui::Button("Reset Profile")) {
             reset();
         }
-        //ImGui::SameLine();
-        //if (ImGui::Button("Test SQL Connection")) {
-        //    // Test SQL connection with select statement -- IT WORKS!!!!!!
-        //    sql.executeQuery("UPDATE genexprt SET filename = 'testing' WHERE genexprtid = 2");
-        //}
 
         // Start popup for confirmation that profile values reset successfully
         if (ImGui::BeginPopup("Profile Reset")) {
@@ -809,27 +788,9 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
                 }
 
                 // Sizing for table to fit in window
-                ImVec2 windowSize = ImVec2(ImGui::GetMainViewport()->Size.x, 0);
+                ImVec2 windowSize = ImVec2(ImGui::GetContentRegionAvail().x, 0);
 
-                    
-                //if (items.Size == 0 && selectedId.size() == 1) {
-                //    items.resize(1, items::MyItem());
-                //    items::MyItem& item = items[0];
-                //    item.ID = 0;
-                //    item.Name = selectedFieldName[0].c_str();
-                //    item.Order = 0;
-                //}
-                ///*for (int i = 0; i < items.Size; i++)
-                //{
-                //    items::MyItem& item = items[i];
-                //    item.ID = i;
-                //    item.Name = selectedFieldName[i].c_str();
-                //    item.Order = ImGui::InputInt(("##order" + std::to_string(i)).c_str(), &order[i], 0, 0);
-                //}*/
-
-                // Begin table for selectable field items
-                ImGui::BeginChild("FieldSelectionTable", ImVec2(544, 360),ImGuiChildFlags_AutoResizeX);
-                if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_Borders, windowSize)) {
+                if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_Borders | ImGuiTableFlags_NoHostExtendX, windowSize)) {
                     for (int i = 0; i < fields.size(); i++)
                     {
 
@@ -883,10 +844,9 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
                     ImGui::EndTable();
                 }
 
-                // End field selection child window
-                ImGui::EndChild();
                 ImGui::SameLine();
-                ImGui::BeginChild("FieldOrderTableChildWindow",ImVec2(0, 360), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX);
+                ImGui::SetNextWindowSizeConstraints(ImVec2(110, 0), ImVec2(400, 425));
+                ImGui::BeginChild("FieldOrderTableChildWindow",ImVec2(0, 0), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY);
 
                 // Create field list
                 static ImVector<items::MyItem> items;
