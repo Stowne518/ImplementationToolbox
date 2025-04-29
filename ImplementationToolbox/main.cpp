@@ -128,10 +128,10 @@ int main(int, char**)
     static bool show_modules = usrsettings.getModules();
 
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.6.5";
-    const char* currVersion = "Implementation Toolbox v0.6.5";
-    const std::string version_number = "v0.6.5";
-    const char* lastUpdate = "4/21/25";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.6";
+    const char* currVersion = "Implementation Toolbox v0.6.6";
+    const std::string version_number = "v0.6.6";
+    const char* lastUpdate = "4/29/25";
 
     // Button labels
     static char genExprtLabel[] = "Generic Export Generator";
@@ -215,15 +215,39 @@ int main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
 
-    static float font_size = 14.0f;
-
-    // Try to load an Arial font from windows directory
-    if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size));
-    if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size + 2));
+    static float font_size = 18.0f;
+    ImFontConfig config;
+    // Try to load an Segoe UI or Arial font from windows directory
+    try
+    {
+        if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeuib.ttf", font_size, &config, nullptr));
+    }
+    catch (const std::exception&)
+    {
+        log.AddLog("[ERROR] Failed to load segoeui.ttf from windows. Trying next font.\n");
+    }
+    try
+    {
+        if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size));
+    }
+    catch (const std::exception&)
+    {
+        log.AddLog("[ERROR] Failed to load arial.ttf from windows. Trying next font.\n");
+    }
     // If we can't find it use the default one
-    else (io.Fonts->AddFontDefault());
-
-    ImFont* current_font = ImGui::GetFont();
+    try
+    {
+        if (io.Fonts->AddFontDefault());
+    }
+    catch (const std::exception&)
+    {
+        log.AddLog("[ERROR] Failed to load default font Closing application.\n");
+        std::cerr << "[ERROR] Failed to load default font Closing application.";
+        return 1;
+    }
+    
+    io.Fonts->Build();
+    ImFontAtlas* font_atlas = io.Fonts;
 
     // Our state
     bool show_demo_window = false;
@@ -413,19 +437,12 @@ int main(int, char**)
             }
             if (ImGui::BeginMenu("Settings"))
             {
-                //if (ImGui::BeginMenu("Fonts"))
-                //{
-                //    ImGuiIO& io = ImGui::GetIO();
-
-                //    for (ImFont* font : io.Fonts->Fonts)
-                //    {
-                //        ImGui::PushID((void*)font);
-                //        if(ImGui::MenuItem(font->GetDebugName(), NULL, &current_font));
-                //        ImGui::PopID();
-                //    }
-                //    // End Font Menu
-                //    ImGui::EndMenu();
-                //}
+                if (ImGui::BeginMenu("Fonts"))
+                {
+                    ImGui::ShowFontSelector("Fonts");
+                    // End Font Menu
+                    ImGui::EndMenu();
+                }
                 // Open popup for SQL settings
                 if (ImGui::MenuItem("Open SQL Configuration Window", NULL, &show_sql_conn_window));
                 if(connectionStrings.size() > 0)

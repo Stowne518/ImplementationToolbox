@@ -21,6 +21,9 @@ private:
 		connected,
 		savedString;
 
+	// TODO Add a string variable that gets passed as a reference to any query to a database. Create a separate function in SqlHelper that always runs first called
+	// queryTester which will run the current query first using count or begin/rollback query to see if it executes successfully, if not, throw an error and return that
+	// error so we can capture it in a our application log and display to user instead of just in console window
 public:
 	// Setters
 	void _SetSource(std::string s) {
@@ -86,9 +89,38 @@ public:
 	std::string displayConnectionName(const std::string& directory);
 	void readConnString(const std::string dir, char* source, char* db, char* un, char* pw, bool);
 	bool readConnString(const std::string);
-	std::vector<std::string> returnStrQry(const std::string connectionstring, const std::string column, const std::string table, int quantity);
+	std::vector<std::string> returnStrQry(const std::string connectionstring, const std::string column, const std::string table, int quantity, int ascdesc);
 	std::vector<std::string> returnDtStrQry(const std::string connectionstring, const std::string column, const std::string table, int quantity);
 	std::vector<int> returnIntQry(const std::string connectionstring, const std::string column, const std::string table, int quantity);
+	void servLogQuery
+	(
+		std::string connectionString,				// String containing connection info for SQL
+		std::string column,							// Column that is being used in the order by clause
+		int quantity,								// Number of rows expected in return
+		int ascdesc,								// 0 = ascending order, 1 = descending order to return results in
+		std::vector<int>& servlogid,				// Reference to servlog servlogid
+		std::vector<std::string>& service,			// Reference to servlog service
+		std::vector<std::string>& product,			// Reference to servlog product
+		std::vector<std::string>& logtime,			// Reference to servlog logtime
+		std::vector<std::string>& descriptn,		// Reference to servlog descriptn
+		std::vector<std::string>& computer,			// Reference to servlog computer
+		std::vector<std::string>& logtype			// Reference to servlog logtype
+	);
+	void servLogQuery
+	(
+		std::string connectionString,				// String containing connection info for SQL
+		std::string column,							// Column that is being used in the order by clause
+		int quantity,								// Number of rows expected in return
+		int ascdesc,								// 0 = ascending order, 1 = descending order to return results in
+		std::string where,							// Pass custom where statement to servlog select
+		std::vector<int>& servlogid,				// Reference to servlog servlogid
+		std::vector<std::string>& service,			// Reference to servlog service
+		std::vector<std::string>& product,			// Reference to servlog product
+		std::vector<std::string>& logtime,			// Reference to servlog logtime
+		std::vector<std::string>& descriptn,		// Reference to servlog descriptn
+		std::vector<std::string>& computer,			// Reference to servlog computer
+		std::vector<std::string>& logtype			// Reference to servlog logtype
+	);
 };
 
 #endif // SQL_H
