@@ -40,9 +40,6 @@
     <ClCompile Include="genericDataImport.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="servlogViewer.cpp">
-      <Filter>CAD source files</Filter>
-    </ClCompile>
     <ClCompile Include="UserSettings.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -66,6 +63,9 @@
     </ClCompile>
     <ClCompile Include="fieldOrderTable.cpp">
       <Filter>RMS source files</Filter>
+    </ClCompile>
+    <ClCompile Include="servlogViewer.cpp">
+      <Filter>CAD source files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -102,9 +102,6 @@
     <ClInclude Include="genericDataImport.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="servlogViewer.h">
-      <Filter>CAD header files</Filter>
-    </ClInclude>
     <ClInclude Include="UserSettings.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -128,6 +125,9 @@
     </ClInclude>
     <ClInclude Include="fieldOrderTable.h">
       <Filter>RMS header files</Filter>
+    </ClInclude>
+    <ClInclude Include="servlogViewer.h">
+      <Filter>CAD header files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

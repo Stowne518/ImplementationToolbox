@@ -7,7 +7,7 @@ struct AppLog;
 struct UserSettings
 {
 private:
-	int DarkMode = 0;
+	int DarkMode = 0;			// 0 = light mode, 1 = dark mode
 	float windowWidth = 1280;
 	float windowHeight = 720;
 	float windowPosX = 0;
