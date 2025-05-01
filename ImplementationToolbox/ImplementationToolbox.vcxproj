@@ -105,7 +105,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\Users\samuel.towne\source\repos\SqlConnectionHandler;..\;..\backends;%(AdditionalIncludeDirectories);C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Alex\source\repos\SqlConnectionHandler;C:\Users\samuel.towne\source\repos\SqlConnectionHandler;..\;..\backends;%(AdditionalIncludeDirectories);C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalUsingDirectories>C:\Users\samuel.towne\source\repos\SqlConnectionHandler;%(AdditionalUsingDirectories)</AdditionalUsingDirectories>

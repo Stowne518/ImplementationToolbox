@@ -314,12 +314,20 @@ std::vector<std::string > getListOfConnStrings()
 {
     std::string connStrDir = "C:\\ImplementationToolbox\\ConnectionStrings\\";
     std::vector<std::string> connStrFiles;
-    for (const auto& entry : std::filesystem::directory_iterator(connStrDir))
+    try
     {
-        if (entry.path().extension() == ".str")
+        for (const auto& entry : std::filesystem::directory_iterator(connStrDir))
         {
-            connStrFiles.push_back(entry.path().filename().string());
+            if (entry.path().extension() == ".str")
+            {
+                connStrFiles.push_back(entry.path().filename().string());
+            }
         }
     }
+    catch (const std::exception&)
+    {
+		std::cerr << "[ERROR] Failed to read connection string directory. Check if it exists.\n";
+    }
+    
     return connStrFiles;
 }
