@@ -68,13 +68,92 @@ std::string displayDataFiles(std::string dir);
 
 std::string displayTableNames(Sql& sql);
 
-void displayMappingTable(AppLog& log, DisplaySettings& ds, std::vector<std::string>& s_columns, std::vector<std::string>& d_columns_name, std::vector<std::string>& d_columns_type, std::vector<std::string>& d_columns_max, std::vector<std::string>& d_columns_null, std::vector<std::string>& b_columns, std::vector<std::string>& rows, std::vector<int>& b_column_index, std::vector<int>& s_columns_index, std::vector<int>& d_column_index, int& table_len, bool* nulls, bool* duplicate);
+void displayMappingTable(AppLog& log, 
+	DisplaySettings& ds, 
+	std::vector<std::string>& s_columns, 
+	std::vector<std::string>& d_columns_name, 
+	std::vector<std::string>& d_columns_type, 
+	std::vector<std::string>& d_columns_max, 
+	std::vector<std::string>& d_columns_null, 
+	std::vector<std::string>& b_columns,
+	std::vector<std::string>& rows, 
+	std::vector<int>& b_column_index, 
+	std::vector<int>& s_columns_index, 
+	std::vector<int>& d_column_index,
+	int& table_len,
+	bool* nulls,
+	bool* duplicate,
+	bool* automap,
+	bool editable);
 
-void processData(std::vector<std::string>& data_rows, std::vector<std::vector<std::string>>& data_parsed_final, std::vector<int>& buffer_columns_index, std::vector<int>& destination_columns_index, std::vector<int>& data_rows_index, AppLog& log, bool& cleanup);
+void processData(std::vector<std::string>& data_rows, 
+	std::vector<std::vector<std::string>>& data_parsed_final, 
+	std::vector<int>& buffer_columns_index, 
+	std::vector<int>& destination_columns_index, 
+	std::vector<int>& data_rows_index, 
+	AppLog& log, 
+	bool& cleanup);
 
-void buildInsertQuery(std::string table_name, std::vector<std::string>& insert_rows, std::vector<int>& d_columns_index, std::vector<std::string>& d_columns, std::vector<std::string>& rows, std::vector<int>& rows_index, bool* nulls, AppLog& log);
+void buildInsertQuery(std::string table_name, 
+	std::vector<std::string>& insert_rows, 
+	std::vector<int>& d_columns_index, 
+	std::vector<std::string>& d_columns, 
+	std::vector<std::string>& rows, 
+	std::vector<int>& rows_index, 
+	std::vector<std::vector<std::string>>& data_parsed_final,
+	bool adduser,
+	bool addtime,
+	bool* nulls, 
+	AppLog& log);
 
-void displayDataTable(AppLog&, std::vector<std::vector<std::string>>& d_columns, std::vector<int>& d_columns_index, std::vector<std::string>& rows, std::vector<int>& rows_index, int&);
-bool insertMappedData(Sql& sql, std::string query);
+void displayDataTable(AppLog&, 
+	std::vector<std::vector<std::string>>& d_columns,
+	std::vector<int>& d_columns_index, 
+	std::vector<std::string>& rows, 
+	std::vector<int>& rows_index, 
+	std::vector<std::vector<std::string>>& data_parsed_final,
+	std::vector<std::string>& d_column_max,
+	int& table_len,
+	bool* nulls,
+	bool editable);
 
-void clearMappings(AppLog& log, std::vector<std::string>& source_columns, std::vector<int>& source_columns_index, std::vector<std::vector<std::string>>& destination_columns, std::vector<int>& destination_columns_index, std::vector<std::string>& buffer_columns, std::vector<int>& buffer_columns_index, std::vector<std::string>& data_rows, std::vector<int>& data_rows_index, std::vector<std::string>& insert_rows, std::string& table_name, bool& loaded_csv, bool& load_tables, bool& load_columns, bool& confirm_mapping, std::string& filepath, bool* nulls, bool& confirm_data);
+bool insertMappedData(Sql& sql, std::string query, std::string& message);
+
+void clearMappings(AppLog& log, 
+	std::vector<std::string>& source_columns, 
+	std::vector<int>& source_columns_index, 
+	std::vector<std::vector<std::string>>& destination_columns, 
+	std::vector<int>& destination_columns_index, 
+	std::vector<std::string>& buffer_columns, 
+	std::vector<int>& buffer_columns_index, 
+	std::vector<std::string>& data_rows, 
+	std::vector<int>& data_rows_index, 
+	std::vector<std::string>& insert_rows, 
+	std::string& table_name, 
+	bool& loaded_csv, 
+	bool& load_tables, 
+	bool& load_columns, 
+	bool& confirm_mapping, 
+	bool& data_processed, 
+	std::string& filepath,
+	bool* nulls, 
+	bool* dups,
+	bool& confirm_data, 
+	std::vector<std::string>& d_col_name, 
+	std::vector<std::string>& d_col_type, 
+	std::vector<std::string>& d_col_max, 
+	std::vector<std::string>& d_col_null, 
+	std::vector<std::string>& query_results, 
+	std::vector<std::string>& dup_rows, 
+	std::vector<bool>& inserted, 
+	bool& dup_check,
+	bool& adduser,
+	bool& addtime,
+	std::vector<std::string>& sql_message,
+	std::vector<std::vector<std::string>>& data_parsed_final);
+
+std::vector<std::string> parseCSVLine(const std::string& line);
+
+std::string trim(const std::string& str);
+
+bool emptyStrings(std::vector<std::string> vec);

@@ -14,8 +14,8 @@ bool Sql::requiredInfo(std::string s, std::string db, std::string u, std::string
 	return true;
 }
 
-bool Sql::executeQuery(std::string query) {
-    if (!SqlConnectionHandler::executeUpdateQuery(_GetConnectionString(), query)) {
+bool Sql::executeQuery(std::string query, std::string& message) {
+    if (!SqlConnectionHandler::executeUpdateQuery(_GetConnectionString(), query, message)) {
         return false;
     }
     else
