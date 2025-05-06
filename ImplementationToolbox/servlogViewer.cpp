@@ -258,19 +258,6 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         ImGui::EndGroup();      // End ascending/descending group
         ImGui::EndPopup();
     }
-    //ImGui::SameLine();
-    //if (ImGui::Button("ASC/DESC"))
-    //{
-    //    ImGui::OpenPopup("ascending");
-    //}
-    //if (ImGui::BeginPopup("ascending"))
-    //{
-    //    ImGui::RadioButton("Ascending", &ascdesc, 0); if (ImGui::IsItemClicked() && frameskip) { log.AddLog("[INFO] Order by %s %s\n", column_order.c_str(), ascendingdescending.c_str()); changed = true; }
-    //    ImGui::RadioButton("Descending", &ascdesc, 1);
-
-    //    // End ASC/DESC popup
-    //    ImGui::EndPopup();
-    //}
     
     if(where == "")
     {
@@ -392,14 +379,26 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
     
     // DONE: Add filter settings to exclude/include specific columns for filtering - utlized ImGui table context menu to allow right-clicking the headers to hide the unwanted ones
     ImGui::SameLine(); if (ImGui::Button("Filter")) { ImGui::OpenPopup("Filters"); }; ImGui::SameLine();
-    filter.Draw("##Filter", ImGui::GetContentRegionAvail().x);
+    filter.Draw("##Filter, (Filter records here include,-exclude)", ImGui::GetContentRegionAvail().x);
 
     // End Child window for top of servlog  
     ImGui::EndChild();
 
     ImVec2 table_size = ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing() * 1.5f);
     // Begin SQL table structure for servlog
-    if (ImGui::BeginTable("servlogsql", COLUMNS, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_Sortable | ImGuiTableFlags_HighlightHoveredColumn | ImGuiTableFlags_Hideable | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody, table_size))
+    if (ImGui::BeginTable("servlogsql", 
+        COLUMNS, 
+        ImGuiTableFlags_SizingFixedFit | 
+        ImGuiTableFlags_Resizable | 
+        ImGuiTableFlags_Borders | 
+        ImGuiTableFlags_ScrollY | 
+        ImGuiTableFlags_ScrollX | 
+        ImGuiTableFlags_Sortable | 
+        ImGuiTableFlags_HighlightHoveredColumn | 
+        ImGuiTableFlags_Hideable | 
+        ImGuiTableFlags_RowBg | 
+        ImGuiTableFlags_ContextMenuInBody, 
+        table_size))
     {
         ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn("servlogid", ImGuiTableColumnFlags_DefaultSort, ImGuiSortDirection_Ascending);
@@ -781,7 +780,7 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
 
                         }
                     }
-                    j++;   // increment after displaying a row
+                    j++;   // increment after displaying a row for hover highlight accuracy with filter
                 }
                 else
                 {
@@ -810,6 +809,7 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         else
             DisplayColoredText("Not Connected.", sql._GetConnected());
         ImGui::TableNextColumn();
+        // Right align all text after the status field
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(sql._GetSource().c_str()).x - ImGui::GetStyle().CellPadding.x);
         ImGui::Text(sql._GetSource().c_str());
         ImGui::TableNextColumn();
@@ -820,7 +820,14 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         ImGui::Text(sql._GetDatabase().c_str());
         ImGui::TableNextColumn();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize("Row: 1000, Column: 8").x - ImGui::GetStyle().CellPadding.x);
-        ImGui::Text("Row: %i, Column: %i", hovered_row - 1, hovered_column);
+        if (hovered_row == -1 || hovered_column == -1)
+        {
+			ImGui::Text("Row: N/A, Column: N/A");
+        }
+        else
+        {
+            ImGui::Text("Row: %i, Column: %i", hovered_row, hovered_column);
+        }
         ImGui::TableNextColumn();
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize("1000 rows").x - ImGui::GetStyle().CellPadding.x);
         ImGui::Text("%i rows", displayed_rows);

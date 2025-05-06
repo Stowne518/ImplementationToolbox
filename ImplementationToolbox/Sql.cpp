@@ -347,7 +347,7 @@ void Sql::servLogQuery(std::string connectionString, std::string column, int qua
     SqlConnectionHandler::servlogView(connectionString, column, quantity, ascdesc, servlogid, service, product, logtime, logtype, descriptn, computer);
 }
 
-void Sql::servLogQuery(std::string connectionString, std::string column, int quantity, int ascdesc, std::string where, std::vector<int>& servlogid, std::vector<std::string>& service, std::vector<std::string>& product, std::vector<std::string>& logtime, std::vector<std::string>& descriptn, std::vector<std::string>& computer, std::vector<std::string>& logtype)
+void Sql::servLogQuery(std::string connectionString, std::string column, int quantity, int ascdesc, std::string where, std::vector<int>& servlogid, std::vector<std::string>& service, std::vector<std::string>& product, std::vector<std::string>& logtime, std::vector<std::string>& logtype, std::vector<std::string>& descriptn, std::vector<std::string>& computer)
 {
     SqlConnectionHandler::servlogView(connectionString, column, quantity, ascdesc, where, servlogid, service, product, logtime, logtype, descriptn, computer);
 }
