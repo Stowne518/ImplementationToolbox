@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <map>
 #include <string>
+#include <chrono>
+#include <ostream>
+#include <iomanip>
+#include <sstream>
+#include <ctime>
 struct AppLog
 {
 	ImGuiTextBuffer		Buf;
@@ -26,18 +31,39 @@ struct AppLog
 		LineOffsets.clear();
 		LineOffsets.push_back(0);
 	}
+	
+    void AddLog(const char* fmt, ...) IM_FMTARGS(2)
+    {
+       int old_size = Buf.size();
 
-	void AddLog(const char* fmt, ...) IM_FMTARGS(2)
-	{
-		int old_size = Buf.size();
-		va_list args;
-		va_start(args, fmt);
-		Buf.appendfv(fmt, args);
-		va_end(args);
-		for (int new_size = Buf.size(); old_size < new_size; old_size++)
-			if (Buf[old_size] == '\n')
-				LineOffsets.push_back(old_size + 1);
-	}
+       // Get current system time
+       auto now = std::chrono::system_clock::now();
+       auto time_t_now = std::chrono::system_clock::to_time_t(now);
+       std::tm local_tm;
+    #ifdef _WIN32
+       localtime_s(&local_tm, &time_t_now); // Windows-specific
+    #else
+       localtime_r(&time_t_now, &local_tm); // POSIX-compliant
+    #endif
+
+       // Format time as [mm/dd/yyyy hh:mm:ss]
+       std::ostringstream timeStream;
+       timeStream << "[" << std::put_time(&local_tm, "%m/%d/%Y %H:%M:%S") << "] ";
+
+       // Append timestamp to the buffer
+       Buf.append(timeStream.str().c_str());
+
+       // Append the log message
+       va_list args;
+       va_start(args, fmt);
+       Buf.appendfv(fmt, args);
+       va_end(args);
+
+       // Update line offsets
+       for (int new_size = Buf.size(); old_size < new_size; old_size++)
+           if (Buf[old_size] == '\n')
+               LineOffsets.push_back(old_size + 1);
+    }
 
 	void Draw(const char* title, bool* p_open = NULL)
 	{
