@@ -107,8 +107,8 @@ std::vector<std::string> readFieldList();
 void reset();                           // resets all currently selected options in the export
 void saveGenericExport(int);            // Saves generic export sql script to a file
 void saveGenericFields(int);            // Saves generic field sql script to a file
-void updateGenericExportSql(Sql&);      // Function to update generic export options directly in SQL
-void GenFldsUpdateSql(Sql& sql);        // Function to update generic field options directly in SQL
+void updateGenericExportSql(Sql&, std::string& message);      // Function to update generic export options directly in SQL
+void GenFldsUpdateSql(Sql& sql, std::string& message);        // Function to update generic field options directly in SQL
 
 //Globals
 
@@ -181,6 +181,7 @@ std::vector<std::string> fields = readFieldList();
 static std::vector<std::string> selectedFieldName;
 static std::vector<int> selectedId;
 static bool profileLoaded = false;     // Check if incoming data was from a profile that was loaded from a file
+static std::string sql_message; // Message used to display SQL errors
 
 namespace items
 {
@@ -1201,7 +1202,7 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
                     ImGui::TableNextColumn();
                     if (sql._GetConnected()) {
                         if (ImGui::Button("Update in SQL", ImVec2(140, 0))) {
-                            updateGenericExportSql(sql);
+                            updateGenericExportSql(sql, sql_message);
                         }
                     }
                     else {
@@ -1287,7 +1288,7 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
                     ImGui::TableNextColumn();
                     if (sql._GetConnected()) {
                         if (ImGui::Button("Update in SQL", ImVec2(140, 0))) {
-                            GenFldsUpdateSql(sql);
+                            GenFldsUpdateSql(sql, sql_message);
                         }
                     }
                     else {
@@ -1507,158 +1508,158 @@ void saveGenericFields(int option) {
     ImGui::LogFinish();
 }
 
-void updateGenericExportSql(Sql& sql) {
+void updateGenericExportSql(Sql& sql, std::string& message) {
     char query[256];        // Buffer array to hold char arrays in
     sprintf(query, "UPDATE genexprt SET filename = '%s' WHERE genexprtid = %d", exportName, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET username = '%s' WHERE genexprtid = %d", sftpUser, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET password = '%s' WHERE genexprtid = %d", sftpPass, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET ipaddress = '%s' WHERE genexprtid = %d", sftpIp, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET targetdir = '%s' WHERE genexprtid = %d", sftpTargetDir, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET agency = '%s' WHERE genexprtid = %d", agency, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET issftp = '%d' WHERE genexprtid = %d", isSftp, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     switch (isPinReq) {
     case true:
         sprintf(query, "UPDATE genexprt SET ispinreq = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET ispinreq = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     sprintf(query, "UPDATE genexprt SET pintype = '%d' WHERE genexprtid = %d", pinType, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     switch (includeHousing) {
     case true:
         sprintf(query, "UPDATE genexprt SET inclhousng = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET inclhousng = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     switch (combineHousing) {
     case true:
         sprintf(query, "UPDATE genexprt SET combhousng = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET combhousng = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     switch (combineStApt) {
     case true:
         sprintf(query, "UPDATE genexprt SET combstrapt = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET combstrapt = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     sprintf(query, "UPDATE genexprt SET actcodetyp = '2' WHERE genexprtid = %d", genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET recordoptn = '%d' WHERE genexprtid = %d", recordOptn, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET filetype = '%d' WHERE genexprtid = %d", fileType, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET fileoptn = '%d' WHERE genexprtid = %d", fileOptn, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     switch (exportNow) {
     case true:
         sprintf(query, "UPDATE genexprt SET exprtnow = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET exprtnow = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     sprintf(query, "UPDATE genexprt SET createoptn = '%d' WHERE genexprtid = %d", createOptn, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET cashbalfmt = '0' WHERE genexprtid = %d", genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET dateformat = '%d' WHERE genexprtid = %d", dateFormat, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET writedelay = '%d' WHERE genexprtid = %d", writeDelay, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     switch (retainHistory) {
     case true:
         sprintf(query, "UPDATE genexprt SET retainhist = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET retainhist = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     switch (noQuotes) {
     case true:
         sprintf(query, "UPDATE genexprt SET noquotes = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET noquotes = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     switch (secureSSN) {
     case true:
         sprintf(query, "UPDATE genexprt SET securessn = '1' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     case false:
         sprintf(query, "UPDATE genexprt SET securessn = '0' WHERE genexprtid = %d", genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
         break;
     }
 
     sprintf(query, "UPDATE genexprt SET inactive = '0' WHERE genexprtid = %d", genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET expchar1 = '%c' WHERE genexprtid = %d", activeField, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET expchar2 = '%c' WHERE genexprtid = %d", inActiveField, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     sprintf(query, "UPDATE genexprt SET delimiter = '%s' WHERE genexprtid = %d", delimiter, genexptid);
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 }
 
-void GenFldsUpdateSql(Sql& sql) {
+void GenFldsUpdateSql(Sql& sql, std::string& message) {
     char query[2048];
 
     // Update statement with field names
@@ -1666,7 +1667,7 @@ void GenFldsUpdateSql(Sql& sql) {
     // Need to first make sure no fields are excluded before deciding which ones are included
     // If updating preexisting fields this would leave out any previously excluded fields
     sprintf(query, "UPDATE genflds SET altfldname = ''");
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     // Now we select which fields to exclude
     std::string updateQuery = "UPDATE genflds SET altfldname = 'x' WHERE fldname NOT IN (";
@@ -1685,12 +1686,12 @@ void GenFldsUpdateSql(Sql& sql) {
 
     // Copy the constructed query to the char buffer
     strncpy(query, updateQuery.c_str(), sizeof(query));
-    sql.executeQuery(query);
+    sql.executeQuery(query, message);
 
     // Write out all the field names, the order they are presented in, and which ID they belong to
     for (int i = 0; i < selectedId.size(); i++)
     {
         sprintf(query, "UPDATE genflds SET fieldorder = %i WHERE fldname = '%s' AND genexprtid = %i", i, selectedFieldName[i].c_str(), genexptid);
-        sql.executeQuery(query);
+        sql.executeQuery(query, message);
     }
 }

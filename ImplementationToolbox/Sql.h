@@ -77,7 +77,7 @@ public:
 	}
 
 	bool requiredInfo(std::string, std::string, std::string, std::string);
-	bool executeQuery(std::string);
+	bool executeQuery(std::string, std::string& message);
 	void DisplaySqlConfigWindow(bool*, std::string, AppLog&);
 	void saveConnString(std::string, std::string name, AppLog&);
 	void saveConnString(std::string dir, std::string name, int servertype);

@@ -1129,6 +1129,7 @@ std::string AddWhere(AppLog& log, bool& where_open)
             {
                 logtime_end = "";
                 logtime_start = "";
+                where = "";
             }
             else
             {
