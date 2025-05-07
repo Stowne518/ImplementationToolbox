@@ -326,7 +326,7 @@ std::vector<std::string > getListOfConnStrings()
     }
     catch (const std::exception&)
     {
-		std::cerr << "[ERROR] Failed to read connection string directory. Check if it exists.\n";
+		std::cerr << "[ERROR] Failed to read connection string directory. Check that it exists.\n";
     }
     
     return connStrFiles;

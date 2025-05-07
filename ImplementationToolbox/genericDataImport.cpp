@@ -4,13 +4,13 @@
 #include "imgui_stdlib.h"
 #include <iostream>
 #include <algorithm>
-#include <atomic>
 #include <thread>
 #include <future>
 #include <chrono>
 #include <unordered_set>
-
-void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
+#pragma unmanaged
+std::mutex sqlMutex;
+void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
 {
 
     static DisplaySettings display_settings;                // Init struct for display settings to maintain user settings
@@ -78,7 +78,6 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         dataProcessed = false,
         isBuildingInserts = false;
 
-    std::mutex sqlMutex;
 
     enum ButtonStyle
     {
@@ -538,10 +537,6 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                 restrict_duplicates,
                 &auto_map_cols, 
                 !confirm_mapping);
-            if (confirm_mapping)
-            {
-                data_window = true;
-            }
         }
         else
         {
@@ -633,10 +628,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             ImGui::TextDisabled("Data Staging");
             if (confirm_mapping)
             {
-                if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data))
-                {
-                    insert_window = true;
-                }
+                if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data, !confirm_data));
             }
             else
             {
@@ -644,7 +636,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                 ImGui::MenuItem("Confirm Data", NULL, &confirm_data);
                 ImGui::EndDisabled();
             }
-
+			ImGui::Text("(Rows: %i)", data_parsed_final.size());
             // End data staging menu bar
             ImGui::EndMenuBar();
         }
@@ -744,6 +736,8 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             ImGuiWindowFlags_MenuBar /*|
             ImGuiWindowFlags_NoScrollbar*/
             );
+        static std::atomic<bool> running = false;       // Is duplicate checking running
+
         if (confirm_data && !isBuildingInserts)
         {
             for(int i = inserted.size(); i < insert_rows.size(); i++)                   // Populate vector with bools for tracking when they are inserted into SQL or not
@@ -755,35 +749,51 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             }
             if (dup_check)                                                              // If dup_check is true this indicates we need to look for duplicates before showing insert rows
             {
-                // Loop through each row to insert data
-                for (int i = 0; i < inserted.size(); i++)
+                
+                if(!running)
                 {
-                    int duplicate_count = 0;
-                    // Loop over each column to check if we need to be concerned with duplicates
-                    for (int j = 0; j < destination_columns_index.size(); j++)
-                    {
-                        // Check for duplicate restricted columns
-                        if (restrict_duplicates[destination_columns_index[j]])
-                        {
-                            // TODO optimize SQL query for checking for duplicates by sending all columns at once and checking for only 1 records in the DB instead of all of them
-                            if(duplicate_count = sql.returnRecordCount(table_name, destination_columns[j][destination_columns_index[j]], data_parsed_final[i][j]) > 0)
-                            {
-                                break;  // Break if we find a duplicate on this column since the whole row is thrown out we can stop checking
-                            }
-                        }
-                    }
-                    if (duplicate_count == 0)
-                    {
-                        validRows.push_back(insert_rows[i]);    // Only keep rows that pass the duplicate check
-                    }
-                    else
-                    {
-						// Add row to new vector for rows that contain illegal duplicate data
-						dup_rows.push_back(insert_rows[i]);
-                    }
+                    checkForDuplicates_Thread(
+                    sql,
+                    log,
+                    table_name,
+                    insert_rows,
+                    data_parsed_final,
+                    destination_columns_index,
+                    destination_columns,
+                    restrict_duplicates,
+                    dup_rows,
+                    inserted,
+                    running
+                    );
                 }
-                // Set insert_rows equal to all inserts that passed duplicate checks
-                insert_rows = validRows; // Move the valid rows to insert_rows
+                
+                // Loop through each row to insert data
+                //for (int i = 0; i < inserted.size(); i++)
+                //{
+                //    int duplicate_count = 0;
+                //    // Loop over each column to check if we need to be concerned with duplicates
+                //    for (int j = 0; j < destination_columns_index.size(); j++)
+                //    {
+                //        // Check for duplicate restricted columns
+                //        if (restrict_duplicates[destination_columns_index[j]])
+                //        {
+                //            // TODO optimize SQL query for checking for duplicates by sending all columns at once and checking for only 1 records in the DB instead of all of them
+                //            if(sql.checkDuplicate(table_name, destination_columns[j][destination_columns_index[j]], data_parsed_final[i][j]) > 0)
+                //            {
+                //                // Add row to new vector for rows that contain illegal duplicate data
+                //                dup_rows.push_back(insert_rows[i]);
+                //                duplicate_count++;
+                //                break;  // Break if we find a duplicate on this column since the whole row is thrown out we can stop checking
+                //            }
+                //        }
+                //    }
+                //    if (duplicate_count == 0)
+                //    {
+                //        validRows.push_back(insert_rows[i]);    // Only keep rows that pass the duplicate check
+                //    }
+                //}
+                //// Set insert_rows equal to all inserts that passed duplicate checks
+                //insert_rows = validRows; // Move the valid rows to insert_rows
 
                 // Mark that we've checked for duplicates and don't need to look again
                 dup_check = false;
@@ -793,7 +803,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         {
             ImGui::TextDisabled("Insert Review");
 
-            if (ImGui::MenuItem("Insert all data"))
+            if (ImGui::MenuItem("Insert all data", NULL, false, insert_rows.size() > 0))
             {
                 try
                 {
@@ -830,6 +840,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
         {
 			show_sql_messages = true;
         }
+
         // End insert menu bar
         ImGui::EndMenuBar();
 
@@ -879,9 +890,10 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             {
                 ImGuiListClipper clipper;   // Used to only render displayed items for increased performance
                 clipper.Begin(insert_rows.size());
-                if (insert_rows.size() >= 1 && !isBuildingInserts)
+                if (insert_rows.size() >= 1 && !isBuildingInserts && !running)
                 {
                     ImGui::Text("Review insert statements generated by tool before running insert into SQL");
+                    ImGui::SameLine(); ImGui::Text("(Rows: %i)", insert_rows.size());
                     if (ImGui::BeginTable("InsertRows", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY))
                     {
                         ImGui::TableSetupColumn("Insert #", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_NoResize);
@@ -939,9 +951,13 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
                         ImGui::EndTable();
                     }clipper.End();    // End the list clipper rendering
                 }
+                else if (running)
+                {
+					ImGui::Text("Checking for duplicate data...");
+                }
                 else
                 {
-                    ImGui::Text("No valid data for entry! Check duplicate restrictions and try again.");
+                    ImGui::Text("No valid data for entry! Check duplicate rows tab.");
                 }
                 // End Insert Rows tab item
                 ImGui::EndTabItem();
@@ -949,6 +965,7 @@ void genericDataImport(bool* p_open, Sql sql, AppLog& log, std::string dir)
             if(ImGui::BeginTabItem("Duplicate Rows"))
             {
                 ImGui::Text("Data that was found to be duplicated and removed from insert list:");
+				ImGui::SameLine(); ImGui::Text("(Rows: %i)", dup_rows.size());
                 if(ImGui::BeginTable("Duplicates",2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY))
                 {
 					ImGui::TableSetupColumn("Duplicate #", ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_NoResize);
@@ -1724,10 +1741,12 @@ void clearMappings(AppLog& log,
     std::vector<std::vector<std::string>>& data_parsed_final)
 {
     // Clear null flags
-    for (int i = 0; i < destination_columns.size(); i++)
+    for (int i = 0; i < 1000; i++)
     {
-        nulls[i] = false;
-        dups[i] = false;
+        if(nulls[i])
+            nulls[i] = false;
+		if (dups[i])
+            dups[i] = false;
     }
     // Clear all vectors
     source_columns.clear();
@@ -1822,3 +1841,87 @@ bool emptyStrings(std::vector<std::string> vec)
 
     return vectorEmpty;                             // Otherwise we return true to show the vector was empty
 }
+
+void checkForDuplicates(
+    Sql& sql,
+    AppLog& log,
+    std::string table_name,
+    std::vector<std::string>& insert_rows,
+    std::vector<std::vector<std::string>>& data_parsed_final,
+    std::vector<int>& destination_columns_index,
+    std::vector<std::vector<std::string>>& destination_columns,
+    bool* restrict_duplicates,
+    std::vector<std::string>& dup_rows,
+    std::vector<bool>& inserted,
+    std::atomic<bool>& running
+)
+{
+    // Initialize the vector to store valid rows
+    std::vector<std::string> validRows;
+    std::lock_guard<std::mutex> lock(sqlMutex);
+    running = true;
+    // Loop through each row to insert data
+    for (int i = 0; i < inserted.size(); i++)
+    {
+        int duplicate_count = 0;
+        
+        // Search through dup_rows to see if the current insert_row is already in the list, if so we can skip it and move on to the next
+        // If user selects multiple columns to check for duplicates on, without this check we may end up generating the same inserts 2+ times depending on the number selected, since it might be true more than once
+        /*if(std::find(dup_rows.begin(), dup_rows.end(), insert_rows[i]) == dup_rows.end())
+        {*/
+            // Loop over each column to check if we need to be concerned with duplicates
+            for (int j = 0; j < destination_columns_index.size(); j++)
+            {
+                // Check for duplicate restricted columns
+                if (restrict_duplicates[destination_columns_index[j]])
+                {
+                    // TODO optimize SQL query for checking for duplicates by sending all columns at once and checking for only 1 records in the DB instead of all of them
+                    if (sql.checkDuplicate(table_name, destination_columns[0][destination_columns_index[j]], data_parsed_final[i][j]) > 0)
+                    {
+                        // Add row to new vector for rows that contain illegal duplicate data
+                        dup_rows.push_back(insert_rows[i]);
+                        duplicate_count++;
+                        break;  // Break if we find a duplicate on this column since the whole row is thrown out we can stop checking
+                    }
+                }
+            }
+            if (duplicate_count == 0)
+            {
+                validRows.push_back(insert_rows[i]);    // Only keep rows that pass the duplicate check
+            }
+        //}
+    }
+    running = false;
+    insert_rows = validRows;    // Update the insert_rows vector to only contain valid rows
+    return;                     // End function after setting new insert_rows value
+}
+
+void checkForDuplicates_Thread(
+    Sql& sql,
+    AppLog& log,
+    std::string table_name,
+    std::vector<std::string>& insert_rows,
+    std::vector<std::vector<std::string>>& data_parsed_final,
+    std::vector<int>& destination_columns_index,
+    std::vector<std::vector<std::string>>& destination_columns,
+    bool* restrict_duplicates,
+    std::vector<std::string>& dup_rows,
+    std::vector<bool>& inserted,
+    std::atomic<bool>& running)
+{
+	std::thread(
+        checkForDuplicates, 
+        std::ref(sql),
+        std::ref(log),
+        std::move(table_name),
+        std::ref(insert_rows),
+        std::ref(data_parsed_final),
+        std::ref(destination_columns_index),
+        std::ref(destination_columns),
+        restrict_duplicates,
+        std::ref(dup_rows),
+        std::ref(inserted),
+        std::ref(running)
+    ).detach();
+}
+

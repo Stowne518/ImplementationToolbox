@@ -128,10 +128,10 @@ int main(int, char**)
     static bool show_modules = usrsettings.getModules();
 
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
-    const wchar_t* versionNum = L"Implementation Toolbox v0.6.6";
-    const char* currVersion = "Implementation Toolbox v0.6.6";
-    const std::string version_number = "v0.6.6";
-    const char* lastUpdate = "4/29/25";
+    const wchar_t* versionNum = L"Implementation Toolbox v0.6.7";
+    const char* currVersion = "Implementation Toolbox v0.6.7";
+    const std::string version_number = "v0.6.7";
+    const char* lastUpdate = "5/6/25";
 
     // Button labels
     static char genExprtLabel[] = "Generic Export Generator";
@@ -730,30 +730,6 @@ int main(int, char**)
             {
                 showDisabledButton(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
             }
-            /*
-            * Deprecated modules removed from program after replacing with generic importer
-            if (!show_map_import_window)
-            {
-                if (ImGui::Button(mapDataImportLabel, moduleSelectionSize))
-                {
-                    show_map_import_window = true;
-                }
-            }
-            else
-            {
-                showDisabledButton(mapDataImportLabel, moduleSelectionSize);
-            }
-            if (!show_unit_import_window)
-            {
-                if (ImGui::Button(unitImportLabel, moduleSelectionSize))
-                {
-                    show_unit_import_window = true;
-                }
-            }
-            else
-            {
-                showDisabledButton(unitImportLabel, moduleSelectionSize);
-            }*/
             ImGui::SeparatorText("SQL");
             // Show sql query builder button 
             if (!show_sql_query_builder_window)

@@ -352,6 +352,10 @@ void Sql::servLogQuery(std::string connectionString, std::string column, int qua
     SqlConnectionHandler::servlogView(connectionString, column, quantity, ascdesc, where, servlogid, service, product, logtime, logtype, descriptn, computer);
 }
 
+bool Sql::checkDuplicate(std::string table, std::string column, std::string value)
+{
+	return SqlConnectionHandler::checkDuplicates(_GetConnectionString(), table, column, value);
+}
 int Sql::returnRecordCount(std::string table, std::string column) 
 {
     int count;

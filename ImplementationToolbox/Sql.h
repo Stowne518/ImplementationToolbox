@@ -81,6 +81,7 @@ public:
 	void DisplaySqlConfigWindow(bool*, std::string, AppLog&);
 	void saveConnString(std::string, std::string name, AppLog&);
 	void saveConnString(std::string dir, std::string name, int servertype);
+	bool checkDuplicate(std::string table, std::string column, std::string value);
 	int returnRecordCount(std::string table, std::string column);
 	int returnRecordCount(std::string table, std::string column, std::string value);
 	std::vector<std::vector<std::string>> getTableColumns(std::string connStr, std::string table);

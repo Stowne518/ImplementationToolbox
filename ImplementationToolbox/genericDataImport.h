@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <atomic>
 #include "imgui.h"
 
 // Class declartion
@@ -58,7 +59,7 @@ public:
 	bool getMappingOverview() { return mapoverview; }
 };
 
-void genericDataImport(bool* p_open, Sql, AppLog&, std::string);
+void genericDataImport(bool* p_open, Sql&, AppLog&, std::string);
 
 std::vector<std::string> getColumns(const std::filesystem::path& dir);
 
@@ -157,3 +158,33 @@ std::vector<std::string> parseCSVLine(const std::string& line);
 std::string trim(const std::string& str);
 
 bool emptyStrings(std::vector<std::string> vec);
+
+void checkForDuplicates(
+	Sql& sql,
+	AppLog& log,
+	std::string table_name,
+	std::vector<std::string>& insert_rows,
+	std::vector<std::vector<std::string>>& data_parsed_final,
+	std::vector<int>& destination_columns_index,
+	std::vector<std::vector<std::string>>& destination_columns,
+	bool* restrict_duplicates,
+	std::vector<std::string>& dup_rows,
+	std::vector<bool>& inserted,
+	std::atomic<bool>& running
+);
+
+void checkForDuplicates_Thread(
+	Sql& sql, 
+	AppLog& log,
+	std::string table_name, 
+	std::vector<std::string>& insert_rows, 
+	std::vector<std::vector<std::string>>& data_parsed_final, 
+	std::vector<int>& destination_columns_index, 
+	std::vector<std::vector<std::string>>& destination_columns, 
+	bool* restrict_duplicates, 
+	std::vector<std::string>& dup_rows, 
+	std::vector<bool>& inserted,
+	std::atomic<bool>& running
+);
+
+

@@ -794,7 +794,7 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
                 if (ImGui::BeginTable("Select Fields", 6, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingFixedSame | ImGuiTableFlags_Borders | ImGuiTableFlags_NoHostExtendX, windowSize)) {
                     for (int i = 0; i < fields.size(); i++)
                     {
-
+                        ImGui::PushID(i);
                         ImGui::TableNextColumn();
                         if (!includeHousing && fields[i] == "LocFac" || !includeHousing && fields[i] == "LocSec" || !includeHousing && fields[i] == "LocUnit" || !includeHousing && fields[i] == "LocBed") {
                             ImGui::BeginDisabled();
@@ -839,6 +839,7 @@ void showGenericExportWindow(bool* p_open, Sql& sql, AppLog& log) {
                             profileLoaded = false;
                             break;
                         }
+                        ImGui::PopID();
                     }
 
                     // End Field table
