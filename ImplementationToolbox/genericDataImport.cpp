@@ -567,50 +567,68 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
     }
     if (mapoverview)
     {
+        static bool overview_hovered = false;
+
+        if(overview_hovered)
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.1f, 0.1f, 0.1f, 0.3f));
+
         // Create new window for mapping overview
-        (ImGui::BeginChild("Mapping Overview", ImVec2(200, ImGui::GetContentRegionAvail().y - 275), 
-            ImGuiChildFlags_AlwaysAutoResize | 
-            ImGuiChildFlags_AutoResizeX | 
-            ImGuiChildFlags_AutoResizeY | 
+        if ((ImGui::BeginChild("Mapping Overview", ImVec2(200, ImGui::GetContentRegionAvail().y - 275),
+            ImGuiChildFlags_AlwaysAutoResize |
+            ImGuiChildFlags_AutoResizeX |
+            ImGuiChildFlags_AutoResizeY |
             ImGuiChildFlags_Borders,
-            ImGuiWindowFlags_MenuBar));
-        ImVec2 overview_window_size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::GetTextLineHeightWithSpacing() * 2));
-        if (ImGui::BeginMenuBar())
+            ImGuiWindowFlags_MenuBar)))
         {
-            ImGui::TextDisabled("Mapping Overview");
-
-            // End Mapping overview menu bar
-            ImGui::EndMenuBar();
-        }
-        // Display an overview of the mapping
-        if (ImGui::BeginTable("Overview", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX, overview_window_size))
-        {
-            ImGui::TableSetupScrollFreeze(0, 1);
-            ImGui::TableSetupColumn("Destination");
-            ImGui::TableSetupColumn("=");
-            ImGui::TableSetupColumn("Source");
-            ImGui::TableHeadersRow();
-            for (int i = 0; i < destination_column_name.size(); i++)
+            ImVec2 overview_window_size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - (ImGui::GetTextLineHeightWithSpacing() * 2));
+            if (ImGui::BeginMenuBar())
             {
-                if (!buffer_columns[i].empty())
+                ImGui::TextDisabled("Mapping Overview");
+
+                // End Mapping overview menu bar
+                ImGui::EndMenuBar();
+            }
+            // Display an overview of the mapping
+            if (ImGui::BeginTable("Overview", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX, overview_window_size))
+            {
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableSetupColumn("Destination");
+                ImGui::TableSetupColumn("=");
+                ImGui::TableSetupColumn("Source");
+                ImGui::TableHeadersRow();
+                for (int i = 0; i < destination_column_name.size(); i++)
                 {
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::Text("%s", destination_column_name[i]);
-                    ImGui::TableNextColumn();
-                    ImGui::Text("=");
-                    ImGui::TableNextColumn();
-                    ImGui::Text("%s", buffer_columns[i]);
-                }
-            }   // End Mapping overview
+                    if (!buffer_columns[i].empty())
+                    {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", destination_column_name[i]);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("=");
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", buffer_columns[i]);
+                    }
+                }   // End Mapping overview
 
-            // End Mapping overview table
-            ImGui::EndTable();
+                // End Mapping overview table
+                ImGui::EndTable();
+            }
         }
-
+        
         // End Mapping overview window
         ImGui::EndChild();
-
+        if (overview_hovered)
+        {
+            ImGui::PopStyleColor();
+        }
+        if (ImGui::IsItemHovered())
+        {
+            overview_hovered = true;
+        }
+        else
+        {
+            overview_hovered = false;
+        }
         ImGui::SameLine();
     }
 
@@ -619,10 +637,12 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         // Display newly mapped rows as a table
         ImGui::BeginChild("Data Staging",
             ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y - 275), 
-            ImGuiChildFlags_AlwaysAutoResize | 
+            /*ImGuiChildFlags_AlwaysAutoResize |*/ 
             ImGuiChildFlags_Borders | 
-            ImGuiChildFlags_AutoResizeY, 
-            ImGuiWindowFlags_MenuBar);
+            ImGuiChildFlags_AutoResizeY |
+            ImGuiChildFlags_AutoResizeX,
+            ImGuiWindowFlags_MenuBar
+        );
         if (ImGui::BeginMenuBar())
         {
             ImGui::TextDisabled("Data Staging");
@@ -729,12 +749,9 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         // Begin child window for inserts that the user can review before pressing the button to run all inserts, as well as choose settings for the inserts
         ImGui::BeginChild("Insert Rows",
             ImVec2(ImGui::GetContentRegionAvail().x, 250),
-            /*ImGuiChildFlags_AlwaysAutoResize |*/
             ImGuiChildFlags_ResizeY |
-            ImGuiChildFlags_AutoResizeX |
             ImGuiChildFlags_Border,
-            ImGuiWindowFlags_MenuBar /*|
-            ImGuiWindowFlags_NoScrollbar*/
+            ImGuiWindowFlags_MenuBar
             );
         static std::atomic<bool> running = false;       // Is duplicate checking running
 

@@ -400,7 +400,7 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         ImGuiTableFlags_ContextMenuInBody, 
         table_size))
     {
-        ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_NoSort);
+        ImGui::TableSetupColumn("row #", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoHeaderLabel | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn("servlogid", ImGuiTableColumnFlags_DefaultSort, ImGuiSortDirection_Ascending);
         ImGui::TableSetupColumn("service");
         ImGui::TableSetupColumn("product");
@@ -796,7 +796,7 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         ImGui::EndTable();
     }
     ImVec2 table_info_size = ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing());
-    if (ImGui::BeginTable("tablestats", 6, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_BordersInnerV, table_info_size))
+    if (ImGui::BeginTable("tablestats", 6, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_BordersInner, table_info_size))
     {
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.00f, 0.00f, 0.00f, 1.00f));      // Always display black text here since we keep the yellow background in either color setting
         ImGui::TableNextRow();
@@ -822,7 +822,7 @@ void servlogViewer(bool* open, Sql& sql, AppLog& log, UserSettings& settings)
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize("Row: 1000, Column: 8").x - ImGui::GetStyle().CellPadding.x);
         if (hovered_row == -1 || hovered_column == -1)
         {
-			ImGui::Text("Row: N/A, Column: N/A");
+			ImGui::Text("Row: 0, Column: 0");
         }
         else
         {
