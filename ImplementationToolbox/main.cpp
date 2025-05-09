@@ -221,6 +221,8 @@ int main(int, char**)
     try
     {
         if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeuib.ttf", font_size, &config, nullptr));
+        if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeuib.ttf", font_size + 2, &config, nullptr));
+        if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeuib.ttf", font_size - 2, &config, nullptr));
     }
     catch (const std::exception&)
     {
@@ -229,6 +231,8 @@ int main(int, char**)
     try
     {
         if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Arial.ttf", font_size));
+        if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Verdana.ttf", font_size));
+
     }
     catch (const std::exception&)
     {
@@ -599,8 +603,8 @@ int main(int, char**)
         const ImVec2 window_min = ImVec2(600, 400);
         const ImVec2 window_max = ImVec2(1920, 1080);
 
+        // Root file path for all other directories or files this program saves/creates/loads
         static std::string directory_path = "C:\\ImplementationToolbox\\";
-        static std::string units_directory_path = directory_path + "Units\\";
 
         // Display the CST logo at the top of the screen
         //ImGui::SetNextWindowPos(cstLogoPos);
@@ -680,7 +684,23 @@ int main(int, char**)
         //ImGui::SetNextWindowPos(gettingStartedPos);
         if (open_getting_started) {
             ImGui::Begin("Getting Started", &open_getting_started, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
-            ImGui::TextWrapped("To get started, click on modules from the menu bar and select the module you'd like to use.");
+            ImGui::TextWrapped("To get started, click on modules from the module selection window or from the Modules menu bar and select the module you'd like to use.");
+            ImGui::SeparatorText("Where to begin?");
+			ImGui::TextWrapped("If this is your first time opening the application I would suggest getting familiarized with the menus and the layout of the application.");
+			ImGui::TextWrapped("The Getting Started window will show you the basics of how to use the application and what each module does and some terminology used throughout the application.");
+            ImGui::TextWrapped("Starting with the main menu bar.\nThis is the bar that runs across the main window with menu options in this order: File, View, Modules, Settings");
+			ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("File: This menu contains the option to close the application.");
+			ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("View: This menu contains the option to show/close the Getting Started window, Module Selection window, Recent Updates window, Health Check window, and Debug Log window.");
+			ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("Modules: This menu contains the option to show/close the modules themselves. This works the same as the modules selection window");
+			ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("Settings: This menu contains the option to change the font, open the SQL Configuration window, and quick connect to a SQL server.");
+            ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("Dark Mode/Light Mode: This options changes the theme of the entire application based on user preference and is saved after closing the application");
+            ImGui::SeparatorText("Windows");
+            ImGui::TextWrapped("Any of the windows that you can open can be attached to something called the \"Dockspace\".\nThe dockspace is the main window screen which most of these windows are docked into to begin with. For user customization you can click the title tab and drag the window away from it's current position to pop it out of the current dockspace and leave it as a standalone window or dock it to another window or an edge of the main dockspace.");
+            ImGui::SeparatorText("Settings");
+            ImGui::TextWrapped("There are a couple of differnt setting options within this application.");
+            ImGui::TextWrapped("There are the options under the settings menu, which allow for changing the font, opening the SQL configuration window, or using a quick connection option for a saved connection string.");
+            ImGui::TextWrapped("Then there are user settings which store information like window placement, size, and theme settings. These are found in 2 different .ini files within C:\\ImplementationToolbox\\. Or, wherever you run the application from.");
+            ImGui::TextWrapped("If you ever need to restore these settings to a default state you can shut the application down, browse to C:\\ImplementationToolbox\\ and delete the ImplementationToolbox.ini and the imgui.ini and run the LaunchImplementationToolbox.bat file to get fresh files with default settings you had when you first started this application up.");
 
             // End getting started
             ImGui::End();

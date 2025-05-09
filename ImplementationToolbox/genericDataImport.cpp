@@ -1676,6 +1676,8 @@ void displayDataTable(
             }
         }clipper_x.End();
         
+        // End data table
+        ImGui::EndTable();
     }
     // Update referenced rows vector with modified data and then set rows vector equal to tmp_rows to update the reference vector
     //if(changed)
@@ -1696,8 +1698,6 @@ void displayDataTable(
     //        }
     //    }
     //}
-    // End data table
-    ImGui::EndTable();
 }
 
 bool insertMappedData(Sql& sql, std::string query, std::string& message)
