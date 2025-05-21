@@ -766,7 +766,6 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
             }
             if (dup_check)                                                              // If dup_check is true this indicates we need to look for duplicates before showing insert rows
             {
-                
                 if(!running)
                 {
                     checkForDuplicates_Thread(
@@ -783,34 +782,6 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
                     running
                     );
                 }
-                
-                // Loop through each row to insert data
-                //for (int i = 0; i < inserted.size(); i++)
-                //{
-                //    int duplicate_count = 0;
-                //    // Loop over each column to check if we need to be concerned with duplicates
-                //    for (int j = 0; j < destination_columns_index.size(); j++)
-                //    {
-                //        // Check for duplicate restricted columns
-                //        if (restrict_duplicates[destination_columns_index[j]])
-                //        {
-                //            // TODO optimize SQL query for checking for duplicates by sending all columns at once and checking for only 1 records in the DB instead of all of them
-                //            if(sql.checkDuplicate(table_name, destination_columns[j][destination_columns_index[j]], data_parsed_final[i][j]) > 0)
-                //            {
-                //                // Add row to new vector for rows that contain illegal duplicate data
-                //                dup_rows.push_back(insert_rows[i]);
-                //                duplicate_count++;
-                //                break;  // Break if we find a duplicate on this column since the whole row is thrown out we can stop checking
-                //            }
-                //        }
-                //    }
-                //    if (duplicate_count == 0)
-                //    {
-                //        validRows.push_back(insert_rows[i]);    // Only keep rows that pass the duplicate check
-                //    }
-                //}
-                //// Set insert_rows equal to all inserts that passed duplicate checks
-                //insert_rows = validRows; // Move the valid rows to insert_rows
 
                 // Mark that we've checked for duplicates and don't need to look again
                 dup_check = false;
@@ -1039,7 +1010,7 @@ std::vector<std::string> getColumns(const std::filesystem::path& dir/*, std::vec
             columns.push_back(token);
         }
     }
-
+	dataImport.close();     // close the file
     return columns;
 }
 
@@ -1058,7 +1029,7 @@ std::vector<std::string> getRows(const std::filesystem::path& dir)
     {
         rowTmp.push_back(line);
     }
-
+    rowData.close();        // Close the file
     return rowTmp;
 }
 
@@ -1182,7 +1153,7 @@ void displayMappingTable(AppLog& log,
     bool editable)
 {
     std::string value;
-    std::vector<std::string> values;
+    static std::vector<std::string> values;
     static std::vector<std::string>s_columns_buf;
     static bool copied = false;
     ImVec2 button_style = ds.getButtonStyle();
@@ -1198,33 +1169,35 @@ void displayMappingTable(AppLog& log,
     if(!copied && s_columns.size() > 0)
     {
         s_columns_buf = s_columns;
+        // Populate vector with first row of data for preview
+        for (int i = 0; i < rows.size(); i++)
+        {
+            std::stringstream ss(rows[i]);
+            while (std::getline(ss, value, ','))
+            {
+                values.push_back(value);
+            }
+        }
+        // If there are more columns than sample data fill in blank to prevent crashing
+        if (rows.size() < s_columns.size())
+        {
+            for (int i = rows.size(); i < s_columns.size(); i++)
+            {
+                values.push_back("");
+            }
+        }
+        
         copied = true;
     }
-    // Populate vector with first row of data for preview
-    for (int i = 0; i < rows.size(); i++)
-    {
-        std::stringstream ss(rows[i]);
-        while (std::getline(ss, value, ','))
-        {
-            values.push_back(value);
-        }
-    }
-    // If there are more columns than sample data fill in blank to prevent crashing
-    if (rows.size() < s_columns.size())
-    {
-        for (int i = rows.size(); i < s_columns.size(); i++)
-        {
-            values.push_back("");
-        }
-    }
-	// Prepopulate b_column_index with -1 to show no mapping has been done yet
-	if (b_column_index.size() < b_columns.size())
+    // Prepopulate b_column_index with -1 to show no mapping has been done yet
+    if (b_column_index.size() < b_columns.size())
     {
         for (int i = 0; i < b_columns.size(); i++)
         {
             b_column_index.push_back(-1);
         }
     }
+    
     /*
     * Created flexible mapping tables
 	* We check the number of columns imported from the source and destination tables
@@ -1323,11 +1296,8 @@ void displayMappingTable(AppLog& log,
                             log.AddLog("[DEBUG] Verifying buffer index position against source columns index...\n");
                             for (int j = 0; j < b_column_index.size(); j++)
                             {
-                                if (b_columns[j] == "")
-                                {
-                                    // if label is blank do nothing
-                                }
-                                else if (b_columns[j] != s_columns[b_column_index[j]])
+                                // Skip if label is blank
+                                if (b_columns[i] != "" && b_columns[j] != s_columns[b_column_index[j]])
                                 {
                                     // If the buffer label isn't equal to the source label we know the source buffer has been misaligned.
                                     // Correct buffer label by comparing to source labels and use that position
@@ -1565,7 +1535,6 @@ void buildInsertQuery(std::string table_name,
 	{
 		log.AddLog("[ERROR] Failed to build insert query: %s\n", e.what());
 	}
-    // return {};
 }
 
 /// <summary>
@@ -1696,25 +1665,6 @@ void displayDataTable(
         // End data table
         ImGui::EndTable();
     }
-    // Update referenced rows vector with modified data and then set rows vector equal to tmp_rows to update the reference vector
-    //if(changed)
-    //{
-    //    for (int i = 0; i < rows.size(); i++)
-    //    {
-    //        // Blank out current row value to replace with new data from values
-    //        rows[i] = "";
-    //        for (int j = 0; j < d_columns_index.size(); j++)
-    //        {
-    //            rows[i] += data_parsed_final[i][j];
-    //            if (data_parsed_final[i][j] == "")
-    //            {
-    //                rows[i] += "";
-    //            }
-    //            if (j < d_columns_index.size() - 1 || d_columns_index.size() == 1 && rows.size() > 1 && i < rows.size() - 1)
-    //                rows[i] += ',';
-    //        }
-    //    }
-    //}
 }
 
 bool insertMappedData(Sql& sql, std::string query, std::string& message)
@@ -1845,6 +1795,7 @@ std::string trim(const std::string& str) {
     return str.substr(strBegin, strRange);
 }
 
+// Function to check if a vector of strings is empty
 bool emptyStrings(std::vector<std::string> vec)
 {
     bool vectorEmpty = true;                        // Set vectorEmpty to true by default to make the function prove its false
@@ -1881,32 +1832,27 @@ void checkForDuplicates(
     for (int i = 0; i < inserted.size(); i++)
     {
         int duplicate_count = 0;
-        
-        // Search through dup_rows to see if the current insert_row is already in the list, if so we can skip it and move on to the next
-        // If user selects multiple columns to check for duplicates on, without this check we may end up generating the same inserts 2+ times depending on the number selected, since it might be true more than once
-        /*if(std::find(dup_rows.begin(), dup_rows.end(), insert_rows[i]) == dup_rows.end())
-        {*/
-            // Loop over each column to check if we need to be concerned with duplicates
-            for (int j = 0; j < destination_columns_index.size(); j++)
+
+        // Loop over each column to check if we need to be concerned with duplicates
+        for (int j = 0; j < destination_columns_index.size(); j++)
+        {
+            // Check for duplicate restricted columns
+            if (restrict_duplicates[destination_columns_index[j]])
             {
-                // Check for duplicate restricted columns
-                if (restrict_duplicates[destination_columns_index[j]])
+                // TODO optimize SQL query for checking for duplicates by sending all columns at once and checking for only 1 records in the DB instead of all of them
+                if (sql.checkDuplicate(table_name, destination_columns[0][destination_columns_index[j]], data_parsed_final[i][j]) > 0)
                 {
-                    // TODO optimize SQL query for checking for duplicates by sending all columns at once and checking for only 1 records in the DB instead of all of them
-                    if (sql.checkDuplicate(table_name, destination_columns[0][destination_columns_index[j]], data_parsed_final[i][j]) > 0)
-                    {
-                        // Add row to new vector for rows that contain illegal duplicate data
-                        dup_rows.push_back(insert_rows[i]);
-                        duplicate_count++;
-                        break;  // Break if we find a duplicate on this column since the whole row is thrown out we can stop checking
-                    }
+                    // Add row to new vector for rows that contain illegal duplicate data
+                    dup_rows.push_back(insert_rows[i]);
+                    duplicate_count++;
+                    break;  // Break if we find a duplicate on this column since the whole row is thrown out we can stop checking
                 }
             }
-            if (duplicate_count == 0)
-            {
-                validRows.push_back(insert_rows[i]);    // Only keep rows that pass the duplicate check
-            }
-        //}
+        }
+        if (duplicate_count == 0)
+        {
+            validRows.push_back(insert_rows[i]);    // Only keep rows that pass the duplicate check
+        }
     }
     running = false;
     insert_rows = validRows;    // Update the insert_rows vector to only contain valid rows
