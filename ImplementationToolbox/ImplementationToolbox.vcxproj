@@ -168,8 +168,11 @@
     <ClCompile Include="..\imgui_stdlib.cpp" />
     <ClCompile Include="..\imgui_tables.cpp" />
     <ClCompile Include="..\imgui_widgets.cpp" />
+    <ClCompile Include="AppLog.cpp" />
+    <ClCompile Include="DisplayImages.cpp" />
     <ClCompile Include="fieldOrderTable.cpp" />
     <ClCompile Include="genericDataImport.cpp" />
+    <ClCompile Include="getInterfaceFiles.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="genericexport_window.cpp" />
     <ClCompile Include="oneButtonRefresh_window.cpp" />
@@ -191,9 +194,11 @@
     <ClInclude Include="..\imgui_internal.h" />
     <ClInclude Include="..\imgui_stdlib.h" />
     <ClInclude Include="AppLog.h" />
+    <ClInclude Include="DisplayImages.h" />
     <ClInclude Include="fieldOrderTable.h" />
     <ClInclude Include="genericDataImport.h" />
     <ClInclude Include="genericexport_window.h" />
+    <ClInclude Include="getInterfaceFiles.h" />
     <ClInclude Include="oneButtonRefresh_window.h" />
     <ClInclude Include="popups.h" />
     <ClInclude Include="Profile.h" />

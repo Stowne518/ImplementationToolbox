@@ -39,6 +39,8 @@
 #include <Windows.h>
 #include "genericDataImport.h"
 #include "AppLog.h"
+#include "getInterfaceFiles.h"
+#include "DisplayImages.h"
 
 
 
@@ -141,6 +143,7 @@ int main(int, char**)
     // static char mapDataImportLabel[] = "Map Data Import";            -- DEPRECATED
     static char servlogLabel[] = "Servlog Viewer";
     static char genericDataImportLabel[] = "Generic Data Import";
+    static char getInterfaceFilesLabel[] = "Get Interface Files";
 
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
@@ -267,6 +270,7 @@ int main(int, char**)
     bool show_servlog_viewer = false;
 	bool show_generic_import_data_window = false;
     bool show_sql_conn_window = false;
+    bool show_get_interface_files = false;
 
     // Popup window states
     bool gen_export_info = false;
@@ -708,38 +712,41 @@ int main(int, char**)
 
         if(show_modules)
         {
-            ImVec2 moduleSelectionSize = ImVec2(ImGui::GetWindowWidth(), module_button_size_y);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, (ImVec2(0, 4.5)));
             ImGui::Begin("Module Selection", &show_modules);
-            
+            ImVec2 moduleSelectionSize = ImVec2(ImGui::GetWindowWidth(), module_button_size_y);
+
             // Show generic export generator button 
             ImGui::SeparatorText("RMS/JMS");
-            if (!show_generic_export_window)
+            addButtonTrigger(genExprtLabel, &show_generic_export_window, moduleSelectionSize, !show_generic_export_window);
+            /*if (!show_generic_export_window)
             {
-                if (ImGui::Button(genExprtLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
+                if (ImGui::Button(genExprtLabel, moduleSelectionSize))
                 {
                     show_generic_export_window = true;
                 }
             }
             else
             {
-                showDisabledButton(genExprtLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }
+                showDisabledButton(genExprtLabel, moduleSelectionSize);
+            }*/
             // Show one button refresh button 
-            if (!show_one_button_refresh_window)
+            addButtonTrigger(oneBttnLabel, &show_one_button_refresh_window, moduleSelectionSize, !show_one_button_refresh_window);
+            /*if (!show_one_button_refresh_window)
             {
-                if (ImGui::Button(oneBttnLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
+                if (ImGui::Button(oneBttnLabel, moduleSelectionSize))
                 {
                     show_one_button_refresh_window = true;
                 }
             }
             else
             {
-                showDisabledButton(oneBttnLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }
+                showDisabledButton(oneBttnLabel, moduleSelectionSize);
+            }*/
 
             ImGui::SeparatorText("CAD");
-            if (!show_servlog_viewer)
+            addButtonTrigger(servlogLabel, &show_servlog_viewer, moduleSelectionSize, !show_servlog_viewer);
+            /*if (!show_servlog_viewer)
             {
                 if (ImGui::Button(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
@@ -749,10 +756,11 @@ int main(int, char**)
             else
             {
                 showDisabledButton(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }
+            }*/
             ImGui::SeparatorText("SQL");
             // Show sql query builder button 
-            if (!show_sql_query_builder_window)
+            addButtonTrigger(sqlQryLabel,  &show_sql_query_builder_window, moduleSelectionSize, !show_sql_query_builder_window);
+            /*if (!show_sql_query_builder_window)
             {
                 if (ImGui::Button(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
@@ -762,8 +770,9 @@ int main(int, char**)
             else
             {
                 showDisabledButton(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }
-            if (!show_generic_import_data_window)
+            }*/
+            addButtonTrigger(genericDataImportLabel, &show_generic_import_data_window, moduleSelectionSize, !show_generic_import_data_window);
+            /*if (!show_generic_import_data_window)
             {
                 if (ImGui::Button(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
                 {
@@ -773,7 +782,9 @@ int main(int, char**)
             else
             {
                 showDisabledButton(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }
+            }*/
+            ImGui::SeparatorText("General");
+            addButtonTrigger(getInterfaceFilesLabel, &show_get_interface_files, moduleSelectionSize, !show_get_interface_files);
 
             // End Module Selection window
             ImGui::End();
@@ -836,6 +847,13 @@ int main(int, char**)
             ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(genericDataImportLabel, &show_generic_import_data_window);
             genericDataImport(&show_generic_import_data_window, sql, log, directory_path);
+            ImGui::End();
+        }
+        if (show_get_interface_files)
+        {
+            ImGui::SetNextWindowSizeConstraints(window_min, window_max);
+            ImGui::Begin(getInterfaceFilesLabel, &show_get_interface_files);
+            getInterfaceFiles(&show_get_interface_files, log);
             ImGui::End();
         }
 

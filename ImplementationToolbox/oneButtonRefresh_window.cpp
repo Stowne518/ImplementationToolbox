@@ -4,6 +4,7 @@
 
 #include "imgui.h"
 #include "oneButtonRefresh_window.h"
+#include "systemFunctions.h"
 
 // System Includes
 #include <ctype.h>          // toupper
@@ -145,6 +146,7 @@ void showOneButtonRefreshWindow(bool* p_open, AppLog& log) {
 
     static bool use_work_area = false;
     static bool samePath = false;
+    static bool displayScript = false;
 
     const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     ImVec2 display = ImGui::GetIO().DisplaySize;
@@ -296,16 +298,7 @@ void showOneButtonRefreshWindow(bool* p_open, AppLog& log) {
     ImGui::SameLine();
     // See if we have all data elements filled out before allowing the script to generate to avoid errors
     bool data_check = dataCheck(rmsName, liveFilePath, rmstrnName, trnFilePath);
-    if (data_check) {
-        if (ImGui::Button("Generate Script", button_size))
-            ImGui::OpenPopup("OneButtonRefreshScript");
-    }
-    if (!data_check) {
-        ImGui::BeginDisabled();
-        ImGui::Button("Generate Script", button_size);
-        ImGui::SetItemTooltip("Please fill out all fields before generating script.");
-        ImGui::EndDisabled();
-    }
+    if(addButton("Generate Script", button_size, data_check)) { ImGui::OpenPopup("OneButtonRefreshScript"); }
 
     // Center window when it opens
     ImVec2 center2 = ImGui::GetMainViewport()->GetCenter();
@@ -314,7 +307,7 @@ void showOneButtonRefreshWindow(bool* p_open, AppLog& log) {
 
     if (ImGui::BeginPopupModal("OneButtonRefreshScript", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
         // Begin child window to display the script text in
-        ImGui::BeginChild("SQLScriptText", ImVec2(ImGui::GetContentRegionMax().x, ImGui::GetContentRegionMax().y - 50), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+        ImGui::BeginChild("SQLScriptText", ImVec2(ImGui::GetContentRegionMax().x, ImGui::GetContentRegionMax().y - 60), ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
 
         // Beign on screen print out of refresh scripts
         ImGui::Text("DECLARE @DB1 NVARCHAR(128) = N'%s' 						--RMS Training Database Name", rmstrnName);
@@ -470,9 +463,9 @@ void showOneButtonRefreshWindow(bool* p_open, AppLog& log) {
         ImGui::EndChild();
 
         // Close button to exit the modal
-        if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
+        if (addButton("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
         ImGui::SameLine();
-        if (ImGui::Button("Copy to clipboard", ImVec2(140, 0))) {
+        if (addButton("Copy to clipboard", ImVec2(140, 0))) {
             ImGui::LogToClipboard();
             ImGui::LogText("\nDECLARE @DB1 NVARCHAR(128) = N'%s' 						--Destination Database Name", rmstrnName);
             ImGui::LogText("\nDECLARE @DB2 NVARCHAR(128) = N'%s' 						--Source Live Database Name", rmsName);

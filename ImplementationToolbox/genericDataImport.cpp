@@ -1,6 +1,7 @@
 #include "genericDataImport.h"
 #include "Sql.h"
 #include "AppLog.h"
+#include "systemFunctions.h"
 #include "imgui_stdlib.h"
 #include <iostream>
 #include <algorithm>
@@ -10,6 +11,8 @@
 #include <unordered_set>
 #pragma unmanaged
 std::mutex sqlMutex;
+
+
 void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
 {
 
@@ -47,6 +50,7 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
     static bool cleanup = false;
     static bool data_mapped_check = false;              //  Set to true when a buffer column is mapped to something. Reset to false if they are all blank
     static bool dup_check = false;
+    static bool new_window = false;
     static bool allow_nulls[1000] = {};
     static bool restrict_duplicates[1000] = {};
     static int display_column_rows = 10;
@@ -272,7 +276,7 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         {
             ImGui::SameLine();
 
-            if (ImGui::Button("Load Columns"))
+            if (addButton("Load Columns"))
             {
                 try
                 {
@@ -649,6 +653,7 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
             if (confirm_mapping)
             {
                 if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data, !confirm_data));
+                if (ImGui::MenuItem("Popout Window", NULL, &new_window, !confirm_data));
             }
             else
             {
@@ -695,16 +700,36 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         }
         else
         {
-            displayDataTable(log, 
-                destination_columns, 
-                destination_columns_index, 
-                data_rows, 
-                data_rows_index, 
-                data_parsed_final, 
-                destination_column_max, 
-                display_data_rows, 
-                allow_nulls,
-                !confirm_data);
+            if (new_window)
+            {
+                ImGui::Text("Popout window open. Close to return display here.");
+				ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+                ImGui::Begin("Data Staging Window", &new_window, ImGuiWindowFlags_NoDocking);
+				displayDataTable(log,
+					destination_columns,
+					destination_columns_index,
+					data_rows,
+					data_rows_index,
+					data_parsed_final,
+					destination_column_max,
+					display_data_rows,
+					allow_nulls,
+					!confirm_data);
+                ImGui::End();   // End Data staging pop out window
+            }
+            else
+            {
+                displayDataTable(log,
+                    destination_columns,
+                    destination_columns_index,
+                    data_rows,
+                    data_rows_index,
+                    data_parsed_final,
+                    destination_column_max,
+                    display_data_rows,
+                    allow_nulls,
+                    !confirm_data);
+            }
         }
 
         // End Staging area window
@@ -1087,6 +1112,11 @@ std::string displayDataFiles(std::string dir)
     return chosenName;
 }
 
+/// <summary>
+/// Creates a combo box using a list of tables pulled from the SQL database to select where to import data to.
+/// </summary>
+/// <param name="sql"></param>
+/// <returns>string containining the selected table name</returns>
 std::string displayTableNames(Sql& sql)
 {
     // DONE: add keyboard capture to get a letter while combobox is active, then move the displayed position to that letter. use ImGui to see if ItemIsActive, if so start an IO monitor, when a key is pressed we do a find in the list and maybe a get position for the value in the box -- solved with text filter
@@ -1263,7 +1293,7 @@ void displayMappingTable(AppLog& log,
                 ImGui::TableSetColumnIndex(2);
                 ImGui::Text("  %s", d_columns_name[i]);
                 ImGui::SetItemTooltip("Data Type: %s\nMax Len: %s\nNullable: %s", d_columns_type[i].c_str(), d_columns_max[i].c_str(), d_columns_null[i].c_str());
-                ImGui::TableSetColumnIndex(3);
+                ImGui::TableSetColumnIndex(3);  
                 if (editable)
                 {
                     ImGui::Button(b_columns[i].c_str(), button_style);
@@ -1324,7 +1354,7 @@ void displayMappingTable(AppLog& log,
                         ImGui::EndDragDropTarget();
                     }
                 }
-                else
+				else    // If not editable we just display the label as text for easier rendering
                 {
                     ImGui::Text("%s", b_columns[i].c_str());
                 }

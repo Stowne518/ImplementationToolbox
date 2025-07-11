@@ -67,6 +67,15 @@
     <ClCompile Include="servlogViewer.cpp">
       <Filter>CAD source files</Filter>
     </ClCompile>
+    <ClCompile Include="getInterfaceFiles.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="AppLog.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="DisplayImages.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlQueryBuilder.h">
@@ -128,6 +137,12 @@
     </ClInclude>
     <ClInclude Include="servlogViewer.h">
       <Filter>CAD header files</Filter>
+    </ClInclude>
+    <ClInclude Include="getInterfaceFiles.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="DisplayImages.h">
+      <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

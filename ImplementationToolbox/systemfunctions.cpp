@@ -280,24 +280,6 @@ void displayUpdates() {
     ImGui::PopStyleVar();
 }
 
-// See imgui wiki for function example: https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
-bool displayCentralSquareLogo(LPDIRECT3DDEVICE9 g_pd3dDevice, const char* filename, PDIRECT3DTEXTURE9* out_texture, int* out_width, int* out_height) {
-    PDIRECT3DTEXTURE9 texture;
-    HRESULT hr = D3DXCreateTextureFromFileA(g_pd3dDevice, filename, &texture);
-    if (hr != S_OK) {
-        std::cerr << "Failed to load image. HRESULT:" << hr << std::endl;
-        return false;
-    }
-
-    // Retrieve description of texture surfgace so we can access the size
-    D3DSURFACE_DESC my_image_desc;
-    texture->GetLevelDesc(0, &my_image_desc);
-    *out_texture = texture;
-    *out_width = (int)my_image_desc.Width;
-    *out_height = (int)my_image_desc.Height;
-    return true;
-}
-
 void showDisabledButton(static char label[], ImVec2 size) {
     ImGui::BeginDisabled();
     ImGui::Button(label, size);
@@ -352,4 +334,86 @@ std::vector<std::string > getListOfConnStrings()
     }
     
     return connStrFiles;
+}
+
+bool addButton(const char* label)
+{
+    if (ImGui::Button(label))
+        return true;
+    else
+        return false;
+}
+
+bool addButton(const char* label, const ImVec2 size)
+{
+    if (ImGui::Button(label, size))
+        return true;
+    else
+        return false;
+}
+
+bool addButton(const char* label, const ImVec2 size, bool enabled)
+{
+    if (enabled)
+    {
+        if (ImGui::Button(label, size))
+        {
+            return true;
+        }
+    }
+    else
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button(label, size);
+        ImGui::EndDisabled();
+    }
+    return false;
+}
+
+bool addButtonTrigger(const char* label, bool* trigger)
+{
+    if (ImGui::Button(label))
+    {
+		*trigger = !(*trigger); // Toggle the trigger state
+        return true;
+    }
+    else
+        return false;
+}
+
+bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size)
+{
+    if (ImGui::Button(label, size))
+    {
+        *trigger = !(*trigger); // Toggle the trigger state
+        return true;
+    }
+    else
+        return false;
+}
+
+bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size, bool enabled)
+{  
+   if (enabled) 
+   {  
+       if (trigger != nullptr) // Check if the pointer is not null  
+       {  
+           if (ImGui::Button(label, size))  
+           {
+               *trigger = !(*trigger);
+               return true;
+           }
+       }
+       else
+       {
+           return false;
+       }
+   }  
+   else  
+   {  
+       ImGui::BeginDisabled();  
+       ImGui::Button(label, size);  
+       ImGui::EndDisabled();  
+       return false;
+   }  
 }
