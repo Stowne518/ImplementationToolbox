@@ -701,7 +701,7 @@ int main(int, char**)
             ImGui::SeparatorText("Windows");
             ImGui::TextWrapped("Any of the windows that you can open can be attached to something called the \"Dockspace\".\nThe dockspace is the main window screen which most of these windows are docked into to begin with. For user customization you can click the title tab and drag the window away from it's current position to pop it out of the current dockspace and leave it as a standalone window or dock it to another window or an edge of the main dockspace.");
             ImGui::SeparatorText("Settings");
-            ImGui::TextWrapped("There are a couple of differnt setting options within this application.");
+            ImGui::TextWrapped("There are a couple of different setting options within this application.");
             ImGui::TextWrapped("There are the options under the settings menu, which allow for changing the font, opening the SQL configuration window, or using a quick connection option for a saved connection string.");
             ImGui::TextWrapped("Then there are user settings which store information like window placement, size, and theme settings. These are found in 2 different .ini files within C:\\ImplementationToolbox\\. Or, wherever you run the application from.");
             ImGui::TextWrapped("If you ever need to restore these settings to a default state you can shut the application down, browse to C:\\ImplementationToolbox\\ and delete the ImplementationToolbox.ini and the imgui.ini and run the LaunchImplementationToolbox.bat file to get fresh files with default settings you had when you first started this application up.");
@@ -718,73 +718,25 @@ int main(int, char**)
 
             // Show generic export generator button 
             ImGui::SeparatorText("RMS/JMS");
-            addButtonTrigger(genExprtLabel, &show_generic_export_window, moduleSelectionSize, !show_generic_export_window);
-            /*if (!show_generic_export_window)
-            {
-                if (ImGui::Button(genExprtLabel, moduleSelectionSize))
-                {
-                    show_generic_export_window = true;
-                }
-            }
-            else
-            {
-                showDisabledButton(genExprtLabel, moduleSelectionSize);
-            }*/
+            ButtonTrigger(genExprtLabel, &show_generic_export_window, moduleSelectionSize, show_generic_export_window);
+
             // Show one button refresh button 
-            addButtonTrigger(oneBttnLabel, &show_one_button_refresh_window, moduleSelectionSize, !show_one_button_refresh_window);
-            /*if (!show_one_button_refresh_window)
-            {
-                if (ImGui::Button(oneBttnLabel, moduleSelectionSize))
-                {
-                    show_one_button_refresh_window = true;
-                }
-            }
-            else
-            {
-                showDisabledButton(oneBttnLabel, moduleSelectionSize);
-            }*/
+            ButtonTrigger(oneBttnLabel, &show_one_button_refresh_window, moduleSelectionSize, show_one_button_refresh_window);
 
             ImGui::SeparatorText("CAD");
-            addButtonTrigger(servlogLabel, &show_servlog_viewer, moduleSelectionSize, !show_servlog_viewer);
-            /*if (!show_servlog_viewer)
-            {
-                if (ImGui::Button(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
-                {
-                    show_servlog_viewer = true;
-                }
-            }
-            else
-            {
-                showDisabledButton(servlogLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }*/
+            // Show servlog viewer button
+            ButtonTrigger(servlogLabel, &show_servlog_viewer, moduleSelectionSize, show_servlog_viewer);
+            
             ImGui::SeparatorText("SQL");
             // Show sql query builder button 
-            addButtonTrigger(sqlQryLabel,  &show_sql_query_builder_window, moduleSelectionSize, !show_sql_query_builder_window);
-            /*if (!show_sql_query_builder_window)
-            {
-                if (ImGui::Button(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
-                {
-                    show_sql_query_builder_window = true;
-                }
-            }
-            else
-            {
-                showDisabledButton(sqlQryLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }*/
-            addButtonTrigger(genericDataImportLabel, &show_generic_import_data_window, moduleSelectionSize, !show_generic_import_data_window);
-            /*if (!show_generic_import_data_window)
-            {
-                if (ImGui::Button(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y)))
-                {
-                    show_generic_import_data_window = true;
-                }
-            }
-            else
-            {
-                showDisabledButton(genericDataImportLabel, ImVec2(ImGui::GetWindowWidth(), module_button_size_y));
-            }*/
+            ButtonTrigger(sqlQryLabel,  &show_sql_query_builder_window, moduleSelectionSize, show_sql_query_builder_window);
+            
+            // Show generic data import button
+            ButtonTrigger(genericDataImportLabel, &show_generic_import_data_window, moduleSelectionSize, show_generic_import_data_window);
+            
             ImGui::SeparatorText("General");
-            addButtonTrigger(getInterfaceFilesLabel, &show_get_interface_files, moduleSelectionSize, !show_get_interface_files);
+            // Show get interface files button
+            ButtonTrigger(getInterfaceFilesLabel, &show_get_interface_files, moduleSelectionSize, show_get_interface_files);
 
             // End Module Selection window
             ImGui::End();
@@ -794,8 +746,6 @@ int main(int, char**)
         }
 
         // Recent Updates window
-        //ImGui::SetNextWindowSize(recentUpdateSize);
-        //ImGui::SetNextWindowPos(recentUpdatePos, ImGuiCond_Always, ImVec2(0.0f, 0.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 0));
 
         if (open_recent_updates) 

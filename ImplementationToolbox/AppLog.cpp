@@ -32,11 +32,11 @@ void AppLog::Draw(const char* title, bool* p_open = NULL)
 
 	// Main Window
 
-	bool clear = addButton("Clear");
+	bool clear = Button("Clear");
 	ImGui::SameLine();
-	bool copy = addButton("Copy");
+	bool copy = Button("Copy");
 	ImGui::Separator();
-	if (addButton("Options")) { ImGui::OpenPopup("Options"); }
+	if (Button("Options")) { ImGui::OpenPopup("Options"); }
 	ImGui::SameLine();
 	Filter.Draw("Filter", -100.0f);
 

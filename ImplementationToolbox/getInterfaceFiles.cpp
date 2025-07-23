@@ -58,7 +58,7 @@ void getInterfaceFiles(bool* open, AppLog& log)
 		ImGui::SameLine();
 		DisplayColoredText("Directory does not exist. Create it?", false);
 		ImGui::SameLine();
-		if (addButton("Create Directory"))
+		if (Button("Create Directory"))
 		{
 			createLocalDirs(log, destinationDir);	// Create the directory if it does not exist
 		}
@@ -74,7 +74,7 @@ void getInterfaceFiles(bool* open, AppLog& log)
 	ImGui::Text("Local interface directory: %s", destinationDir.string().c_str());
 	ImGui::Text("Path to interfaces: %s", pathToInterfaces.string().c_str());
 	ImGui::SameLine();
-	if (addButton("Confirm"))
+	if (Button("Confirm"))
 	{
 		if (productName.empty())
 		{
@@ -105,7 +105,7 @@ void getInterfaceFiles(bool* open, AppLog& log)
 		// End selected interfaces child window
 		ImGui::EndChild();
 
-		if (addButton("Copy Inteface Files"))
+		if (Button("Copy Inteface Files"))
 		{
 			if (vpnConnected && !destinationDirString.empty() && !productName.empty())
 			{

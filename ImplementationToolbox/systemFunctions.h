@@ -35,9 +35,34 @@ void showDisabledButton(static char label[], ImVec2 size);
 
 std::vector<std::string> getListOfConnStrings();
 
-bool addButton(const char* label);
-bool addButton(const char* label, const ImVec2 size);
-bool addButton(const char* label, const ImVec2 size, bool enabled);
-bool addButtonTrigger(const char* label, bool* trigger);
-bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size);
-bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size, bool enabled);
+bool Button(const char* label);
+bool Button(const char* label, bool enabled);
+bool Button(const char* label, const ImVec2 size);
+bool Button(const char* label, const ImVec2 size, bool enabled);
+bool ButtonTrigger(const char* label, bool* trigger);
+bool ButtonTrigger(const char* label, bool* trigger, bool enabled);
+bool ButtonTrigger(const char* label, bool* trigger, const ImVec2 size);
+bool ButtonTrigger(const char* label, bool* trigger, const ImVec2 size, bool enabled);
+
+
+template<typename T>
+bool ComboBox(const char* label, const std::vector<T>& items, int& currentIndex, ImGuiTextFilter& filter) {
+    if (ImGui::BeginCombo(label, items[currentIndex])) {
+        filter.Draw("Filter##label", 110.0f);
+        for (int i = 0; i < items.size(); ++i) {
+            if(filter.PassFilter(items[i]))
+            {
+                bool isSelected = (currentIndex == i);
+                if (ImGui::Selectable(items[i], isSelected)) {
+                    currentIndex = i;
+                }
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+        }
+        ImGui::EndCombo();
+        return true;
+    }
+    return false;
+}

@@ -112,261 +112,232 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
     log.logStateChange("isLoadingInserts", isLoadingInserts);
     log.logStateChange("dataProcessed", dataProcessed);
     log.logStateChange("isBuildingInserts", isBuildingInserts);
+    log.logStateChange("filepath.empty()", filepath.empty());
 
     ImGui::SameLine();
     ImGui::BeginGroup();
-    if (filepath.empty() || loaded_csv)
+    if (Button("Load CSV", (filepath.empty() || loaded_csv)))  // Only enable button if filepath is !empty OR we have !loaded_csv already
     {
-        ImGui::BeginDisabled();
-        ImGui::Button("Load CSV");
-        ImGui::SetItemTooltip("CSV loaded!");
-        ImGui::EndDisabled();
-    }
-    else
-    {
-        if (ImGui::Button("Load CSV"))
+        try
         {
+            // Start asynchronous thread to populate columns so we don't freeze program on larger file imports --#13
+            columnFuture = std::async(
+                std::launch::async,
+                getColumns,
+                std::filesystem::path(dir + "DataImport\\" + filepath) // Pass the correct argument
+            );
 
-            try
-            {
-                // Start asynchronous thread to populate columns so we don't freeze program on larger file imports --#13
-                columnFuture = std::async(
-                    std::launch::async,
-                    getColumns,
-                    std::filesystem::path(dir + "DataImport\\" + filepath) // Pass the correct argument
-                );
-                isLoadingCSV = true;    // Flag the process of loading CSV has started
+            // Start asynchronous thread to populate rows so we don't freeze program on larger file imports --#13
+            rowFuture = std::async(
+                std::launch::async,
+                getRows,
+                std::filesystem::path(dir + "DataImport\\" + filepath)
+            );
+            isLoadingCSV = true;    // Flag the process of loading CSV has started
+            isLoadingData = true;
+            loaded_csv = true;      // Set loaded flag
 
-                // Start asynchronous thread to populate rows so we don't freeze program on larger file imports --#13
-                rowFuture = std::async(
-                    std::launch::async,
-                    getRows,
-                    std::filesystem::path(dir + "DataImport\\" + filepath)
-                );
-                isLoadingData = true;
-
-                log.AddLog("[INFO] File selected: %s\n", filepath.c_str());
-                // rowFuture.get();
-            }
-            catch (const std::ifstream::failure& e)
-            {
-                log.AddLog("[ERROR] Failed to load CSV file: %s", e.what());
-                ImGui::SetItemTooltip("Failed to load CSV file.");
-            }
-            catch (std::filesystem::filesystem_error& e)
-            {
-                log.AddLog("[ERROR] Filesystem error: %s", e.what());
-                ImGui::SetItemTooltip("Filesystem error occurred.");
-            }
-            catch (const std::exception& e)
-            {
-                log.AddLog("[ERROR] Failed to load CSV file: %s", e.what());
-                ImGui::SetItemTooltip("Failed to load CSV file.");
-            }
-            catch (...)
-            {
-                log.AddLog("[ERROR] Unknown error occurred while loading CSV file.");
-                ImGui::SetItemTooltip("Unknown error occurred.");
-            }
+            log.AddLog("[INFO] File selected: %s\n", filepath.c_str());
         }
-        // Poll the future to see if CSV columns have finished loading
-        if (isLoadingCSV)
+        catch (const std::ifstream::failure& e)
         {
-            static auto lastCheck = std::chrono::steady_clock::now();
-            auto now = std::chrono::steady_clock::now();
+            log.AddLog("[ERROR] Failed to load CSV file: %s", e.what());
+            ImGui::SetItemTooltip("Failed to load CSV file.");
+        }
+        catch (std::filesystem::filesystem_error& e)
+        {
+            log.AddLog("[ERROR] Filesystem error: %s", e.what());
+            ImGui::SetItemTooltip("Filesystem error occurred.");
+        }
+        catch (const std::exception& e)
+        {
+            log.AddLog("[ERROR] Failed to load CSV file: %s", e.what());
+            ImGui::SetItemTooltip("Failed to load CSV file.");
+        }
+        catch (...)
+        {
+            log.AddLog("[ERROR] Unknown error occurred while loading CSV file.");
+            ImGui::SetItemTooltip("Unknown error occurred.");
+        }
+    }
+    // Poll the future to see if CSV columns have finished loading
+    if (isLoadingCSV)
+    {
+        static auto lastCheck = std::chrono::steady_clock::now();
+        auto now = std::chrono::steady_clock::now();
 
-            // Check futures every 250ms
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCheck).count() > 250)
+        // Check futures every 250ms
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCheck).count() > 250)
+        {
+            lastCheck = now;
+            if (columnFuture.valid() && columnFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
             {
-                lastCheck = now;
-                if (columnFuture.valid() && columnFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+                try
                 {
-                    try
+                    // Retrieve the result
+                    source_columns = columnFuture.get();
+
+                    // Log the loaded columns
+                    for (const auto& column : source_columns)
                     {
-                        // Retrieve the result
-                        source_columns = columnFuture.get();
-
-                        // Log the loaded columns
-                        for (const auto& column : source_columns)
-                        {
-                            log.AddLog("[INFO] CSV Table Column loaded: %s\n", column.c_str());
-                        }
-
-                        // Get count and index position of loaded columns
-                        for (int i = 0; i < source_columns.size(); i++)
-                        {
-                            source_columns_index.push_back(i);
-                            log.AddLog("[INFO] Source column index added: %i\n", i);
-                        }
+                        log.AddLog("[INFO] CSV Table Column loaded: %s\n", column.c_str());
                     }
-                    catch (const std::exception& e)
+
+                    // Get count and index position of loaded columns
+                    for (int i = 0; i < source_columns.size(); i++)
                     {
-                        log.AddLog("[ERROR] Failed to load CSV columns: %s\n", e.what());
-                        ImGui::SetItemTooltip("Failed to load CSV columns.");
+                        source_columns_index.push_back(i);
+                        log.AddLog("[INFO] Source column index added: %i\n", i);
                     }
                 }
-
-                // Check if rowFuture is ready without blocking
-                if (rowFuture.valid() && rowFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+                catch (const std::exception& e)
                 {
-                    try
-                    {
-                        // Retrieve the result
-                        data_rows = rowFuture.get();
+                    log.AddLog("[ERROR] Failed to load CSV columns: %s\n", e.what());
+                    ImGui::SetItemTooltip("Failed to load CSV columns.");
+                }
+            }
 
-                        // Log the loaded rows
-                        log.AddLog("[INFO] CSV rows loaded: %zu rows\n", data_rows.size());
-                    }
-                    catch (const std::exception& e)
-                    {
-                        log.AddLog("[ERROR] Failed to load CSV rows: %s\n", e.what());
-                        ImGui::SetItemTooltip("Failed to load CSV rows.");
-                    }
-                }
-                // If both futures are done, reset the loading flag
-                if (!columnFuture.valid() && !rowFuture.valid())
+            // Check if rowFuture is ready without blocking
+            if (rowFuture.valid() && rowFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+            {
+                try
                 {
-                    isLoadingCSV = false; // Reset the loading flag
-                    isLoadingData = false;
-                    loaded_csv = true;      // Set loaded flag
-                    log.AddLog("[INFO] Columns and rows loading finished.\n");
+                    // Retrieve the result
+                    data_rows = rowFuture.get();
+
+                    // Log the loaded rows
+                    log.AddLog("[INFO] CSV rows loaded: %zu rows\n", data_rows.size());
                 }
+                catch (const std::exception& e)
+                {
+                    log.AddLog("[ERROR] Failed to load CSV rows: %s\n", e.what());
+                    ImGui::SetItemTooltip("Failed to load CSV rows.");
+                }
+            }
+            // If both futures are done, reset the loading flag
+            if (!columnFuture.valid() && !rowFuture.valid())
+            {
+                isLoadingCSV = false; // Reset the loading flag
+                isLoadingData = false;
+                log.AddLog("[INFO] Columns and rows loading finished.\n");
             }
         }
     }
+
+    if (filepath.empty())
+        ImGui::SetItemTooltip("File path empty, add a file to DataImport or select a file to load.");
+    else if (loaded_csv)
+        ImGui::SetItemTooltip("CSV already loaded.");
     ImGui::EndGroup();
     ImGui::SameLine();
     ImGui::BeginGroup();
 
     // Get destination columns
-    if (!sql._GetConnected())
+    ButtonTrigger("Load SQL Tables", &load_tables, (load_tables || !sql._GetConnected())); // Add a button that flips the load_tables trigger and appears disabled if load_tables is true or if we're not connected to a SQL database
+    
+    ImGui::SameLine();
+    if (load_tables)
     {
-        ImGui::SameLine();
-        ImGui::BeginDisabled();
-        ImGui::Button("Load SQL Tables");
-        ImGui::SetItemTooltip("Connect to a SQL database to proceed.");
-        ImGui::EndDisabled();
+        ImGui::Text("Select a table to import to: "); ImGui::SameLine();
+        ImGui::SetNextItemWidth(175);
+        table_name = displayTableNames(sql);
     }
-    else
+    ImGui::SameLine();
+    if (Button("Load Columns", (load_columns || table_name.empty())))
     {
-        if (!load_tables)
+        try
         {
-            ImGui::SameLine();
-            if (ImGui::Button("Load SQL Tables"))
+            // Capture the current value of table_name by value
+            std::string curr_table_name = table_name;
+            std::string connectionString;
+            sql._SetConnectionString();
+
             {
-                load_tables = true;
+                // Lock the mutex to safely access sql object
+                std::lock_guard<std::mutex> lock(sqlMutex);
+                connectionString = sql._GetConnectionString();  // After locking sqlMutex get connection string value to protect from changes
+                curr_table_name = table_name;                   // After locking sqlMutex get table name to protect from changes while processing
             }
-        }
-        if (load_tables)
-        {
-            ImGui::Text("Select a table to import to: "); ImGui::SameLine();
-            ImGui::SetNextItemWidth(175);
-            table_name = displayTableNames(sql);
-        }
-        if (load_columns || table_name.empty())
-        {
-            ImGui::SameLine();
-            ImGui::BeginDisabled();
-            ImGui::Button("Load Columns");
-            if (load_columns) ImGui::SetItemTooltip("Columns loaded!");
-            else ImGui::SetItemTooltip("Select a table to load columns.");
-            ImGui::EndDisabled();
-        }
-        else
-        {
-            ImGui::SameLine();
+            // Start the asynchronous operation
+            destinationFuture = std::async(
+                std::launch::async,
+                [&sql, connectionString, curr_table_name]() {
+                    //sql._SetConnectionString();
 
-            if (addButton("Load Columns"))
+                    return sql.getTableColumns(connectionString, curr_table_name);
+                }
+            );
+            isLoadingColumns = true; // Indicate that the columns are being loaded
+        }
+        catch (const std::exception& e)
+        {
+            log.AddLog("[ERROR] Failed to start loading SQL columns: %s\n", e.what());
+            ImGui::SetItemTooltip("Failed to start loading SQL columns.");
+        }
+        catch (...)
+        {
+            log.AddLog("[ERROR] Unknown error occurred while loading SQL tables.\n");
+            ImGui::SetItemTooltip("Unknown error occurred.");
+        }
+    }
+
+    // Set tooltips for button
+    if (load_columns) ImGui::SetItemTooltip("Columns loaded!");
+    else ImGui::SetItemTooltip("Select a table to load columns.");
+
+    // Poll the future to see if columns have finished loading
+    if (isLoadingColumns)
+    {
+        // Check if future is ready without blocking
+        if (destinationFuture.valid() && destinationFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+        {
+            try
             {
-                try
-                {
-                    // Capture the current value of table_name by value
-                    std::string curr_table_name = table_name;
-                    std::string connectionString;
-                    sql._SetConnectionString();
+                // Retrieve the result
+                destination_columns = destinationFuture.get();
 
+                // DONE remove addtime and adduser columns before they make it to the mapping table -- #22
+                // Perform some initial data parsing/clean up before we start mappinng it (removing adduser and addtime)
+                for (int i = 0; i < destination_columns[0].size(); /*i++*/)                                                     // First layer of vectors are the containers for each complete column set
+                {
+                    if (destination_columns[0][i] == "adduser" || destination_columns[0][i] == "addtime")                       // If the column name is adduser or addtime remove it and each matching index for the schema information
                     {
-                        // Lock the mutex to safely access sql object
-                        std::lock_guard<std::mutex> lock(sqlMutex);
-                        connectionString = sql._GetConnectionString();  // After locking sqlMutex get connection string value to protect from changes
-                        curr_table_name = table_name;                   // After locking sqlMutex get table name to protect from changes while processing
+                        destination_columns[0].erase(destination_columns[0].begin() + i);
+                        destination_columns[1].erase(destination_columns[1].begin() + i);
+                        destination_columns[2].erase(destination_columns[2].begin() + i);
+                        destination_columns[3].erase(destination_columns[3].begin() + i);
+                        adduser = true;     // If we find a column adduser or addtime set their flags to true by default
+                        addtime = true;
                     }
-                    // Start the asynchronous operation
-                    destinationFuture = std::async(
-                        std::launch::async,
-                        [&sql, connectionString, curr_table_name]() {
-                            //sql._SetConnectionString();
-
-                            return sql.getTableColumns(connectionString, curr_table_name);
-                        }
-                    );
-                    isLoadingColumns = true; // Indicate that the columns are being loaded
+                    else
+                    {
+                        i++;                                                                                                    // Only increment when we aren't removing a vector
+                    }
                 }
-                catch (const std::exception& e)
+                for (int j = 0; j < destination_columns[0].size(); j++)
                 {
-                    log.AddLog("[ERROR] Failed to start loading SQL columns: %s\n", e.what());
-                    ImGui::SetItemTooltip("Failed to start loading SQL columns.");
+                    destination_column_name.push_back(destination_columns[0][j]);
+                    destination_column_type.push_back(destination_columns[1][j]);
+                    destination_column_max.push_back(destination_columns[2][j]);
+                    destination_column_null.push_back(destination_columns[3][j]);
+                    log.AddLog("[INFO] SQL Table Column loaded: %s\n", destination_column_name[j]);  // Index 0 should be a list of column names
+                    buffer_columns.push_back("");
                 }
-                catch (...)
-                {
-                    log.AddLog("[ERROR] Unknown error occurred while loading SQL tables.\n");
-                    ImGui::SetItemTooltip("Unknown error occurred.");
-                }
+                load_columns = true;
+                isLoadingColumns = false; // Reset the loading flag
             }
-            // Poll the future to see if columns have finished loading
-            if (isLoadingColumns)
+            catch (const std::exception& e)
             {
-                // Check if future is ready without blocking
-                if (destinationFuture.valid() && destinationFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
-                {
-                    try
-                    {
-                        // Retrieve the result
-                        destination_columns = destinationFuture.get();
-
-                        // DONE remove addtime and adduser columns before they make it to the mapping table -- #22
-                        // Perform some initial data parsing/clean up before we start mappinng it (removing adduser and addtime)
-                        for (int i = 0; i < destination_columns[0].size(); /*i++*/)                                                     // First layer of vectors are the containers for each complete column set
-                        {
-                            if (destination_columns[0][i] == "adduser" || destination_columns[0][i] == "addtime")                       // If the column name is adduser or addtime remove it and each matching index for the schema information
-                            {
-                                destination_columns[0].erase(destination_columns[0].begin() + i);
-                                destination_columns[1].erase(destination_columns[1].begin() + i);
-                                destination_columns[2].erase(destination_columns[2].begin() + i);
-                                destination_columns[3].erase(destination_columns[3].begin() + i);
-                                adduser = true;     // If we find a column adduser or addtime set their flags to true by default
-                                addtime = true;
-                            }
-                            else
-                            {
-                                i++;                                                                                                    // Only increment when we aren't removing a vector
-                            }
-                        }
-                        for (int j = 0; j < destination_columns[0].size(); j++)
-                        {
-                            destination_column_name.push_back(destination_columns[0][j]);
-                            destination_column_type.push_back(destination_columns[1][j]);
-                            destination_column_max.push_back(destination_columns[2][j]);
-                            destination_column_null.push_back(destination_columns[3][j]);
-                            log.AddLog("[INFO] SQL Table Column loaded: %s\n", destination_column_name[j]);  // Index 0 should be a list of column names
-                            buffer_columns.push_back("");
-                        }
-                        load_columns = true;
-                        isLoadingColumns = false; // Reset the loading flag
-                    }
-                    catch (const std::exception& e)
-                    {
-                        log.AddLog("[ERROR] Failed to load SQL columns: %s\n", e.what());
-                        ImGui::SetItemTooltip("Failed to load SQL columns.");
-                        isLoadingColumns = false; // Reset the loading flag
-                    }
-                }
+                log.AddLog("[ERROR] Failed to load SQL columns: %s\n", e.what());
+                ImGui::SetItemTooltip("Failed to load SQL columns.");
+                isLoadingColumns = false; // Reset the loading flag
             }
         }
     }
     ImGui::EndGroup();
     ImGui::SameLine();
-    if (ImGui::Button("Cancel Import", ImVec2(150, 0)))
+    // Cancel the current import and set all variables back to default
+    if (Button("Cancel Import", ImVec2(150, 0)))
     {
         clearMappings(log, 
             source_columns, 
@@ -401,46 +372,38 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
             sql_query_message,
             data_parsed_final);
     }
-    if (ImGui::Button("Display"))
-    {
-        ImGui::OpenPopup("WindowOptions");
-    }
+    if (Button("Display")) { ImGui::OpenPopup("WindowOptions"); }  // Open a  popup window to display various options related to display of child tables and buttons on the mapping window
     ImGui::SameLine();
     // Display options to include adduser and addtime
     ImGui::Text("Include:"); ImGui::SameLine();
     if (ImGui::Checkbox("adduser", &adduser)); ImGui::SetItemTooltip("This will automatically include adduser to the insert statement with a default value of 'CSTDATAIMPORT'"); ImGui::SameLine();
     if (ImGui::Checkbox("addtime", &addtime)); ImGui::SetItemTooltip("This will automatically include addtime to the insert statement with a default value of today's date and time");
 
+    // Windo containing display options
     if (ImGui::BeginPopup("WindowOptions", ImGuiWindowFlags_NoMove))
     {
         ImGui::Text("Display Settings");
         ImGui::Separator();
         ImGui::SeparatorText("Mapping display style:");
         if (ImGui::RadioButton("Expanded", &button_style, Button_Comp)); ImGui::SameLine(); if (ImGui::RadioButton("Compact", &button_style, Button_Expand));
-        if (button_style == Button_Comp)
-        {
-            display_settings.setButtonStyle(false);
-        }
-        else
-        {
-            display_settings.setButtonStyle(true);
-        }
+        if (button_style == Button_Comp) { display_settings.setButtonStyle(false); }
+        else { display_settings.setButtonStyle(true); }
         ImGui::SeparatorText("Windows");
         if (ImGui::Checkbox("Display Column Mapping", &column_window));
         if (ImGui::Checkbox("Display mapping overview", &mapoverview));
         if (ImGui::Checkbox("Display Data Staging", &data_window));
         if (ImGui::Checkbox("Display Insert Window", &insert_window));
 
-        display_settings.setColumnWindow(column_window);
-        display_settings.setDataWindow(data_window);
-        display_settings.setInsertWindow(insert_window);
-        display_settings.setMappingOverview(mapoverview);
+        display_settings.setColumnWindow(column_window);        // Display/hide column mapping child window
+        display_settings.setDataWindow(data_window);            // Display/hide data staging child window
+		display_settings.setInsertWindow(insert_window);        // Display/hide insert window
+		display_settings.setMappingOverview(mapoverview);       // Display/hide mapping overview child window
         log.logStateChange("mapoverview", mapoverview);
         log.logStateChange("column_window", &column_window);
         log.logStateChange("data_window", &data_window);
         log.logStateChange("insert_window", &insert_window);
 
-        // End windowoptions popup
+        // End WindowOptions popup
         ImGui::EndPopup();
     }
     if (column_window)
@@ -475,44 +438,14 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
             {
                 ImGui::Text("All Columns loaded! |");
                 // Disable all buttons once data is confirmed
-                if (confirm_mapping)
+                if (Button("Auto-Match", confirm_mapping))
                 {
-                    ImGui::BeginDisabled();
-
-                    if (ImGui::Button("Auto-Match"))
-                    {
-                        auto_map_cols = true;
-                    }
-                    // Disable confirm mapping button if there are not columns mapped
-                    if (!data_mapped_check)
-                        ImGui::BeginDisabled();
-                    if (ImGui::Button("Confirm Mapping"))
-                    {
-                        confirm_mapping = true;
-                    }
-
-                    if (!data_mapped_check)
-                        ImGui::EndDisabled();
-
-
-                    ImGui::EndDisabled();
-				}
-                else
-                {
-                    if (ImGui::Button("Auto-Match"))
-                    {
-                        auto_map_cols = true;
-                    }
-                    // Disable confirm mapping button if there are not columns mapped
-                    if (!data_mapped_check)
-                        ImGui::BeginDisabled();
-                    if (ImGui::Button("Confirm Mapping"))
-                    {
-                        confirm_mapping = true;
-                    }
-                    if (!data_mapped_check)
-                        ImGui::EndDisabled();
+                    auto_map_cols = true;
                 }
+
+                // Disable confirm mapping button if there are not columns mapped
+                if (Button("Confirm Mapping", (!data_mapped_check || confirm_mapping)))
+                    confirm_mapping = true;
             }
             else
             {
@@ -702,6 +635,7 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         {
             if (new_window)
             {
+                // Create a "pop out" window to hold the data and allow resizing for easier data review while in staging
                 ImGui::Text("Popout window open. Close to return display here.");
 				ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
                 ImGui::Begin("Data Staging Window", &new_window, ImGuiWindowFlags_NoDocking);
@@ -849,10 +783,8 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
             ImGui::MenuItem("Insert all data");
             ImGui::EndDisabled();
         }
-        if (ImGui::Button("Show Insert Results"))
-        {
-			show_sql_messages = true;
-        }
+
+		ButtonTrigger("Show Insert Results", &show_sql_messages, show_sql_messages); // Add a button that toggles the visibility of the SQL messages window
 
         // End insert menu bar
         ImGui::EndMenuBar();
@@ -924,34 +856,23 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
                                 ImGui::PushID(i);
                                 ImGui::TextDisabled("%i", i);
                                 ImGui::TableSetColumnIndex(1);
-                                if (!inserted[i])
+                                if (Button("SQL", inserted[i]))
                                 {
-                                    // Create button to allow individual lines to be submittedd to SQL after it's generated
-                                    if (ImGui::Button("SQL"))
+                                    try
                                     {
-                                        try
+                                        if (insertMappedData(sql, insert_rows[i], sql_query_message[i]))
                                         {
-                                            if (insertMappedData(sql, insert_rows[i], sql_query_message[i]))
-                                            {
-                                                // query_results.push_back("Insert Successful for insert #" + std::to_string(i));
-                                                inserted[i] = true;
-                                            }
-                                        }
-                                        catch (std::exception& e)
-                                        {
-                                            //query_results.push_back(e.what());
-                                            inserted[i] = false;
-                                            sql_query_message[i] = e.what();        // Capture exception message to display after insert attempt
+                                            // query_results.push_back("Insert Successful for insert #" + std::to_string(i));
+                                            inserted[i] = true;
                                         }
                                     }
+                                    catch (std::exception& e)
+                                    {
+                                        //query_results.push_back(e.what());
+                                        inserted[i] = false;
+                                        sql_query_message[i] = e.what();        // Capture exception message to display after insert attempt
+                                    }
                                     ImGui::SetItemTooltip("Insert this row into SQL");
-                                }
-                                else
-                                {
-                                    ImGui::BeginDisabled();
-                                    ImGui::Button("SQL");
-                                    ImGui::SetItemTooltip("Inserted successfully!");
-                                    ImGui::EndDisabled();
                                 } ImGui::SameLine();
                                 ImGui::TableSetColumnIndex(2);
                                 ImGui::Text("%s", insert_rows[i].c_str());
@@ -1008,14 +929,9 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         // End Insert Rows child window
         ImGui::EndChild();
     }
-
-    
-
-    // Default return
-    // return false;
 }
 
-std::vector<std::string> getColumns(const std::filesystem::path& dir/*, std::vector<std::string>& columns*/) 
+std::vector<std::string> getColumns(const std::filesystem::path& dir) 
 {
 	std::ifstream dataImport;
     std::vector<std::string> columns;
@@ -1066,8 +982,10 @@ std::vector<std::string> getRows(const std::filesystem::path& dir)
 std::string displayDataFiles(std::string dir)
 {
     static std::string chosenName;
+    static int selectedFile = 0;
     std::vector<std::string> fileNames;
     static ImGuiTextFilter file_filter;
+
     for (const auto& entry : std::filesystem::directory_iterator(dir))
     {
         std::string filename = entry.path().filename().string();
@@ -1084,32 +1002,12 @@ std::string displayDataFiles(std::string dir)
         fileNameCStr.push_back(name.c_str());
     }
 
-    // Display the Combo box for csv files in the directory otherwise we show text instead
-    static int currentItem = 0;
     ImGui::SetNextItemWidth(175);
-    if (!fileNameCStr.empty() && ImGui::BeginCombo("##Select unit csv", fileNameCStr[currentItem])) {
-        file_filter.Draw("Filter##Files", 110.0f);
-        for (int n = 0; n < fileNameCStr.size(); n++) {
-            if(file_filter.PassFilter(fileNameCStr[n]))
-            {
-                bool isSelected = (currentItem == n);
-                if (ImGui::Selectable(fileNameCStr[n], isSelected)) {
-                    currentItem = n;
-                    chosenName = fileNameCStr[n];
-                }
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-        }
-        // End Combo Box for profile drop down
-        ImGui::EndCombo();
-    }
-    else if (fileNameCStr.empty())
-        ImGui::TextWrapped("No CSV files found. Place a .csv file in %s", dir.c_str());
+    ImGui::PushID("filesBox");
+    ComboBox("##FilesBox", fileNameCStr, selectedFile, file_filter);     // Pass vector of c string arrays, and state of selected item
+    ImGui::PopID();
 
-    // Return the currently selected name in the combo box
-    return chosenName;
+    return chosenName = fileNameCStr[selectedFile];     // Set chosenName equal to the vector with the state of selected from ComboBox function
 }
 
 /// <summary>
@@ -1121,6 +1019,7 @@ std::string displayTableNames(Sql& sql)
 {
     // DONE: add keyboard capture to get a letter while combobox is active, then move the displayed position to that letter. use ImGui to see if ItemIsActive, if so start an IO monitor, when a key is pressed we do a find in the list and maybe a get position for the value in the box -- solved with text filter
     static std::vector<std::string> tableNames;
+    static int selectedTable = 0;
 	static ImGuiTextFilter filter;
     static std::string tmp_db = "";
     static std::string tmp_source = "";
@@ -1138,30 +1037,11 @@ std::string displayTableNames(Sql& sql)
 	}
 
 	// Display the Combo box if we find sql tables otherwise we show text instead
-	static int currentItem = 0;
-	if (!tableNameCStr.empty() && ImGui::BeginCombo("##Select table", tableNameCStr[currentItem])) {
-        ImGui::SetNextItemWidth(100);
-        filter.Draw("Filter##Tables", 110.0f);
-        for (int n = 0; n < tableNameCStr.size(); n++) {
-            if(filter.PassFilter(tableNameCStr[n]))
-            {
-                bool isSelected = (currentItem == n);
-                if (ImGui::Selectable(tableNameCStr[n], isSelected)) {
-                    currentItem = n;
-                    chosenName = tableNameCStr[n];
-                }
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-		}
-		// End Combo Box for profile drop down
-		ImGui::EndCombo();
-	}
-	else if (tableNameCStr.empty())
-		ImGui::TextWrapped("No tables found in database.");
-	// Return the currently selected name in the combo box
-	return chosenName;
+    ImGui::SetNextItemWidth(175);
+    ImGui::PushID("tableBox");
+    ComboBox("##Tables", tableNameCStr, selectedTable, filter);
+    ImGui::PopID();
+	return chosenName = tableNameCStr[selectedTable];
 }
 
 void displayMappingTable(AppLog& log, 

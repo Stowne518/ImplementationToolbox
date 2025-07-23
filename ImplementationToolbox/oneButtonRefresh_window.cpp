@@ -298,7 +298,7 @@ void showOneButtonRefreshWindow(bool* p_open, AppLog& log) {
     ImGui::SameLine();
     // See if we have all data elements filled out before allowing the script to generate to avoid errors
     bool data_check = dataCheck(rmsName, liveFilePath, rmstrnName, trnFilePath);
-    if(addButton("Generate Script", button_size, data_check)) { ImGui::OpenPopup("OneButtonRefreshScript"); }
+    if(Button("Generate Script", button_size, data_check)) { ImGui::OpenPopup("OneButtonRefreshScript"); }
 
     // Center window when it opens
     ImVec2 center2 = ImGui::GetMainViewport()->GetCenter();
@@ -463,9 +463,9 @@ void showOneButtonRefreshWindow(bool* p_open, AppLog& log) {
         ImGui::EndChild();
 
         // Close button to exit the modal
-        if (addButton("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
+        if (Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); }
         ImGui::SameLine();
-        if (addButton("Copy to clipboard", ImVec2(140, 0))) {
+        if (Button("Copy to clipboard", ImVec2(140, 0))) {
             ImGui::LogToClipboard();
             ImGui::LogText("\nDECLARE @DB1 NVARCHAR(128) = N'%s' 						--Destination Database Name", rmstrnName);
             ImGui::LogText("\nDECLARE @DB2 NVARCHAR(128) = N'%s' 						--Source Live Database Name", rmsName);

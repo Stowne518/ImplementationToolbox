@@ -3,6 +3,8 @@
 #include "AppLog.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
+#include <cmath>
 
 /// <summary>
 /// Function used to check the main directory path exists for us to save various files into it. Returns true if it is able to create the directory or already exists. Returns false if it can't create it and doesn't exist
@@ -51,29 +53,7 @@ bool createDirectory(std::string& path, AppLog& log) {
 				log.AddLog("[INFO] Data Import directory successfully created at: %s\n", dataImportDir.c_str());
                 // Return true if we make it here without exception
                 log.AddLog("[INFO] All directories successfully created.\n");
-                return true;
-
-
-    //            // Create unit directory to store unit csv files
-    //            std::filesystem::create_directory(unitCSVDir);
-				//log.AddLog("[INFO] Unit CSV directory successfully created at: %s\n", unitCSVDir.c_str());
-                // Create agency CSV directory
-    //            std::filesystem::create_directory(agencyCSVDir);
-				//log.AddLog("[INFO] Agency CSV directory successfully created at: %s\n", agencyCSVDir.c_str());
-    //            // Create Groups CSV directory
-    //            std::filesystem::create_directory(groupsCSVDir);
-				//log.AddLog("[INFO] Groups CSV directory successfully created at: %s\n", groupsCSVDir.c_str());
-    //            // Create Maps directory
-    //            std::filesystem::create_directory(map_dir);
-				//log.AddLog("[INFO] Maps directory successfully created at: %s\n", map_dir.c_str());
-    //            // Create Stations CSV directory
-    //            std::filesystem::create_directory(beats_dir);
-
-    //            std::filesystem::create_directory(district_dir);
-    //            std::filesystem::create_directory(station_dir);
-    //            std::filesystem::create_directory(geoprox_dir);
-    //            std::filesystem::create_directory(responseplan_dir);
-    //            std::filesystem::create_directory(reportingarea_dir);                
+                return true;               
             }
             else {
                 log.AddLog("[INFO] Working Directory already exists.\n");
@@ -125,47 +105,6 @@ bool createDirectory(std::string& path, AppLog& log) {
         // Return true if we make it here without exception
 		log.AddLog("[INFO] All subdirectories successfully found/created.\n");
         return true;
-        /*
-        * --DEPRECATED OLD DIRECTORIES NO LONGER USED
-        if (!std::filesystem::exists(unitCSVDir))
-        {
-            std::filesystem::create_directory(unitCSVDir);
-        }
-
-        if (!std::filesystem::exists(agencyCSVDir))
-        {
-            std::filesystem::create_directories(agencyCSVDir);
-        }
-        if (!std::filesystem::exists(groupsCSVDir))
-        {
-            std::filesystem::create_directories(groupsCSVDir);
-        }
-        if (!std::filesystem::exists(beats_dir))
-        {
-            std::filesystem::create_directories(beats_dir);
-        }
-        if (!std::filesystem::exists(station_dir))
-        {
-            std::filesystem::create_directories(station_dir);
-        }
-        if (!std::filesystem::exists(district_dir))
-        {
-            std::filesystem::create_directory(district_dir);
-        }
-        if (!std::filesystem::exists(geoprox_dir))
-        {
-            std::filesystem::create_directory(geoprox_dir);
-        }
-        if (!std::filesystem::exists(responseplan_dir))
-        {
-            std::filesystem::create_directory(responseplan_dir);
-        }
-        if (!std::filesystem::exists(reportingarea_dir))
-        {
-            std::filesystem::create_directory(reportingarea_dir);
-        }*/
-
-
     }
     catch (std::filesystem::filesystem_error& fse)
     {
@@ -187,9 +126,8 @@ bool genericFieldCheck() {
     std::vector<std::string> fieldTest;
 
     fieldTest = readFieldList();
-    if (fieldTest.empty()) {
+    if (fieldTest.empty())
         return false;
-    }
     else
         return true;
 
@@ -286,34 +224,6 @@ void showDisabledButton(static char label[], ImVec2 size) {
     ImGui::EndDisabled();
 }
 
-// Function to display a color picker and change the background color
-//void colorPickerWithBackgroundChange(ImVec4& bgColor) {
-//    ImGui::Begin("Select a Background color");
-//
-//    // Array of pleasing colors
-//    static ImVec4 colors[] = {
-//        ImVec4(0.9f, 0.1f, 0.1f, 1.0f), // Red
-//        ImVec4(0.1f, 0.9f, 0.1f, 1.0f), // Green
-//        ImVec4(0.1f, 0.1f, 0.9f, 1.0f), // Blue
-//        ImVec4(0.9f, 0.9f, 0.1f, 1.0f), // Yellow
-//        ImVec4(0.9f, 0.1f, 0.9f, 1.0f), // Magenta
-//        ImVec4(0.1f, 0.9f, 0.9f, 1.0f), // Cyan
-//        ImVec4(0.5f, 0.5f, 0.5f, 1.0f)  // Gray
-//    };
-//
-//    // Display color buttons
-//    for (int i = 0; i < IM_ARRAYSIZE(colors); ++i) {
-//        ImGui::PushID(i); // Ensure each button has a unique ID
-//        if (ImGui::ColorButton("##color", colors[i], ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(50, 50))) {
-//            bgColor = colors[i];
-//        }
-//        ImGui::PopID();
-//        if ((i + 1) % 3 != 0) ImGui::SameLine();
-//    }
-//
-//    ImGui::End();
-//}
-
 std::vector<std::string > getListOfConnStrings()
 {
     std::string connStrDir = "C:\\ImplementationToolbox\\ConnectionStrings\\";
@@ -321,12 +231,8 @@ std::vector<std::string > getListOfConnStrings()
     try
     {
         for (const auto& entry : std::filesystem::directory_iterator(connStrDir))
-        {
             if (entry.path().extension() == ".str")
-            {
                 connStrFiles.push_back(entry.path().filename().string());
-            }
-        }
     }
     catch (const std::exception&)
     {
@@ -336,7 +242,12 @@ std::vector<std::string > getListOfConnStrings()
     return connStrFiles;
 }
 
-bool addButton(const char* label)
+/// <summary>
+/// Add basic button with custom label and default size
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <returns>true if clicked, false if not</returns>
+bool Button(const char* label)
 {
     if (ImGui::Button(label))
         return true;
@@ -344,7 +255,35 @@ bool addButton(const char* label)
         return false;
 }
 
-bool addButton(const char* label, const ImVec2 size)
+/// <summary>
+/// Add basic button with custom label and default size and ability to enable/disable with a state bool
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <param name="disabled">- bool that determines if it appears disabled</param>
+/// <returns>true if clicked, false if not</returns>
+bool Button(const char* label, bool disabled)
+{
+    if (disabled)
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button(label);
+        ImGui::EndDisabled();
+        return false;
+    }
+    else
+    {
+        return ImGui::Button(label);
+    }
+    return false;
+}
+
+/// <summary>
+/// Add basic button with custom label and custom size
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <param name="size">- ImVec2 size of the button to display</param>
+/// <returns>true if clicked, false if not</returns>
+bool Button(const char* label, const ImVec2 size)
 {
     if (ImGui::Button(label, size))
         return true;
@@ -352,25 +291,39 @@ bool addButton(const char* label, const ImVec2 size)
         return false;
 }
 
-bool addButton(const char* label, const ImVec2 size, bool enabled)
+/// <summary>
+/// Add basic button with custom label, custom size, and a flag to enable or disable the button
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <param name="size">- ImVec2 size of the button to display</param>
+/// <param name="disabled">- bool that determines if it appears disabled</param>
+/// <returns>true if clicked, false if not</returns>
+bool Button(const char* label, const ImVec2 size, bool disabled)
 {
-    if (enabled)
+    if (disabled)
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button(label, size);
+        ImGui::EndDisabled(); 
+        return false;
+    }
+    else
     {
         if (ImGui::Button(label, size))
         {
             return true;
-        }
-    }
-    else
-    {
-        ImGui::BeginDisabled();
-        ImGui::Button(label, size);
-        ImGui::EndDisabled();
+        }        
     }
     return false;
 }
 
-bool addButtonTrigger(const char* label, bool* trigger)
+/// <summary>
+///  Adds a button labeled with char* passed that will flip the state of the bool you pass it. Displays the default size of button
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <param name="trigger">- the bool to flip current state of</param>
+/// <returns>boolean</returns>
+bool ButtonTrigger(const char* label, bool* trigger)
 {
     if (ImGui::Button(label))
     {
@@ -381,7 +334,46 @@ bool addButtonTrigger(const char* label, bool* trigger)
         return false;
 }
 
-bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size)
+/// <summary>
+/// Adds a button labeled with char* passed that will flip the state of the bool you pass it. Displays the passed size of button
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <param name="trigger">- the bool to flip current state of</param>
+/// <returns>boolean</returns>
+bool ButtonTrigger(const char* label, bool* trigger, bool disabled)
+{
+    if (disabled)
+    {
+        ImGui::BeginDisabled();
+        ImGui::Button(label);
+        ImGui::EndDisabled();
+        return false;
+    }
+    else
+    {
+        if (trigger != nullptr) // Check if the pointer is not null  
+        {
+            if (ImGui::Button(label))
+            {
+                *trigger = !(*trigger);
+                return true;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+
+/// <summary>
+/// Adds a button labeled with char* passed that will flip the state of the bool you pass it. Displays the passed size of button
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <param name="trigger">- the bool to flip current state of</param>
+/// <param name="size">- ImVec2 size of the button to display</param>
+/// <returns>boolean</returns>
+bool ButtonTrigger(const char* label, bool* trigger, const ImVec2 size)
 {
     if (ImGui::Button(label, size))
     {
@@ -392,13 +384,28 @@ bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size)
         return false;
 }
 
-bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size, bool enabled)
+/// <summary>
+/// Adds a button labeled with char* passed that will flip the state of the bool you pass it. Displays the passed size of button
+/// </summary>
+/// <param name="label">- the text displayed in the button</param>
+/// <param name="trigger">- the bool to flip current state of</param>
+/// <param name="size">- ImVec2 size of the button to display</param>
+/// <param name="disabled">- bool that determines if it appears disabled</param>
+/// <returns>boolean</returns>
+bool ButtonTrigger(const char* label, bool* trigger, const ImVec2 size, bool disabled)
 {  
-   if (enabled) 
+   if (disabled) 
+   {  
+       ImGui::BeginDisabled();
+       ImGui::Button(label, size);
+       ImGui::EndDisabled();
+       return false;
+   }  
+   else  
    {  
        if (trigger != nullptr) // Check if the pointer is not null  
-       {  
-           if (ImGui::Button(label, size))  
+       {
+           if (ImGui::Button(label, size))
            {
                *trigger = !(*trigger);
                return true;
@@ -408,12 +415,5 @@ bool addButtonTrigger(const char* label, bool* trigger, const ImVec2 size, bool 
        {
            return false;
        }
-   }  
-   else  
-   {  
-       ImGui::BeginDisabled();  
-       ImGui::Button(label, size);  
-       ImGui::EndDisabled();  
-       return false;
    }  
 }
