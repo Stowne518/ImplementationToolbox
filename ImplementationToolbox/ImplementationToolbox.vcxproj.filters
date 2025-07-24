@@ -37,9 +37,6 @@
     <ClCompile Include="popups.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="genericDataImport.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="UserSettings.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -76,6 +73,54 @@
     <ClCompile Include="DisplayImages.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="genericDataImport.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="getColumns.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="getRows.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="displayDataFiles.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="displayTableNames.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="displayMappingTable.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="processData.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="buildInsertQuery.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="displayDataTable.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="insertMappedData.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clearMappings.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parseCSVLine.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trim.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="emptyStrings.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="checkForDuplicates.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="checkForDuplicates_Thread.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlQueryBuilder.h">
@@ -106,9 +151,6 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="popups.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="genericDataImport.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="UserSettings.h">
@@ -144,6 +186,9 @@
     <ClInclude Include="DisplayImages.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="genericDataImport.h">
+      <Filter>GDI Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />
@@ -175,6 +220,12 @@
     </Filter>
     <Filter Include="RMS source files">
       <UniqueIdentifier>{64879471-7945-4ec0-b97e-9912bb5f019d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GDI Header Files">
+      <UniqueIdentifier>{bd09f617-2cf7-4853-9fa7-e970aeda5ee8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GDI Source Files">
+      <UniqueIdentifier>{94f701d7-1a84-4d96-8bb5-01d38287c2df}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

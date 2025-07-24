@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 #include <atomic>
+#include <iostream>
+#include <algorithm>
+#include <future>
+#include <chrono>
+#include <unordered_set>
+
 #include "imgui.h"
 
 // Class declartion
