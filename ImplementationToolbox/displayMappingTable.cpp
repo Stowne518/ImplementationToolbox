@@ -80,13 +80,13 @@ void displayMappingTable(AppLog& log,
     {
         for (int i = 0; i < d_columns_name.size(); i++)     // Loop the destination columns against all source column labels
         {
-            for (int j = 0; j < s_columns_buf.size(); j++)  // Test agains the buffer so we don't directly change source_columns
+            for (int j = 0; j < s_columns_buf.size(); j++)  // Test against the buffer so we don't directly change source_columns
             {
-                if (d_columns_name[i] == s_columns_buf[j])  // Test destination labels against source, if we find one perform mappings before we display table again
+                if (d_columns_name[i] == s_columns_buf[j])  // Test destination labels against source, if we find one, perform mappings before we display table again
                 {
                     log.AddLog("[INFO] Auto-match detected match on %s\n", s_columns_buf[j].c_str());
                     // Map out buffer values first
-                    b_column_index[i] = j;                  // bufffer_column_index at pos i gets value of current j. This should be the source buf index position of matching label - this will correlate the matching buffer column to SQL with the matching source column
+                    b_column_index[i] = j;                  // buffer_column_index at pos i gets value of current j. This should be the source buf index position of matching label - this will correlate the matching buffer column to SQL with the matching source column
                     log.AddLog("[DEBUG] Mapped source column %s to SQL column %s\n", s_columns_buf[j].c_str(), d_columns_name[i].c_str());
                     b_columns[i] = s_columns_buf[j];        // Set buffer column at i equal to label of source column buffer at j. 
                     s_columns_buf[j] = "";                  // Set newly mapped source column buffer index to blank to indicate a swamp with the b_column
@@ -104,7 +104,6 @@ void displayMappingTable(AppLog& log,
         *auto_map = false;       // Reset to false so we don't keep attempting to auto_map columns after first pass
     }
     d_clipper.Begin(d_columns_name.size());
-    //ImGui::BeginChild("DestinationColumnMapping", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
     ImVec2 mapping_tables_outer_size = ImVec2(ImGui::GetContentRegionAvail().x / 2 - 3.60, ImGui::GetContentRegionAvail().y);
     if (ImGui::BeginTable("DestinationMappingTable", 4, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX, mapping_tables_outer_size))
     {
@@ -167,7 +166,17 @@ void displayMappingTable(AppLog& log,
                                 // Skip if label is blank
                                 if (b_columns[i] != "" && b_columns[j] != s_columns[b_column_index[j]])
                                 {
-                                    // If the buffer label isn't equal to the source label we know the source buffer has been misaligned.
+                                    /* Why this is needed:
+                                    * If the buffer label isn't equal to the source label we know the source buffer has been misaligned.
+                                    * This happens when a button is swapped from it's original source position and can cause issues if not realigned
+                                    * Say a user moved source button 2 (index [1]) with label "name" to buffer button 4 (index[3]) with a blank label
+                                    * The buttons are swapped and the labels moved, so buffer button 4 now has the label "name" and source index of 1, and source button 2 now has "" label with buffer index of 3
+                                    * Then, they decide that is incorrect, and grab a different blank source button say at button 5 (index[4]) which had a label "age", but is now empty, to reset it with
+                                    * Now, the app thinks that button 5 with label "name" has index [4] from the source buttons and that we're still mapping the "age" column at index 4 from the original button
+                                    * But the user will believe this is still the "name" column that they are mapping
+                                    * So, if that is used again without realigning, we will map a totally different value than what it thinks is there, since the source label will be the same
+                                    */
+
                                     // Correct buffer label by comparing to source labels and use that position
                                     log.AddLog("[WARN] Detected mismatched indexes! Attempting to match now...\n");
                                     auto it = std::find(s_columns.begin(), s_columns.end(), b_columns[j]);          // Find label value of buffer column at position j within the source column vector
@@ -177,7 +186,7 @@ void displayMappingTable(AppLog& log,
                                 }
                             }
                             log.AddLog("[DEBUG] Buffer column index positions verified against source columns index successfully.\n");
-                            // Display final b_column_index values, when we're done it should match the order and source index of each column added
+                            // Log final b_column_index values, when we're done it should match the order and source index of each column added
                             log.AddLog("[DEBUG] b_column_index positions =  ");
                             for (int i = 0; i < b_column_index.size(); i++)
                             {
@@ -192,7 +201,7 @@ void displayMappingTable(AppLog& log,
                         ImGui::EndDragDropTarget();
                     }
                 }
-                else    // If not editable we just display the label as text for easier rendering
+                else    // To improve performance when it's not editable we just display the label as text for easier rendering instead of buttons
                 {
                     ImGui::Text("%s", b_columns[i].c_str());
                 }
@@ -204,7 +213,6 @@ void displayMappingTable(AppLog& log,
     }
 
     // End destination column mapping child window
-    //ImGui::EndChild();
     ImGui::SameLine();
     s_clipper.Begin(s_columns.size());
     //ImGui::BeginChild("SourceColumnMapping", ImVec2(0,0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
@@ -247,5 +255,4 @@ void displayMappingTable(AppLog& log,
     }
 
     // End Source column mapping
-    //ImGui::EndChild();
 }

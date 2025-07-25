@@ -13,7 +13,7 @@ void processData(std::vector<std::string>& data_rows,
     // Map out buffer index values from source column index positions
     for (int i = 0; i < buffer_columns_index.size(); i++)
     {
-        if (buffer_columns_index[i] != -1)
+        if (buffer_columns_index[i] != -1)                         // We use -1 to indicate that the columns was not mapped and can be ignored
         {
             destination_columns_index.push_back(i);                 // Map SQL table columns in order they were mapped
             data_rows_index.push_back(buffer_columns_index[i]);     // Get index position of data that matches columns to the SQL tables they were mapped to
@@ -44,11 +44,11 @@ void processData(std::vector<std::string>& data_rows,
     // Remove values from data_rows that aren't mapped to a column in SQL
     for (int i = 0; i < data_rows.size(); i++)
     {
-        std::vector<std::string> data_tmp;
-        std::vector<std::string> values = parseCSVLine(data_rows[i]); // Parse out the CSV line into a vector of strings
-        if (!emptyStrings(values))     // Detect if the previously parsed line was empty, if so don't add to data_parsed_final -- #22
+		std::vector<std::string> data_tmp;                              // Create a temporary vector to hold the parsed out strings from the CSV line
+        std::vector<std::string> values = parseCSVLine(data_rows[i]);   // Parse out the CSV line into a vector of strings
+        if (!emptyStrings(values))                                      // Detect if the previously parsed line was empty, if so don't add to data_parsed_final -- #22
         {
-            for (int j = 0; j < destination_columns_index.size(); j++) // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
+            for (int j = 0; j < destination_columns_index.size(); j++)  // Loop over destination columns index size and use the data_rows_index to determine to which columns we're keeping
             {
                 // If we get an empty cell we push back an empty string
                 if (values[data_rows_index[j]] == "")

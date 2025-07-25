@@ -711,7 +711,7 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
             ImGuiChildFlags_Border,
             ImGuiWindowFlags_MenuBar
             );
-        static std::atomic<bool> running = false;       // Is duplicate checking running
+        static std::atomic<bool> running = false;       // Is duplicate checking running?
 
         if (confirm_data && !isBuildingInserts)
         {
