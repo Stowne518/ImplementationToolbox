@@ -141,47 +141,11 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
     // Local variables for scripting
     static char rmstrnName[128], rmsName[128], trnFilePath[256], liveFilePath[256];
 
-    const int DBNAME_LENGTH = 140;
-    const int FILEPATH_LENGTH = 210;
+    /*const int DBNAME_LENGTH = 140;
+    const int FILEPATH_LENGTH = 210;*/
 
-    static bool use_work_area = false;
-
-    const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    ImVec2 display = ImGui::GetIO().DisplaySize;
-    // Set fullscreen options
-    // DONE: Fix the fullscreen option. Only works one way and cannot go back to a windowed view after setting fullscreen
-    //if (use_work_area)
-    //{
-    //    ImGui::SetNextWindowPos(use_work_area ? main_viewport->WorkPos : main_viewport->Pos);
-    //    ImGui::SetNextWindowSize(use_work_area ? main_viewport->WorkSize : main_viewport->Size);
-    //}
-
-    //if (!use_work_area)
-    //{
-    //    // Center window when it opens
-    //    ImVec2 center_window = ImGui::GetMainViewport()->GetCenter();
-    //    ImGui::SetNextWindowPos(center_window, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    //    ImGui::SetNextWindowSize(ImVec2(display.x * .75, (display.y * .75)), ImGuiCond_Always);
-    //}
-
-    //// Begin One Button Refresh window
-    //if (!ImGui::Begin(("SQL Query Builder"), p_open, window_flags)) {
-    //    // Early out if window is collapsed
-    //    ImGui::End();
-    //    return;
-    //}
     // Menu Bar
     if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("Menu")) {
-            if (ImGui::MenuItem("Fullscreen", NULL, &use_work_area));
-            ImGui::Separator();
-            if (ImGui::MenuItem("Close")) {
-                *p_open = false;
-            }
-            
-            // End menu
-            ImGui::EndMenu();
-        }
         if (ImGui::BeginMenu("Help", false)) {
             // TODO - add SQL tips and knowledge to a popup window in here
             if (ImGui::MenuItem("Join Help")) {
@@ -241,7 +205,7 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
 
 
     ImGui::SeparatorText("Statement Selection");
-    ImGui::SetNextItemWidth(strlen(statements[statements_current]) * 12);
+    ImGui::SetNextItemWidth((float)strlen(statements[statements_current]) * 12);
     ImGui::Combo("##sqlstatementtype", &statements_current, statements, IM_ARRAYSIZE(statements), ImGuiComboFlags_WidthFitPreview);
     ImGui::Spacing();
     switch (statements_current) {
@@ -249,6 +213,10 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
         ImGui::SeparatorText("Choose columns to select (15 max)");
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
         ImGui::DragInt("##column_count", &draw_lines, 0.2f, 0, 15); HelpMarker("Click and drag to select number of columns. 0 will include them all.");
+        if( ImGui::IsItemDeactivatedAfterEdit())
+        {
+            log.AddLog("Column count adjusted to %i\n", draw_lines);
+        }
         ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, ImGui::GetTextLineHeight() * 1), ImVec2(FLT_MAX, ImGui::GetTextLineHeightWithSpacing() * MAX_HEIGHT_LINES));
         // DONE: Fix app crashing when any child window is open and the app is minimized. Just removed child window altogether. Not really needed when a simple table can replace it
         if (draw_lines > 0) {
@@ -280,7 +248,7 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
         }
         ImGui::Spacing();
         ImGui::SeparatorText("Choose how many records you want displayed"); 
-        ImGui::SetNextItemWidth(strlen(top[top_current]) * 12 + 15);
+        ImGui::SetNextItemWidth((float)strlen(top[top_current]) * 12 + 15);
         ImGui::Combo("##top", &top_current, top, IM_ARRAYSIZE(top)); HelpMarker("Used to return the specified number of records.\nUseful if you expect to get a large amount of results in your query.");
         if (top_current == 4) {
             ImGui::SameLine();
@@ -331,7 +299,7 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
             if (add_where && where_count >= 1) {
                 ImGui::SameLine();
                 if (ImGui::Button("Remove where clause", ImVec2(140, 30))) {
-                    if (add_where < 1)          // If we get less than 1 where clause we hide this button and the where clause data entry boxes
+                    if (where_count < 1)          // If we get less than 1 where clause we hide this button and the where clause data entry boxes
                         add_where = false;
                     else                        // Otherwise, we reduce the number of where clauses included
                         where_count--;

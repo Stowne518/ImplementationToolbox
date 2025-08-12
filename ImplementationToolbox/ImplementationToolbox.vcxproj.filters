@@ -121,6 +121,9 @@
     <ClCompile Include="checkForDuplicates_Thread.cpp">
       <Filter>GDI Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="customTableLogic.cpp">
+      <Filter>GDI Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlQueryBuilder.h">
@@ -187,6 +190,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="genericDataImport.h">
+      <Filter>GDI Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="customTableLogic.h">
       <Filter>GDI Header Files</Filter>
     </ClInclude>
   </ItemGroup>

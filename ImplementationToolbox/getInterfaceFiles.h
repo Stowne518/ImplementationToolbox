@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <fstream>
 
-class AppLog;
+struct AppLog;
 
 void getInterfaceFiles(bool* open, AppLog& log);
 bool testDirectory(const std::string& rootPath);

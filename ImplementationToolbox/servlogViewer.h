@@ -3,7 +3,7 @@
 #include <vector>
 #include "imgui.h"
 class Sql;
-class AppLog;
+struct AppLog;
 class UserSettings;
 
 void servlogViewer(bool*, Sql&, AppLog&, UserSettings&);

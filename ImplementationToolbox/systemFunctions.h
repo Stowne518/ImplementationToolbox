@@ -31,7 +31,7 @@ void displayUpdates();
 
 
 
-void showDisabledButton(static char label[], ImVec2 size);
+void showDisabledButton(const char* label, ImVec2 size);
 
 std::vector<std::string> getListOfConnStrings();
 

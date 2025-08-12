@@ -1,5 +1,5 @@
 #include "imgui.h"
-class AppLog;
+struct AppLog;
 
 void showSqlQueryBuilderWindow(bool*, AppLog&);
 

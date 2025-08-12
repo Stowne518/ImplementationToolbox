@@ -173,6 +173,7 @@
     <ClCompile Include="checkForDuplicates.cpp" />
     <ClCompile Include="checkForDuplicates_Thread.cpp" />
     <ClCompile Include="clearMappings.cpp" />
+    <ClCompile Include="customTableLogic.cpp" />
     <ClCompile Include="displayDataFiles.cpp" />
     <ClCompile Include="displayDataTable.cpp" />
     <ClCompile Include="DisplayImages.cpp" />
@@ -209,6 +210,7 @@
     <ClInclude Include="..\imgui_internal.h" />
     <ClInclude Include="..\imgui_stdlib.h" />
     <ClInclude Include="AppLog.h" />
+    <ClInclude Include="customTableLogic.h" />
     <ClInclude Include="DisplayImages.h" />
     <ClInclude Include="fieldOrderTable.h" />
     <ClInclude Include="genericDataImport.h" />

@@ -1,4 +1,4 @@
 #pragma once
 class Sql;	// Forward declaration of class
-class AppLog;
+struct AppLog;	// Struct declaration
 void showGenericExportWindow(bool*, Sql& sql, AppLog& log);

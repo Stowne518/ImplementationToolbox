@@ -85,9 +85,9 @@ void displayMappingTable(AppLog& log,
 	std::vector<std::string>& b_columns,
 	std::vector<std::string>& rows, 
 	std::vector<int>& b_column_index, 
-	std::vector<int>& s_columns_index, 
+	/*std::vector<int>& s_columns_index,
 	std::vector<int>& d_column_index,
-	int& table_len,
+	int& table_len,*/
 	bool* nulls,
 	bool* duplicate,
 	bool* automap,
@@ -192,5 +192,3 @@ void checkForDuplicates_Thread(
 	std::vector<bool>& inserted,
 	std::atomic<bool>& running
 );
-
-

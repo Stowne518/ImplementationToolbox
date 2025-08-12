@@ -12,9 +12,9 @@ void displayMappingTable(AppLog& log,
     std::vector<std::string>& b_columns,
     std::vector<std::string>& rows,
     std::vector<int>& b_column_index,
-    std::vector<int>& s_columns_index,
+    /*std::vector<int>& s_columns_index,
     std::vector<int>& d_column_index,
-    int& table_len,
+    int& table_len,*/
     bool* nulls,
     bool* duplicate,
     bool* auto_map,
@@ -103,7 +103,7 @@ void displayMappingTable(AppLog& log,
         }
         *auto_map = false;       // Reset to false so we don't keep attempting to auto_map columns after first pass
     }
-    d_clipper.Begin(d_columns_name.size());
+    d_clipper.Begin(d_columns_name.size(), TEXT_HEIGHT);
     ImVec2 mapping_tables_outer_size = ImVec2(ImGui::GetContentRegionAvail().x / 2 - 3.60, ImGui::GetContentRegionAvail().y);
     if (ImGui::BeginTable("DestinationMappingTable", 4, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX, mapping_tables_outer_size))
     {
@@ -120,15 +120,23 @@ void displayMappingTable(AppLog& log,
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::PushID(i);
+                if (d_columns_null[i] != "YES") // It can't accept nulls so we disable the check box for this row
+                    ImGui::BeginDisabled();
                 ImGui::Checkbox("##nulls", &nulls[i]);
-                ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns_name[i]);
                 log.logStateChange(("%s", d_columns_name[i] + " allows nulls").c_str(), nulls[i]);
+                if (d_columns_null[i] != "YES") // End the disabled the checkbox if it can't accept nulls
+                {
+					ImGui::SetItemTooltip("Column '%s' does not allow NULLs.", d_columns_name[i].c_str());
+                    ImGui::EndDisabled();
+                }
+                else
+                    ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns_name[i].c_str());
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Checkbox("##Dups", &duplicate[i]);
-                ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", d_columns_name[i]);
+                ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", d_columns_name[i].c_str());
                 log.logStateChange(("%s", d_columns_name[i] + " restricts duplicates on insert.").c_str(), duplicate[i]);
                 ImGui::TableSetColumnIndex(2);
-                ImGui::Text("  %s", d_columns_name[i]);
+                ImGui::Text("  %s", d_columns_name[i].c_str());
                 ImGui::SetItemTooltip("Data Type: %s\nMax Len: %s\nNullable: %s", d_columns_type[i].c_str(), d_columns_max[i].c_str(), d_columns_null[i].c_str());
                 ImGui::TableSetColumnIndex(3);
                 if (editable)
@@ -180,7 +188,7 @@ void displayMappingTable(AppLog& log,
                                     // Correct buffer label by comparing to source labels and use that position
                                     log.AddLog("[WARN] Detected mismatched indexes! Attempting to match now...\n");
                                     auto it = std::find(s_columns.begin(), s_columns.end(), b_columns[j]);          // Find label value of buffer column at position j within the source column vector
-                                    int s_col = std::distance(s_columns.begin(), it);                               // Find distance to label located before and return position number
+                                    __int64 s_col = std::distance(s_columns.begin(), it);                           // Find distance to label located before and return position number
                                     b_column_index[j] = s_col;                                                      // Update buffer column to have correct index from source vector
                                     log.AddLog("[DEBUG] Buffer column index matched %i set to source column index %i\n", j, s_col);
                                 }
@@ -188,12 +196,12 @@ void displayMappingTable(AppLog& log,
                             log.AddLog("[DEBUG] Buffer column index positions verified against source columns index successfully.\n");
                             // Log final b_column_index values, when we're done it should match the order and source index of each column added
                             log.AddLog("[DEBUG] b_column_index positions =  ");
-                            for (int i = 0; i < b_column_index.size(); i++)
+                            for (int y = 0; y < b_column_index.size(); y++)
                             {
-                                if (i == b_column_index.size() - 1)
-                                    log.AddLog("%i", b_column_index[i]);
+                                if (y == b_column_index.size() - 1)
+                                    log.AddLog("%i", b_column_index[y]);
                                 else
-                                    log.AddLog("%i, ", b_column_index[i]);
+                                    log.AddLog("%i, ", b_column_index[y]);
                             }
                             log.AddLog("\n");
                         }
@@ -237,7 +245,7 @@ void displayMappingTable(AppLog& log,
                     {
                         ImGui::SetDragDropPayload("DND_Column", &i, sizeof(int));
                         // Display prevew
-                        ImGui::Text("Mapping column %s", s_columns_buf[i]);
+                        ImGui::Text("Mapping column %s", s_columns_buf[i].c_str());
                         ImGui::EndDragDropSource();
                     }
                 }

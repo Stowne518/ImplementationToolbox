@@ -218,7 +218,7 @@ void displayUpdates() {
     ImGui::PopStyleVar();
 }
 
-void showDisabledButton(static char label[], ImVec2 size) {
+void showDisabledButton(const char* label, ImVec2 size) {
     ImGui::BeginDisabled();
     ImGui::Button(label, size);
     ImGui::EndDisabled();
@@ -274,7 +274,6 @@ bool Button(const char* label, bool disabled)
     {
         return ImGui::Button(label);
     }
-    return false;
 }
 
 /// <summary>

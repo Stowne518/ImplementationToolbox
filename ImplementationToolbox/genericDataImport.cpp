@@ -319,7 +319,7 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
                     destination_column_type.push_back(destination_columns[1][j]);
                     destination_column_max.push_back(destination_columns[2][j]);
                     destination_column_null.push_back(destination_columns[3][j]);
-                    log.AddLog("[INFO] SQL Table Column loaded: %s\n", destination_column_name[j]);  // Index 0 should be a list of column names
+                    log.AddLog("[INFO] SQL Table Column loaded: %s\n", destination_column_name[j].c_str());  // Index 0 should be a list of column names
                     buffer_columns.push_back("");
                 }
                 load_columns = true;
@@ -375,8 +375,8 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
     ImGui::SameLine();
     // Display options to include adduser and addtime
     ImGui::Text("Include:"); ImGui::SameLine();
-    if (ImGui::Checkbox("adduser", &adduser)); ImGui::SetItemTooltip("This will automatically include adduser to the insert statement with a default value of 'CSTDATAIMPORT'"); ImGui::SameLine();
-    if (ImGui::Checkbox("addtime", &addtime)); ImGui::SetItemTooltip("This will automatically include addtime to the insert statement with a default value of today's date and time");
+    if (ImGui::Checkbox("adduser", &adduser)) ImGui::SetItemTooltip("This will automatically include adduser to the insert statement with a default value of 'CSTDATAIMPORT'"); ImGui::SameLine();
+    if (ImGui::Checkbox("addtime", &addtime)) ImGui::SetItemTooltip("This will automatically include addtime to the insert statement with a default value of today's date and time");
 
     // Windo containing display options
     if (ImGui::BeginPopup("WindowOptions", ImGuiWindowFlags_NoMove))
@@ -384,14 +384,14 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         ImGui::Text("Display Settings");
         ImGui::Separator();
         ImGui::SeparatorText("Mapping display style:");
-        if (ImGui::RadioButton("Expanded", &button_style, Button_Comp)); ImGui::SameLine(); if (ImGui::RadioButton("Compact", &button_style, Button_Expand));
+        if (ImGui::RadioButton("Expanded", &button_style, Button_Comp)) ImGui::SameLine(); if (ImGui::RadioButton("Compact", &button_style, Button_Expand))
         if (button_style == Button_Comp) { display_settings.setButtonStyle(false); }
         else { display_settings.setButtonStyle(true); }
         ImGui::SeparatorText("Windows");
-        if (ImGui::Checkbox("Display Column Mapping", &column_window));
-        if (ImGui::Checkbox("Display mapping overview", &mapoverview));
-        if (ImGui::Checkbox("Display Data Staging", &data_window));
-        if (ImGui::Checkbox("Display Insert Window", &insert_window));
+        if (ImGui::Checkbox("Display Column Mapping", &column_window))
+        if (ImGui::Checkbox("Display mapping overview", &mapoverview))
+        if (ImGui::Checkbox("Display Data Staging", &data_window))
+        if (ImGui::Checkbox("Display Insert Window", &insert_window))
 
         display_settings.setColumnWindow(column_window);        // Display/hide column mapping child window
         display_settings.setDataWindow(data_window);            // Display/hide data staging child window
@@ -466,9 +466,9 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
                 buffer_columns, 
                 data_rows, 
                 buffer_columns_index, 
-                source_columns_index, 
+                /*source_columns_index,
                 destination_columns_index,
-                display_column_rows,
+                display_column_rows,*/
                 allow_nulls,
                 restrict_duplicates,
                 &auto_map_cols, 
@@ -487,9 +487,9 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
                 buffer_columns,
                 data_rows,
                 buffer_columns_index,
-                source_columns_index,
+                /*source_columns_index,
                 destination_columns_index,
-                display_column_rows,
+                display_column_rows,*/
                 allow_nulls,
                 restrict_duplicates,
                 &auto_map_cols,
@@ -538,11 +538,11 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
                     {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
-                        ImGui::Text("%s", destination_column_name[i]);
+                        ImGui::Text("%s", destination_column_name[i].c_str());
                         ImGui::TableNextColumn();
                         ImGui::Text("=");
                         ImGui::TableNextColumn();
-                        ImGui::Text("%s", buffer_columns[i]);
+                        ImGui::Text("%s", buffer_columns[i].c_str());
                     }
                 }   // End Mapping overview
 
@@ -582,17 +582,10 @@ void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
         if (ImGui::BeginMenuBar())
         {
             ImGui::TextDisabled("Data Staging");
-            if (confirm_mapping)
-            {
-                if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data, !confirm_data));
-                if (ImGui::MenuItem("Popout Window", NULL, &new_window, !confirm_data));
-            }
-            else
-            {
-                ImGui::BeginDisabled();
-                ImGui::MenuItem("Confirm Data", NULL, &confirm_data);
-                ImGui::EndDisabled();
-            }
+
+            if (ImGui::MenuItem("Confirm Data", NULL, &confirm_data, !confirm_data && confirm_mapping));
+            if (ImGui::MenuItem("Popout Window", NULL, &new_window, !confirm_data && confirm_mapping));
+            
 			ImGui::Text("(Rows: %i)", data_parsed_final.size());
             // End data staging menu bar
             ImGui::EndMenuBar();

@@ -524,7 +524,7 @@ int main(int, char**)
                     // Center window when it opens
                     ImGui::SetNextWindowPos(window_center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
                     if (ImGui::MenuItem("Information", NULL, &gen_export_info));
-                    if (ImGui::MenuItem("Help"));
+                    if (ImGui::MenuItem("Help"))
 
                     // End Gen Exprt Gen menu options
                     ImGui::EndMenu();
