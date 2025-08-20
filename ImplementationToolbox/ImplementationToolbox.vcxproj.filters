@@ -19,9 +19,6 @@
     <ClCompile Include="..\imgui_draw.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\backends\imgui_impl_dx9.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\backends\imgui_impl_win32.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
@@ -124,6 +121,9 @@
     <ClCompile Include="customTableLogic.cpp">
       <Filter>GDI Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\backends\imgui_impl_dx12.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlQueryBuilder.h">
@@ -139,9 +139,6 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\imgui.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\backends\imgui_impl_dx9.h">
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\backends\imgui_impl_win32.h">
@@ -194,6 +191,9 @@
     </ClInclude>
     <ClInclude Include="customTableLogic.h">
       <Filter>GDI Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\backends\imgui_impl_dx12.h">
+      <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

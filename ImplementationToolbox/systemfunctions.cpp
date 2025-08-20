@@ -147,23 +147,14 @@ void displayUpdates() {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, (ImVec2(0, 5)));
     if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Spacing();
-        ImGui::Bullet(); ImGui::TextWrapped("Added new directories for Data Import CSV files in the working directory.");
-        ImGui::Bullet(); ImGui::TextWrapped("New Feature: User settings.\nThese settings are now allowing for more customization than before. Windows can now be affixed to anchor points in the main window or to other modules. This creates a viewport as well, so windows can now be moved outside the main display area. It will also track the position and size of the main window and reopen to those specifications each time the program is opened now.");
-        ImGui::Bullet(); ImGui::TextWrapped("New feature: Debug logging. This window can be opened from the main menu bar under view. It will show the current state of the program and any errors that occur.\nThis should allow for reduced testing time and faster troubleshooting moving forward.");
-        ImGui::Bullet(); ImGui::TextWrapped("Debug log has to be retroactively added to support all corners of the program. This will be an ongoing process and it is still limited to the following areas:");
-        
-        ImGui::Indent(); ImGui::Bullet(); ImGui::TextWrapped("SQL Connection");
-        ImGui::Bullet(); ImGui::TextWrapped("Directory creation at launch.");
-        ImGui::Bullet(); ImGui::TextWrapped("Most main screen variables");
-        ImGui::Bullet(); ImGui::TextWrapped("Generic Data Import");
-        ImGui::Bullet(); ImGui::TextWrapped("User Settings");
-        ImGui::Bullet(); ImGui::TextWrapped("System Functions");
-        ImGui::Bullet(); ImGui::TextWrapped("Servlog viewer");
-        ImGui::Unindent();
-
-        ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("Added new feature for SQL quick connection. It will read in the list of saved connection strings (if you have any) and then attempt to connect automatically usinng the one you click on.");
-        ImGui::Bullet(); ImGui::SameLine(); ImGui::TextWrapped("Added new text filters to drop downs in Generic data import and SQL quick connection options.");
+        ImGui::Bullet(); ImGui::TextWrapped("Upgraded entire program to DX12 from DX9. This is an effort to modernize somewhat and make portability better. Should reduce external needed dependancies.");
         ImGui::Spacing();
+    }
+    if (ImGui::CollapsingHeader("Planned Features")) {
+        ImGui::Spacing();
+        ImGui::Bullet(); ImGui::TextWrapped("New Functionality: Generic Data import - saved user preferences specific to the module. Things like displayed windows, button size, etc.");
+        ImGui::Bullet(); ImGui::TextWrapped("New Feature: Get Implementation Files. The idea with this module is that it will check the cleaninstall folder for all interfaces and files and allow you to pick one and download it's contents locally for ease of uploading to a client or keeping files up to date.");
+        ImGui::Bullet(); ImGui::TextWrapped("New Feature: Get Implementation Files - Keep up to date. When this is selected and you open the application, it will automatically check the interface folder you have configured to keep up to date and replace the older version with the newest files automatically.");
     }
     ImGui::SeparatorText("RMS/JMS");
     if (ImGui::CollapsingHeader("Generic Export Generator")) {
@@ -180,31 +171,16 @@ void displayUpdates() {
     if (ImGui::CollapsingHeader("Servlog Viewer"))
     {
         ImGui::Spacing();
-        ImGui::TextWrapped("New Feature: Servlog Viewer");
-        ImGui::Bullet(); ImGui::TextWrapped("This module is a display window for the SQL table in the CAD database called servlog");
-        ImGui::Bullet(); ImGui::TextWrapped("It's a fully functional database view window that allows you to run a query against the database directly from the application and view the results.");
-        ImGui::Bullet(); ImGui::TextWrapped("Some features of this module include:");
-        ImGui::Indent();
-        ImGui::Bullet(); ImGui::TextWrapped("Custom where clauses or logtime specific where clauses.");
-        ImGui::Bullet(); ImGui::TextWrapped("Order by any column ascending or descending.");
-        ImGui::Bullet(); ImGui::TextWrapped("Filtering available across all results.You can also selectively filter on specific columns.");
-        ImGui::Bullet(); ImGui::TextWrapped("SQL style status bar on the bottom row showing information like connection status or server / user you're connected with.");
-        ImGui::Unindent();
-        ImGui::Bullet(); ImGui::TextWrapped("This module also features an auto-refresh timer, for continued monitoring of the table as interfaces run to get real-time updates as they are happening without needing a SQL trace or continually monitoring a SQL query page and manually hitting refresh.");
+        ImGui::TextWrapped("No updates this version.");
         ImGui::Spacing();
     }
     ImGui::SeparatorText("SQL");
     if (ImGui::CollapsingHeader("Generic Data Import"))
     {
         ImGui::Spacing();
-        ImGui::TextWrapped("New Feature: Generic Data Import");
-        ImGui::Bullet(); ImGui::TextWrapped("The module will read in a CSV file and allow you to map the columns to the database table.");
-        ImGui::Bullet(); ImGui::TextWrapped("The module will also allow you to select the table you want to import into after connecting to SQL.");
-        ImGui::Bullet(); ImGui::TextWrapped("After loading CSV and SQL Tables you can begin column mapping by either dragging and dropping source columns onto the SQL columns, or use the auto-map feature to attempt and automatically handle 1:1 matches between column names.");
-        ImGui::Bullet(); ImGui::TextWrapped("Added ability to check for duplicates in the SQL table before inserting the data.");
-        ImGui::Bullet(); ImGui::TextWrapped("Added ability to set columns as nullable before inserting data.This will also change any blank fields to NULL in the data staging table before creating insert statements.");
-        ImGui::Bullet(); ImGui::TextWrapped("Data staging table now checks for column max length, and if it detects a field with a larger size than the max it will highlight the field in red for review.");
-        ImGui::Bullet(); ImGui::TextWrapped("Insert review table is now split up between two tabs. Insert rows shows all insert statements generated that pass duplicate validation, the duplicate rows tab shows the rows that were removed after finding a duplicate match on one of the columns marked restricted for duplicates.");
+        ImGui::TextWrapped("Generic Data Import");
+        ImGui::Bullet(); ImGui::TextWrapped("Added popout window to the data staging table for easier viewing of data on smaller screens.");
+        ImGui::Bullet(); ImGui::TextWrapped("Refactored some logic and broke up large files for faster processing time and easier readability of functionality.");
         ImGui::Spacing();
     }
     if (ImGui::CollapsingHeader("SQL Query Builder")) {
