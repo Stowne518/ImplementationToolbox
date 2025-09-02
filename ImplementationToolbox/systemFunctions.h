@@ -26,11 +26,6 @@ void DisplayColoredText(const char* text, bool isGreen);
 
 void displayUpdates();
 
-// Function to display a color picker and change the background color - DEPRECATED
-// void colorPickerWithBackgroundChange(ImVec4& bgColor);
-
-
-
 void showDisabledButton(const char* label, ImVec2 size);
 
 std::vector<std::string> getListOfConnStrings();

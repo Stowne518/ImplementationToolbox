@@ -99,9 +99,6 @@
 #endif
 #endif
 
-// Function prototypes
-
-
 /*
 Code to display generic export generator and options
 Use this to get around application and perform all functions
@@ -164,17 +161,7 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
     ImGui::TextWrapped("Because this module is relatively untested PLEASE USE CAUTION AND THOROUGHLY INSPECT ALL SQL QUERIES BEFORE RUNNING THEM.");
 
 
-    // Constants
-    const int TABLE_NAME_SIZE = 256;                                                            // Size of table name in the FOR clause
-    const int JOIN_TABLES_SIZE = 250;                                                           // Size of table names allowed in join tables
-    const int WHERE_CLAUSE_SIZE = 612;                                                          // Size of array for where clauses
-    const int WHERE_COLUMN_SIZE = 75;                                                           // Size of where columns name character size
-    const int MAX_COLUMNS = 15;                                                                 // Maximum number of columns allowed for in the where clause
-    const int COLUMNS_NAME_SIZE = 250;                                                          // Size of column names array
-    const int MAX_HEIGHT_LINES = 10;                                                            // How many columns we display in the UI before a scroll bar is used
-    const int MAX_WHERE_HEIGHT = 8;                                                             // How large we display the where clause window before adding scrollbar
-    const int TABLE_NAME_INPUTBOX_WIDTH = 225;                                                  // How long to visually make the input box for entering table names
-    const int COLUMN_NAME_INPUTBOX_WIDTH = 225;                                                 // How long visually the input box for column names appears
+    
 
     // Variables for sql query designer
     const char* statements[] = { "SELECT", "UPDATE", "DELETE", "INSERT", "TRUNCATE TABLE" };    // Begin list items for dropdown box
@@ -203,9 +190,8 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
     static bool whereJoin[MAX_COLUMNS] = {};                                                    // Used to indicate if the selected where clause is against the joined table
     static bool showAllColumns = false;
 
-
     ImGui::SeparatorText("Statement Selection");
-    ImGui::SetNextItemWidth((float)strlen(statements[statements_current]) * 12);
+    ImGui::SetNextItemWidth((float)strlen(statements[statements_current]) * 13);
     ImGui::Combo("##sqlstatementtype", &statements_current, statements, IM_ARRAYSIZE(statements), ImGuiComboFlags_WidthFitPreview);
     ImGui::Spacing();
     switch (statements_current) {
@@ -244,7 +230,7 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
                 // End column table
                 ImGui::EndTable();
             }
-            ImGui::Checkbox("Show all columns", &showAllColumns); HelpMarker("This option with format the query so the specific columns you've chose will appear first, and then all the columns in the table will come after them.");
+            ImGui::Checkbox("Show all columns", &showAllColumns); HelpMarker("This option will format the query so the specific columns you've chosen will appear first, and then all the columns in the table will come after them.");
         }
         ImGui::Spacing();
         ImGui::SeparatorText("Choose how many records you want displayed"); 
@@ -270,7 +256,7 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
         if (joinTbl) {
             ImGui::Text("Join Type"); ImGui::SameLine(); ImGui::SetNextItemWidth(75); ImGui::Combo("##joinType", &currentJoin, joinType, IM_ARRAYSIZE(joinType)); ImGui::SameLine(); ImGui::Text("\tTable to join"); ImGui::SameLine(); ImGui::SetNextItemWidth(JOIN_TABLES_SIZE); ImGui::InputTextWithHint("##jointables", "Enter table name to join", *join_tables, JOIN_TABLES_SIZE); ImGui::Spacing(); ImGui::Spacing();
             ImGui::Text("Enter relational columns between tables"); HelpMarker("See the \'help\' section in the menu bar for more information.");
-            if (ImGui::BeginTable("join_on_columns", 2, ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_HighlightHoveredColumn)) {
+            if (ImGui::BeginTable("join_on_columns", 2, ImGuiTableFlags_BordersV | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_HighlightHoveredColumn, ImVec2(20 + COLUMN_NAME_INPUTBOX_WIDTH * 2, 0))) {
                 ImGui::TableSetupColumn("Table 1 Column"); ImGui::TableSetupColumn("Table 2 Column"); ImGui::TableHeadersRow();
                 ImGui::TableNextColumn(); ImGui::SetNextItemWidth(COLUMN_NAME_INPUTBOX_WIDTH); ImGui::InputTextWithHint("##joincolumn1", "Enter column from first table", join_columns[0], JOIN_TABLES_SIZE);
                 ImGui::TableNextColumn(); ImGui::SetNextItemWidth(COLUMN_NAME_INPUTBOX_WIDTH);;  ImGui::InputTextWithHint("##joincolumn2", "Enter column from second table", join_columns[1], JOIN_TABLES_SIZE);
@@ -284,24 +270,25 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
         // WHERE Section
         ImGui::SeparatorText("Where clause");
         static bool add_where = false;
+        ImVec2 where_button_size = ImVec2(160, 30);
         if (where_count < 15) {
-            if (ImGui::Button("Add where clause", ImVec2(140, 30))) {
+            if (ImGui::Button("Add where clause", where_button_size)) {
                 add_where = true;
                 where_count++;
             }
         }
         else {
             ImGui::BeginDisabled();
-            ImGui::Button("Maximum Reached", ImVec2(140,30));
+            ImGui::Button("Maximum Reached", where_button_size);
             ImGui::EndDisabled();
         }
         // Display add and remove buttons after a where clause has been added
             if (add_where && where_count >= 1) {
                 ImGui::SameLine();
-                if (ImGui::Button("Remove where clause", ImVec2(140, 30))) {
-                    if (where_count < 1)          // If we get less than 1 where clause we hide this button and the where clause data entry boxes
+                if (ImGui::Button("Remove where clause", where_button_size)) {
+                    if (where_count < 1)            // If we get less than 1 where clause we hide this button and the where clause data entry boxes
                         add_where = false;
-                    else                        // Otherwise, we reduce the number of where clauses included
+                    else                            // Otherwise, we reduce the number of where clauses included
                         where_count--;
                 }
             }
@@ -314,7 +301,7 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
                     }
                     else {
                         // Display option for AND/OR for subsequent lines after first where clause since that is the only way to add extra conditions in SQL
-                        ImGui::SetNextItemWidth(50);
+                        ImGui::SetNextItemWidth(70);
                         ImGui::Combo(("##ANDOR" + std::to_string(i)).c_str(), &andor_current[i], andor, IM_ARRAYSIZE(andor));
                     }
                     ImGui::SameLine();
@@ -344,235 +331,46 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
         ImVec2 button_size(button_x, button_y);
         // Set a center point in the window and reduce it by half the button size to center it
         float centerButton = ((ImGui::GetWindowContentRegionMax().x / 2) - (button_x / 2));
-        ImGui::Dummy(ImVec2(10,35));   // Create some space for button
-        ImGui::Dummy(ImVec2(centerButton, 0));
+        ImGui::Dummy(ImVec2(10,35));   // Create some space
+        // ImGui::Dummy(ImVec2(centerButton, 0));
         ImGui::SameLine();
-        if (ImGui::Button("Generate SQL Query", button_size)) {
+        /*if (ImGui::Button("Generate SQL Query", button_size)) {
             ImGui::OpenPopup("GenerateSQLWindow");
-        }
-
-        // Center window when it opens
-        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-        if (ImGui::BeginPopupModal("GenerateSQLWindow", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-            // SELECT Statement generation
-            if (statements_current == 0) {
-                // STATEMENT
-                ImGui::Text("%s", statements[statements_current]);
-                // TOP selection
-                if (top_current != 5) {
-                    ImGui::SameLine();
-                    ImGui::Text("%s", top[top_current]);
-
-                    // Add columns after the top value
-                    if (draw_lines > 0) {
-                        for (int i = 0; i < draw_lines; i++)
-                        {
-                            // If there is more than 1 column add commas between column names unless it's the last column
-                            if (draw_lines >= 2 && (1 + i) < draw_lines) {
-                                ImGui::Text("%s,", columns[i]);
-                                ImGui::SameLine();
-                            }
-                            else if(showAllColumns)
-                                ImGui::Text("%s, *", columns[i]);
-                            else
-                                ImGui::Text("%s", columns[i]);
-                        }
-                    }
-                }
-                else if (draw_lines > 0 && top_current == 5) {
-                    for (int i = 0; i < draw_lines; i++)
-                    {
-                        // If there is more than 1 column add commas between column names unless it's the last column
-                        if (draw_lines >= 2 && (1 + i) < draw_lines) {
-                            ImGui::Text("%s,", columns[i]);
-                            ImGui::SameLine();
-                        }
-                        else
-                            ImGui::Text("%s, *", columns[i]);
-                    }
-                }
-                else
-                    ImGui::Text("*");
-
-                              
-
-                // FROM
-                ImGui::Text("FROM %s", table_name);
-
-                // JOIN
-                if (joinTbl) {
-                    ImGui::Text("%s", joinType[currentJoin]); ImGui::SameLine(); ImGui::Text("JOIN"); ImGui::SameLine(); ImGui::Text("%s", join_tables[0]);
-                    ImGui::Text("ON"); ImGui::SameLine(); ImGui::Text("%s.%s = %s.%s", table_name, join_columns[0], join_tables[0], join_columns[1]);
-                }
-
-                // If no where column was specified then we don't include it
-                if (where_count > 0) {
-                    // WHERE
-                    for (int i = 0; i < where_count; i++) {
-                        // Handle all single quotes first
-                        if (single_quotes[i]) {
-                            // Handle first where clause that is also marked for single quotes
-                            if (i == 0) {
-                                // If first operator is IN marked for single quotes and is first in line - format list and display it
-                                if (operators[operator_current[i]] == "IN") {
-                                    char output[600];                                           // Used to make sure there is room in the array to display our formatted list
-                                    formatList(whereClause[i], output, sizeof(output));         // Format IN list
-                                    ImGui::Text("WHERE %s ", whereColumn[i]); ImGui::SameLine(); ImGui::Text("%s", operators[operator_current[i]]); ImGui::SameLine(); ImGui::Text(" (%s)", output);
-                                }
-                                // Otherwise display the first where clause with normal quotes around it
-                                else {
-                                    ImGui::Text("WHERE %s %s '%s'", whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                }
-                            }
-                            // Handle IN single quote formatted list if it's not the first where clause - DONE
-                            else if (operators[operator_current[i]] == "IN") {
-                                char output[600];                                           // Used to make sure there is room in the array to display our formatted list
-                                formatList(whereClause[i], output, sizeof(output));         // Format IN list
-                                ImGui::Text("  %s %s %s (%s)", andor[andor_current[i]], whereColumn[i], operators[operator_current[i]], output);
-                            }
-                            // Handle all left over single quote combinations
-                            else {
-                                ImGui::Text("  %s %s %s '%s'", andor[andor_current[i]], whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                            }
-                        }
-                        // Handle clauses without quotes
-                        else {
-                            // Handle first where clause
-                            if (i == 0) {
-                                // Handle join table where clauses
-                                if (whereJoin[i]) {
-                                    ImGui::Text("WHERE %s.%s %s %s", join_tables[0], whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                }
-                                else
-                                    ImGui::Text("WHERE %s.%s %s %s", table_name, whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                            }
-                            // Catch the other clauses with AND/OR instead of WHERE
-                            else {
-                                // Add table names in case a joined table is added and we need to pull data from that table
-                                if(whereJoin[i]) {
-                                    ImGui::Text("  %s %s.%s %s %s", andor[andor_current[i]], join_tables[0], whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                }
-                                else
-                                    ImGui::Text("  %s %s.%s %s %s", andor[andor_current[i]], table_name, whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                            }
-                        }
-                    }
-                }
-
-                // Close button to exit the modal
-                if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); } ImGui::SameLine();
-
-                // Button for clipboard copying
-                if (ImGui::Button("Copy to Clipboard", ImVec2(140, 0))) {
-                    ImGui::LogToClipboard();
-                    // SELECT Statement generation
-                    if (statements_current == 0) {
-                        // STATEMENT
-                        ImGui::LogText("%s ", statements[statements_current]);
-                        // TOP selection
-                        if (top_current != 5) {
-                            ImGui::SameLine();
-                            ImGui::LogText("%s\n", top[top_current]);
-
-                            // Add columns after the top value
-                            if (draw_lines > 0) {
-                                for (int i = 0; i < draw_lines; i++)
-                                {
-                                    // If there is more than 1 column add commas between column names unless it's the last column
-                                    if (draw_lines >= 2 && (1 + i) < draw_lines) {
-                                        ImGui::LogText("%s, ", columns[i]);
-                                    }
-                                    else if (showAllColumns)
-                                        ImGui::LogText("%s, *", columns[i]);
-                                    else
-                                        ImGui::LogText("%s", columns[i]);
-                                }
-                            }
-                        }
-                        else if (draw_lines > 0 && top_current == 5) {
-                            for (int i = 0; i < draw_lines; i++)
-                            {
-                                // If there is more than 1 column add commas between column names unless it's the last column
-                                if (draw_lines >= 2 && (1 + i) < draw_lines) {
-                                    ImGui::LogText("%s, ", columns[i]);
-                                }
-                                else
-                                    ImGui::LogText("%s, *", columns[i]);
-                            }
-                        }
-                        else
-                            ImGui::LogText("*");
-
-                        // FROM
-                        ImGui::LogText("\nFROM %s", table_name);
-
-                        // JOIN
-                        if (joinTbl) {
-                            ImGui::LogText("\n%s JOIN %s", joinType[currentJoin], join_tables);
-                            ImGui::LogText("\nON "); ImGui::SameLine(); ImGui::LogText("%s.%s = %s.%s", table_name, join_columns[0], join_tables[0], join_columns[1]);
-                        }
-
-                        // If no where column was specified then we don't include it
-                        if (where_count > 0) {
-                            // WHERE
-                            for (int i = 0; i < where_count; i++) {
-                                // Handle all single quotes first
-                                if (single_quotes[i]) {
-                                    // Handle first where clause that is also marked for single quotes
-                                    if (i == 0) {
-                                        // If first operator is IN marked for single quotes and is first in line - format list and display it
-                                        if (operators[operator_current[i]] == "IN") {
-                                            char output[600];                                           // Used to make sure there is room in the array to display our formatted list
-                                            formatList(whereClause[i], output, sizeof(output));         // Format IN list
-                                            ImGui::LogText("\nWHERE %s ", whereColumn[i]); ImGui::SameLine(); ImGui::LogText("%s", operators[operator_current[i]]); ImGui::SameLine(); ImGui::LogText(" (%s)", output);
-                                        }
-                                        // Otherwise display the first where clause with normal quotes around it
-                                        else {
-                                            ImGui::LogText("\nWHERE %s %s '%s'", whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                        }
-                                    }
-                                    // Handle IN single quote formatted list if it's not the first where clause - DONE
-                                    else if (operators[operator_current[i]] == "IN") {
-                                        char output[600];                                           // Used to make sure there is room in the array to display our formatted list
-                                        formatList(whereClause[i], output, sizeof(output));         // Format IN list
-                                        ImGui::LogText(" \n%s %s %s (%s)", andor[andor_current[i]], whereColumn[i], operators[operator_current[i]], output);
-                                    }
-                                    // Handle all left over single quote combinations
-                                    else {
-                                        ImGui::LogText(" \n%s %s %s '%s'", andor[andor_current[i]], whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                    }
-                                }
-                                // Handle clauses without quotes
-                                else {
-                                    // Handle first where clause
-                                    if (i == 0) {
-                                        // Handle join table where clauses
-                                        if (whereJoin[i]) {
-                                            ImGui::LogText("\nWHERE %s.%s %s %s", join_tables[0], whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                        }
-                                        else
-                                            ImGui::LogText("\nWHERE %s.%s %s %s", table_name, whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                    }
-                                    // Catch the other clauses with AND/OR instead of WHERE
-                                    else {
-                                        // Add table names in case a joined table is added and we need to pull data from that table
-                                        if (whereJoin[i]) {
-                                            ImGui::LogText(" \n%s %s.[dbo].%s %s %s", andor[andor_current[i]], join_tables[0], whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                        }
-                                        else
-                                            ImGui::LogText(" \n%s %s.[dbo].%s %s %s", andor[andor_current[i]], table_name, whereColumn[i], operators[operator_current[i]], whereClause[i]);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+        }*/
+        ImGui::BeginChild("##sqlQueryBuilderOutput", ImGui::GetContentRegionAvail(), ImGuiChildFlags_None, ImGuiWindowFlags_MenuBar);
+        if (ImGui::BeginMenuBar()) {
+            if (ImGui::BeginMenu("Constructed SQL Query", false)) {
+                ImGui::EndMenu();
             }
-            // End Popup Window
-            ImGui::EndPopup();
+            ImGui::EndMenuBar();
         }
+        // Show the generated SQL query in real time
+		generateSQLQuery(
+            statements_current, 
+            statements, 
+            top_current, 
+            top, 
+            draw_lines, 
+            columns, 
+            showAllColumns, 
+            table_name, 
+            joinTbl, 
+            joinType, 
+            currentJoin, 
+            join_tables, 
+            join_columns, 
+            where_count, 
+            single_quotes, 
+            operators,
+            operator_current,
+            whereClause,
+            whereColumn,
+            andor, 
+            andor_current,
+            whereJoin
+        );
+
+        ImGui::EndChild();  // End child window for sql query builder output
     }
         // End case 0 switch
         break;
@@ -584,4 +382,157 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
 
     // End the SQL Wizard Window
     // ImGui::End();
+}
+
+void generateSQLQuery(
+    const int statements_current, 
+    const char* statements[],
+    const int top_current, 
+    const char* top[],
+    const int draw_lines, 
+    char columns[][COLUMNS_NAME_SIZE],
+    const bool& showAllColumns,
+    char table_name[],
+    const bool joinTbl,
+    const char* joinType[],
+    const int currentJoin,
+    char join_tables[][JOIN_TABLES_SIZE],
+    char join_columns[][JOIN_TABLES_SIZE],
+    const int where_count,
+    const bool* single_quotes,
+    const char* operators[],
+    const int* operator_current,
+    const char whereClause[][WHERE_CLAUSE_SIZE],
+    const char whereColumn[][WHERE_COLUMN_SIZE],
+    const char* andor[],
+    const int andor_current[MAX_COLUMNS],
+    const bool* whereJoin
+) {
+    // SELECT Statement generation
+    if (statements_current == 0) {
+        // STATEMENT
+        ImGui::Text("%s", statements[statements_current]);
+        // TOP selection
+        if (draw_lines > 0) {
+            if(top_current != 5)
+            {
+                ImGui::SameLine();
+                ImGui::Text("%s", top[top_current]);
+            }
+
+            // Add columns after the top value
+            for (int i = 0; i < draw_lines; i++)
+            {
+                // If there is more than 1 column add commas between column names unless it's the last column
+                if (draw_lines >= 2 && (1 + i) < draw_lines) {
+                    ImGui::Text("%s,", columns[i]);
+                    ImGui::SameLine();
+                }
+                else if (showAllColumns)
+                    ImGui::Text("%s, *", columns[i]);
+                else
+                    ImGui::Text("%s", columns[i]);
+            }
+        }
+        else
+            ImGui::Text("*");
+
+        // FROM
+        ImGui::Text("FROM %s", table_name);
+
+        // JOIN
+        if (joinTbl) {
+            ImGui::Text("%s", joinType[currentJoin]); ImGui::SameLine(); ImGui::Text("JOIN"); ImGui::SameLine(); ImGui::Text("%s", join_tables[0]);
+            ImGui::Text("ON"); ImGui::SameLine(); ImGui::Text("%s.%s = %s.%s", table_name, join_columns[0], join_tables[0], join_columns[1]);
+        }
+
+        char where[1000] = "WHERE "; // Init where clause char array
+        // If no where column was specified then we don't include it
+        if (where_count > 0) {
+            // WHERE
+            for (int i = 0; i < where_count; i++) {
+                const char* op = operators[operator_current[i]]; // Get current operator for this where clause
+                const char* joined_table = join_tables[currentJoin];
+                // Build the WHERE clause string
+                if (i > 0) {
+                    strcat(where, "\n ");
+                    strcat(where, andor[andor_current[i]]);
+                    strcat(where, " ");
+                }
+                (whereJoin[i] == true)
+                    ? strcat(where, joined_table)   // If select is using a join, add the join table name before the column name
+                    : strcat(where, table_name);
+                strcat(where, ".");                     // Add a dot after the table name
+                strcat(where, whereColumn[i]);          // Add the column name to the where clause
+				strcat(where, " ");                     // Add a space after the column name
+                strcat(where, op);                      // Add the operator after the column name
+                if (strcmp(op, "IN") == 0) {
+                    char output[600];                                           // Used to make sure there is room in the array to display our formatted list
+                    formatList(whereClause[i], output, sizeof(output));         // Format IN list
+                    strcat(where, " ");
+                    strcat(where, "(");
+                    strcat(where, output);
+                    strcat(where, ")");
+                }
+                else {
+                    strcat(where, " ");
+                    if(single_quotes[i])
+                        strcat(where, "'");
+                    strcat(where, whereClause[i]);
+                    if (single_quotes[i])
+                        strcat(where, "'");
+                }
+            }
+                ImGui::Text(where);
+        }
+
+        // Close button to exit the modal
+        // if (ImGui::Button("Close", ImVec2(140, 0))) { ImGui::CloseCurrentPopup(); } ImGui::SameLine();
+
+        // Button for clipboard copying
+        if (ImGui::Button("Copy to Clipboard", ImVec2(140, 0))) {
+            ImGui::LogToClipboard();
+            //// SELECT Statement generation
+            if (statements_current == 0) {
+                // STATEMENT
+                ImGui::LogText("%s ", statements[statements_current]);
+                // TOP selection
+                if (draw_lines > 0) {
+                    if (top_current != 5)
+                    {
+                        ImGui::LogText(" %s", top[top_current]);
+                    }
+
+                    // Add columns after the top value
+                    for (int i = 0; i < draw_lines; i++)
+                    {
+                        // If there is more than 1 column add commas between column names unless it's the last column
+                        if (draw_lines >= 2 && (1 + i) < draw_lines) {
+                            ImGui::LogText("\n%s,", columns[i]);
+                        }
+                        else if (showAllColumns)
+                            ImGui::LogText("\n%s,\n*", columns[i]);
+                        else
+                            ImGui::LogText("\n%s", columns[i]);
+                    }
+                }
+                else
+                    ImGui::LogText(" *");
+
+                // FROM
+                ImGui::LogText("\nFROM %s", table_name);
+
+                // JOIN
+                if (joinTbl) {
+                    ImGui::LogText("\n%s", joinType[currentJoin]); ImGui::SameLine(); ImGui::LogText(" JOIN"); ImGui::SameLine(); ImGui::LogText(" %s", join_tables[0]);
+                    ImGui::LogText("\nON"); ImGui::SameLine(); ImGui::LogText(" %s.%s = %s.%s", table_name, join_columns[0], join_tables[0], join_columns[1]);
+                }
+
+                // If no where column was specified then we don't include it
+                if (where_count > 0) {
+                    ImGui::LogText("\n%s", where);
+                }
+            }
+        }
+    }
 }

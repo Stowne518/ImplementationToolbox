@@ -1,7 +1,5 @@
 #include "systemFunctions.h"
-
 #include "AppLog.h"
-
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <cmath>
@@ -54,20 +52,15 @@ bool createDirectory(std::string& path, AppLog& log) {
                 // Return true if we make it here without exception
                 log.AddLog("[INFO] All directories successfully created.\n");
                 return true;               
-            }
-            else {
+            } else {
                 log.AddLog("[INFO] Working Directory already exists.\n");
                 return false;
             }
         }
-	}
-	catch (std::filesystem::filesystem_error& fse)
-	{
+	} catch (std::filesystem::filesystem_error& fse) {
 		log.AddLog("[ERROR] Filesystem error: %s\n", fse.what());
 		return false;
-	}
-	catch (std::exception& e)
-	{
+	} catch (std::exception& e)	{
 		log.AddLog("[ERROR] General error: %s\n", e.what());
 		return false;
 	}
