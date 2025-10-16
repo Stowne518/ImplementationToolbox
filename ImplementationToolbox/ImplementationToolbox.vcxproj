@@ -188,6 +188,7 @@
     <ClCompile Include="insertMappedData.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="genericexport_window.cpp" />
+    <ClCompile Include="MappingTable.cpp" />
     <ClCompile Include="oneButtonRefresh_window.cpp" />
     <ClCompile Include="parseCSVLine.cpp" />
     <ClCompile Include="popups.cpp" />
@@ -216,6 +217,7 @@
     <ClInclude Include="genericDataImport.h" />
     <ClInclude Include="genericexport_window.h" />
     <ClInclude Include="getInterfaceFiles.h" />
+    <ClInclude Include="MappingTable.h" />
     <ClInclude Include="oneButtonRefresh_window.h" />
     <ClInclude Include="popups.h" />
     <ClInclude Include="Profile.h" />

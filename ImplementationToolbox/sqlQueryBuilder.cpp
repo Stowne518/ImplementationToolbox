@@ -22,8 +22,6 @@
 #include <inttypes.h>       // PRId64/PRIu64, not avail in some MinGW headers.
 #endif
 
-
-
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4127)     // condition expression is constant
@@ -138,9 +136,6 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
     // Local variables for scripting
     static char rmstrnName[128], rmsName[128], trnFilePath[256], liveFilePath[256];
 
-    /*const int DBNAME_LENGTH = 140;
-    const int FILEPATH_LENGTH = 210;*/
-
     // Menu Bar
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("Help", false)) {
@@ -159,9 +154,6 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
     ImGui::TextWrapped("This module will assist with creating complex queries.");
     ImGui::TextWrapped("The idea is that you will enter the table name and columns you want and it will generate a query with an update, join, insert, etc. based on what you need.");
     ImGui::TextWrapped("Because this module is relatively untested PLEASE USE CAUTION AND THOROUGHLY INSPECT ALL SQL QUERIES BEFORE RUNNING THEM.");
-
-
-    
 
     // Variables for sql query designer
     const char* statements[] = { "SELECT", "UPDATE", "DELETE", "INSERT", "TRUNCATE TABLE" };    // Begin list items for dropdown box
@@ -206,9 +198,6 @@ void showSqlQueryBuilderWindow(bool* p_open, AppLog& log) {
         ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, ImGui::GetTextLineHeight() * 1), ImVec2(FLT_MAX, ImGui::GetTextLineHeightWithSpacing() * MAX_HEIGHT_LINES));
         // DONE: Fix app crashing when any child window is open and the app is minimized. Just removed child window altogether. Not really needed when a simple table can replace it
         if (draw_lines > 0) {
-            /*
-            Decided to use a table instead of child window since it was causing crashing when the program minimizes
-            */
             if (ImGui::BeginTable("##custom_columns", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV)) {
                 ImGui::TableSetupColumn("Column Name", NULL, COLUMN_NAME_INPUTBOX_WIDTH);
                 ImGui::TableSetupColumn("Rename");

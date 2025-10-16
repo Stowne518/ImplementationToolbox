@@ -11,10 +11,8 @@
 #pragma unmanaged
 std::mutex sqlMutex;
 
-
 void genericDataImport(bool* p_open, Sql& sql, AppLog& log, std::string dir)
 {
-
     static DisplaySettings display_settings;                // Init struct for display settings to maintain user settings
     static std::vector<std::string> source_columns;
     static std::vector<int> source_columns_index;

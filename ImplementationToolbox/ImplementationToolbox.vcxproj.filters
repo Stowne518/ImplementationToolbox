@@ -124,6 +124,7 @@
     <ClCompile Include="..\backends\imgui_impl_dx12.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="MappingTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlQueryBuilder.h">
@@ -195,6 +196,7 @@
     <ClInclude Include="..\backends\imgui_impl_dx12.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="MappingTable.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />
