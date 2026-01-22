@@ -125,6 +125,18 @@
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="MappingTable.cpp" />
+    <ClCompile Include="SystemConfigLookup.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="SourceTable.cpp" />
+    <ClCompile Include="DestinationTable.cpp" />
+    <ClCompile Include="checkForUpdates.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="codeMapping.cpp" />
+    <ClCompile Include="Tables.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlQueryBuilder.h">
@@ -197,6 +209,17 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="MappingTable.h" />
+    <ClInclude Include="SystemConfigLookup.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceTable.h" />
+    <ClInclude Include="DestinationTable.h" />
+    <ClInclude Include="checkForUpdates.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Tables.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />

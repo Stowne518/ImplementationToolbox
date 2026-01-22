@@ -172,8 +172,11 @@
     <ClCompile Include="buildInsertQuery.cpp" />
     <ClCompile Include="checkForDuplicates.cpp" />
     <ClCompile Include="checkForDuplicates_Thread.cpp" />
+    <ClCompile Include="checkForUpdates.cpp" />
     <ClCompile Include="clearMappings.cpp" />
+    <ClCompile Include="codeMapping.cpp" />
     <ClCompile Include="customTableLogic.cpp" />
+    <ClCompile Include="DestinationTable.cpp" />
     <ClCompile Include="displayDataFiles.cpp" />
     <ClCompile Include="displayDataTable.cpp" />
     <ClCompile Include="DisplayImages.cpp" />
@@ -196,9 +199,12 @@
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="readFieldList.cpp" />
     <ClCompile Include="servlogViewer.cpp" />
+    <ClCompile Include="SourceTable.cpp" />
     <ClCompile Include="Sql.cpp" />
     <ClCompile Include="sqlQueryBuilder.cpp" />
+    <ClCompile Include="SystemConfigLookup.cpp" />
     <ClCompile Include="systemFunctions.cpp" />
+    <ClCompile Include="Tables.cpp" />
     <ClCompile Include="trim.cpp" />
     <ClCompile Include="UserSettings.cpp" />
     <ClCompile Include="xmlParser.cpp" />
@@ -211,7 +217,9 @@
     <ClInclude Include="..\imgui_internal.h" />
     <ClInclude Include="..\imgui_stdlib.h" />
     <ClInclude Include="AppLog.h" />
+    <ClInclude Include="checkForUpdates.h" />
     <ClInclude Include="customTableLogic.h" />
+    <ClInclude Include="DestinationTable.h" />
     <ClInclude Include="DisplayImages.h" />
     <ClInclude Include="fieldOrderTable.h" />
     <ClInclude Include="genericDataImport.h" />
@@ -223,9 +231,12 @@
     <ClInclude Include="Profile.h" />
     <ClInclude Include="readFieldList.h" />
     <ClInclude Include="servlogViewer.h" />
+    <ClInclude Include="SourceTable.h" />
     <ClInclude Include="Sql.h" />
     <ClInclude Include="sqlQueryBuilder.h" />
+    <ClInclude Include="SystemConfigLookup.h" />
     <ClInclude Include="systemFunctions.h" />
+    <ClInclude Include="Tables.h" />
     <ClInclude Include="UserSettings.h" />
     <ClInclude Include="xmlParser.h" />
   </ItemGroup>

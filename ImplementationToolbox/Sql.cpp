@@ -379,11 +379,16 @@ int Sql::returnRecordCount(std::string table, std::string column, std::string va
 /// <param name="connStr">= Connection string to connect to the server for SQL</param>
 /// <param name="table">= Table name that will be passed to get column schema information from</param>
 /// <returns>Returns vector of vector of strings with the above values in their respective positions</returns>
-std::vector<std::vector<std::string>> Sql::getTableColumns(std::string connStr, std::string table)
+std::vector<std::vector<std::string>> Sql::getTableColumns(std::string table)
 {
-    std::vector<std::vector<std::string>> table_columns_schema = SqlConnectionHandler::getColumns(connStr, table);
+    std::vector<std::vector<std::string>> table_columns_schema = SqlConnectionHandler::getColumns(_GetConnectionString(), table);
     return table_columns_schema;
 }
+//std::vector<std::vector<std::string>> Sql::getTableColumns(std::string connStr, std::string table)
+//{
+//  std::vector<std::vector<std::string>> table_columns_schema = SqlConnectionHandler::getColumns(connStr, table);
+//  return table_columns_schema;
+//}
 
 int Sql::returnTableCount(std::string connStr)
 {
@@ -391,8 +396,8 @@ int Sql::returnTableCount(std::string connStr)
 	return count = SqlConnectionHandler::getTableCount(connStr, _GetDatabase());
 }
 
-std::vector<std::string> Sql::getTableNames(std::string connStr, std::string database)
+std::vector<std::string> Sql::getTableNames()
 {
-	std::vector<std::string> table_names = SqlConnectionHandler::getTables(connStr, database);
+	std::vector<std::string> table_names = SqlConnectionHandler::getTables(_GetConnectionString(), _GetDatabase());
 	return table_names;
 }

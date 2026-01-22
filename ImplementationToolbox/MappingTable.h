@@ -5,7 +5,8 @@
 class MappingTable
 {
 private:
-    // Probably going to add a SourceTable and DestinationTable class and replace these
+    // Probably going to add a SourceTable and DestinationTable class and replace these 
+    // OR use composition and have those as classes inside of this one
     std::vector<std::string> SourceColumns;
     std::vector<std::string> DestinationColumnNames;
     std::vector<std::string> DestinationColumnTypes;
@@ -24,7 +25,7 @@ public:
 
     // Getters
     std::vector<std::string> getSourceColumns() const { return SourceColumns; }
-    std::vector<std::string> getDestinaationColumnNames() const { return DestinationColumnNames; }
+    std::vector<std::string> getDestinationColumnNames() const { return DestinationColumnNames; }
     std::vector<std::string> getDestinationColumnTypes() const { return DestinationColumnTypes; }
     std::vector<std::string> getDestinationColumnMax() const { return DestinationColumnMax; }
     std::vector<std::string> getDestinationColumnNulls() const { return DestinationColumnNulls; }

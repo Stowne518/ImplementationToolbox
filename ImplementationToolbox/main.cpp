@@ -185,6 +185,7 @@ int main(int, char**)
 	static float w_width, w_height, wx_pos, wy_pos;
     static int w_darkmode;
 	static bool getting_started, recent_update, health_check, debug_log, modules;
+    static std::string localInterfaceDirectory;
     std::string conn_str;
     
     // Initialize AppLog
@@ -208,6 +209,9 @@ int main(int, char**)
     static bool show_log =              usrsettings.getDebugLog();
     static bool show_modules =          usrsettings.getModules();
 
+    // Get file path for local interface directory
+    static std::string localIntDir =    usrsettings.getLocalDir();
+
     // Change both version nums at the same time, haven't found a way to convert from wchar_t to char* yet.
     const wchar_t* versionNum =             L"Implementation Toolbox v0.7.0";
     const char* currVersion =               "Implementation Toolbox v0.7.0";
@@ -221,6 +225,7 @@ int main(int, char**)
     static char servlogLabel[] =            "Servlog Viewer";
     static char genericDataImportLabel[] =  "Generic Data Import";
     static char getInterfaceFilesLabel[] =  "Get Interface Files";
+    static char* systemConfigurationLabel = "System Configuration Lookup";
     
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
@@ -363,9 +368,11 @@ int main(int, char**)
 	bool show_generic_import_data_window = false;
     bool show_sql_conn_window = false;
     bool show_get_interface_files = false;
+    bool show_sysconfg_lookup = false;
 
     // Popup window states
     bool gen_export_info = false;
+
 
     // Background colors
     static ImVec4 bg_color = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
@@ -430,19 +437,21 @@ int main(int, char**)
 		health_check = usrsettings.getHealthCheck();            // Load health check window state for comparison
 		debug_log = usrsettings.getDebugLog();                  // Load debug log window state for comparison
         modules = usrsettings.getModules();                     // Load module window state
+        localInterfaceDirectory = usrsettings.getLocalDir();    // Load local directory
 
 		// Check if any settings have changed that we save to the file
-		if (
-            w_width != getWindowSize(hwnd).x 
-            || w_height != getWindowSize(hwnd).y 
-            || wx_pos != getWindowPos(hwnd).x 
-            || wy_pos != getWindowPos(hwnd).y 
-            || w_darkmode != isDarkMode 
-            || getting_started != open_getting_started 
-            || recent_update != open_recent_updates 
-            || health_check != open_health_check 
+        if (
+            w_width != getWindowSize(hwnd).x
+            || w_height != getWindowSize(hwnd).y
+            || wx_pos != getWindowPos(hwnd).x
+            || wy_pos != getWindowPos(hwnd).y
+            || w_darkmode != isDarkMode
+            || getting_started != open_getting_started
+            || recent_update != open_recent_updates
+            || health_check != open_health_check
             || debug_log != show_log
             || modules != show_modules
+            || localInterfaceDirectory != localIntDir
             )
 		{
 			// Save the new window size and position
@@ -457,6 +466,7 @@ int main(int, char**)
 			if (show_log) usrsettings.setDebugLog('Y'); else usrsettings.setDebugLog('N');
             if (show_modules) usrsettings.setModules('Y'); else usrsettings.setModules('N');
 			usrsettings.saveSettings(settings_filename, log);
+            usrsettings.setLocalDir(localIntDir);
             sql._SetSavedString(false); // Reset saved string if we save new one to file
 		}
 
@@ -498,6 +508,8 @@ int main(int, char**)
             }
             if (ImGui::BeginMenu("Modules"))
             {
+                ImGui::SeparatorText("General");
+				if (ImGui::MenuItem(getInterfaceFilesLabel, NULL, &show_get_interface_files));
                 ImGui::SeparatorText("RMS/JMS");
                 if (ImGui::MenuItem(genExprtLabel, NULL, &show_generic_export_window));
                 if (ImGui::MenuItem(oneBttnLabel, NULL, &show_one_button_refresh_window));
@@ -508,6 +520,13 @@ int main(int, char**)
                 if (ImGui::MenuItem(genericDataImportLabel, NULL, &show_generic_import_data_window));
 
                 // End Modules menu
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Tools"))
+            {
+                if (ImGui::MenuItem(systemConfigurationLabel, NULL, &show_sysconfg_lookup));
+
+                // End Tool menu
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Settings"))
@@ -745,7 +764,6 @@ int main(int, char**)
                 // End health check table
                 ImGui::EndTable();
             }
-                
 
             // End program Health window
             ImGui::End();
@@ -870,7 +888,7 @@ int main(int, char**)
         {
             ImGui::SetNextWindowSizeConstraints(window_min, window_max);
             ImGui::Begin(getInterfaceFilesLabel, &show_get_interface_files);
-            getInterfaceFiles(&show_get_interface_files, log);
+            getInterfaceFiles(&show_get_interface_files, localIntDir, log);
             ImGui::End();
         }
 

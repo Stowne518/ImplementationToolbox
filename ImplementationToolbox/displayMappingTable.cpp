@@ -1,5 +1,6 @@
 #include "genericDataImport.h"
 #include "systemFunctions.h"
+#include "DestinationTable.h"
 #include "AppLog.h"
 
 void displayMappingTable(AppLog& log,
@@ -9,6 +10,7 @@ void displayMappingTable(AppLog& log,
     std::vector<std::string>& d_columns_type,
     std::vector<std::string>& d_columns_max,
     std::vector<std::string>& d_columns_null,
+    DestinationTable d_table,
     std::vector<std::string>& b_columns,
     std::vector<std::string>& rows,
     std::vector<int>& b_column_index,
@@ -24,6 +26,8 @@ void displayMappingTable(AppLog& log,
     ImVec2 button_style = ds.getButtonStyle();
     ImGuiListClipper d_clipper;
     ImGuiListClipper s_clipper;
+    std::vector<Column> d_columns = d_table.get_columns();
+
     // Fix for issue #14: Clear out buffer if clear button has been clicked and we clear out the source columns from the CSV
     if (s_columns.size() == 0)
     {
@@ -71,38 +75,46 @@ void displayMappingTable(AppLog& log,
     * We can also expand/contract based on the number of columns imported.
     */
     static bool allow_nulls[256] = {};
-    const int TEXT_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
+    //const int TEXT_HEIGHT = ImGui::GetTextLineHeightWithSpacing();
 
     if (*auto_map)   // If we click auto-map button run this once
     {
-        for (int i = 0; i < d_columns_name.size(); i++)     // Loop the destination columns against all source column labels
+        for (int i = 0; i < /*d_columns_name[i]*/ d_columns.size(); i++)     // Loop the destination columns against all source column labels
         {
             for (int j = 0; j < s_columns_buf.size(); j++)  // Test against the buffer so we don't directly change source_columns
             {
-                if (d_columns_name[i] == s_columns_buf[j])  // Test destination labels against source, if we find one, perform mappings before we display table again
+                if (/*d_columns_name[i]*/d_columns[i].Name() == s_columns_buf[j])  // Test destination labels against source, if we find one, perform mappings before we display table again
                 {
                     log.AddLog("[INFO] Auto-match detected match on %s\n", s_columns_buf[j].c_str());
                     // Map out buffer values first
                     b_column_index[i] = j;                  // buffer_column_index at pos i gets value of current j. This should be the source buf index position of matching label - this will correlate the matching buffer column to SQL with the matching source column
-                    log.AddLog("[DEBUG] Mapped source column %s to SQL column %s\n", s_columns_buf[j].c_str(), d_columns_name[i].c_str());
+                    log.AddLog("[DEBUG] Mapped source column %s to SQL column %s\n", s_columns_buf[j].c_str(), /*d_columns_name[i]*/d_columns[i].Name().c_str());
                     b_columns[i] = s_columns_buf[j];        // Set buffer column at i equal to label of source column buffer at j. 
                     s_columns_buf[j] = "";                  // Set newly mapped source column buffer index to blank to indicate a swamp with the b_column
-                    if (d_columns_type[i] == "datetime" || d_columns_null[i] == "YES")
+                    if (/*d_columns_type[i]*/d_columns[i].Type() == "datetime" || /*d_columns_null[i]*/ d_columns[i].Null() == "YES")
                     {
                         log.AddLog("[DEBUG] Datetime or nullable field detected. Marking column null.\n");
                         nulls[i] = true;                    // If column is a datetime field or is nullable auto-mark nullable when mapping
                     }
-                    if (i < d_columns_name.size() - 1)
-                        log.AddLog("[INFO] Moving to next SQL column %s\n", d_columns_name[i + 1].c_str());
+                    if (i < /*d_columns_name*/d_columns.size() - 1)
+                        log.AddLog("[INFO] Moving to next SQL column %s\n", /*d_columns_name[i + 1]*/d_columns[i + 1].Name().c_str());
                     break;                                  // End inner loop because we found what we needed - start checking next column
                 }
             }
         }
         *auto_map = false;       // Reset to false so we don't keep attempting to auto_map columns after first pass
     }
-    d_clipper.Begin(d_columns_name.size(), TEXT_HEIGHT);
+    d_clipper.Begin(/*d_columns_name*/d_columns.size());
     ImVec2 mapping_tables_outer_size = ImVec2(ImGui::GetContentRegionAvail().x / 2 - 3.60, ImGui::GetContentRegionAvail().y);
-    if (ImGui::BeginTable("DestinationMappingTable", 4, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX, mapping_tables_outer_size))
+    if (ImGui::BeginTable("DestinationMappingTable", 4, 
+        ImGuiTableFlags_BordersOuter | 
+        ImGuiTableFlags_SizingFixedFit | 
+        ImGuiTableFlags_ScrollY | 
+        ImGuiTableFlags_BordersInnerH | 
+        ImGuiTableFlags_NoPadOuterX | 
+        ImGuiTableFlags_NoPadInnerX, 
+        mapping_tables_outer_size)
+        )
     {
         ImGui::TableSetupColumn("Null", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn("Dup", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
@@ -117,28 +129,31 @@ void displayMappingTable(AppLog& log,
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::PushID(i);
-                if (d_columns_null[i] != "YES") // It can't accept nulls so we disable the check box for this row
+                if (/*d_columns_null*/d_columns[i].Null() != "YES") // It can't accept nulls so we disable the check box for this row
                     ImGui::BeginDisabled();
                 ImGui::Checkbox("##nulls", &nulls[i]);
-                log.logStateChange(("%s", d_columns_name[i] + " allows nulls").c_str(), nulls[i]);
-                if (d_columns_null[i] != "YES") // End the disabled the checkbox if it can't accept nulls
+                log.logStateChange(("%s", /*d_columns_name*/d_columns[i].Name() + " allows nulls").c_str(), nulls[i]);
+                if (/*d_columns_null*/d_columns[i].Null() != "YES") // End the disabled the checkbox if it can't accept nulls
                 {
-					ImGui::SetItemTooltip("Column '%s' does not allow NULLs.", d_columns_name[i].c_str());
+					ImGui::SetItemTooltip("Column '%s' does not allow NULLs.", /*d_columns_name*/d_columns[i].Name().c_str());
                     ImGui::EndDisabled();
                 }
                 else
-                    ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", d_columns_name[i].c_str());
+                    ImGui::SetItemTooltip("Check this box to include NULLs instead of blanks for data in column '%s'.", /*d_columns_name*/d_columns[i].Name().c_str());
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Checkbox("##Dups", &duplicate[i]);
-                ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", d_columns_name[i].c_str());
-                log.logStateChange(("%s", d_columns_name[i] + " restricts duplicates on insert.").c_str(), duplicate[i]);
+                ImGui::SetItemTooltip("Check this box to check for duplicates for data in column '%s' before inserting.", /*d_columns_name*/d_columns[i].Name().c_str());
+                log.logStateChange(("%s", /*d_columns_name*/d_columns[i].Name() + " restricts duplicates on insert.").c_str(), duplicate[i]);
                 ImGui::TableSetColumnIndex(2);
-                ImGui::Text("  %s", d_columns_name[i].c_str());
-                ImGui::SetItemTooltip("Data Type: %s\nMax Len: %s\nNullable: %s", d_columns_type[i].c_str(), d_columns_max[i].c_str(), d_columns_null[i].c_str());
+                ImGui::Text("  %s", /*d_columns_name*/d_columns[i].Name().c_str());
+                ImGui::SetItemTooltip("Data Type: %s\nMax Len: %s\nNullable: %s", /*d_columns_type*/d_columns[i].Type().c_str(), /*d_columns_max*/d_columns[i].Max().c_str(), /*d_columns_null*/d_columns[i].Null().c_str());
                 ImGui::TableSetColumnIndex(3);
+                ImGui::PopID(); // Pop ID for column checkboxes
                 if (editable)
                 {
+                    ImGui::PushID(i);
                     ImGui::Button(b_columns[i].c_str(), button_style);
+                    ImGui::PopID(); 
 
                     if (ImGui::BeginDragDropTarget())
                     {
@@ -210,7 +225,6 @@ void displayMappingTable(AppLog& log,
                 {
                     ImGui::Text("%s", b_columns[i].c_str());
                 }
-                ImGui::PopID();
             }
         }d_clipper.End();    // End the list clipper rendering
         // End column mapping
@@ -221,7 +235,15 @@ void displayMappingTable(AppLog& log,
     ImGui::SameLine();
     s_clipper.Begin(s_columns.size());
     //ImGui::BeginChild("SourceColumnMapping", ImVec2(0,0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AlwaysAutoResize);
-    if (ImGui::BeginTable("SourceMappingTable", 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX, mapping_tables_outer_size))
+    if (ImGui::BeginTable("SourceMappingTable", 2, 
+        ImGuiTableFlags_BordersOuter | 
+        ImGuiTableFlags_SizingFixedFit | 
+        ImGuiTableFlags_ScrollY | 
+        ImGuiTableFlags_BordersInnerH | 
+        ImGuiTableFlags_NoPadOuterX | 
+        ImGuiTableFlags_NoPadInnerX, 
+        mapping_tables_outer_size)
+    )
     {
         ImGui::TableSetupColumn(" Source Columns ", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);
         ImGui::TableSetupColumn(" Sample data", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoSort);

@@ -18,6 +18,7 @@ private:
 	char recentUpdates;
 	char debugLog;
 	char modules;
+	std::string localdir = ""; // Local directory that stores interface files used in 'Get Interface Files' module
 public:
 	int getDarkMode() const { return DarkMode; }
 	void setDarkMode(int mode) { DarkMode = mode; }
@@ -73,12 +74,17 @@ public:
 		else
 			return false;
 	}
+	std::string getLocalDir() const
+	{
+		return localdir;
+	}
 	// Setters for other settings
 	void setGettingStarted(char value) { gettingStarted = value; }
 	void setHealthCheck(char value) { healthCheck = value; }
 	void setRecentUpdates(char value) {	recentUpdates = value; }
 	void setDebugLog(char value) { debugLog = value; }
 	void setModules(char value) { modules = value; }
+	void setLocalDir(std::string value) { localdir = value; }
 
 	// Save settings to file
 	void saveSettings(const std::string& filename, AppLog&) const;
@@ -102,7 +108,8 @@ public:
 				defaultFile << "HealthCheck=Y\n";		// Default health check setting
 				defaultFile << "RecentUpdates=Y\n";		// Default recent updates setting
 				defaultFile << "DebugLog=N\n";			// Default debug log setting
-				defaultFile << "Modules=Y\n";				// Default modules setting
+				defaultFile << "Modules=Y\n";			// Default modules setting
+				defaultFile << "LocalIntDir=\n";		// Default local interface directory setting
 				defaultFile.close();
 			}
 			return;
@@ -151,6 +158,10 @@ public:
 				if (std::getline(file, line))
 				{
 					setModules(line.substr(line.find('=') + 1)[0]);					// Load and set module setting
+				}
+				if (std::getline(file, line))
+				{
+					setLocalDir(line.substr(line.find('=') + 1));					// Load local interface directory
 				}
 			}
 		}

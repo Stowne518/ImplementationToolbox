@@ -7,8 +7,7 @@ void processData(std::vector<std::string>& data_rows,
     std::vector<int>& buffer_columns_index,
     std::vector<int>& destination_columns_index,
     std::vector<int>& data_rows_index,
-    AppLog& log,
-    bool& cleanup)
+    AppLog& log)
 {
     // Map out buffer index values from source column index positions
     for (int i = 0; i < buffer_columns_index.size(); i++)
@@ -67,5 +66,4 @@ void processData(std::vector<std::string>& data_rows,
             log.AddLog("[WARN] Detected empty line in row %i of the CSV file. Skipping...\n", i);
         }
     }
-    cleanup = true; // Tell application cleanup has been completed and we won't revisit this section
 }

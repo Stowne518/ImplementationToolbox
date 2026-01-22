@@ -17,7 +17,7 @@ std::string displayTableNames(Sql& sql)
     static std::string tmp_source = "";
     if (tableNames.empty() || tmp_db != sql._GetDatabase() || tmp_source != sql._GetSource())           // update tables if the connection string changes
     {
-        tableNames = sql.getTableNames(sql._GetConnectionString(), sql._GetDatabase());
+        tableNames = sql.getTableNames();
         tmp_db = sql._GetDatabase();
         tmp_source = sql._GetSource();
     }

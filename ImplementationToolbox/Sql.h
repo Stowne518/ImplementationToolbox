@@ -84,9 +84,11 @@ public:
 	bool checkDuplicate(std::string table, std::string column, std::string value);
 	int returnRecordCount(std::string table, std::string column);
 	int returnRecordCount(std::string table, std::string column, std::string value);
-	std::vector<std::vector<std::string>> getTableColumns(std::string connStr, std::string table);
 	int returnTableCount(std::string connStr);
-	std::vector<std::string> getTableNames(std::string connStr, std::string database);
+	std::vector<std::vector<std::string>> getTableColumns(std::string table);
+	//std::vector<std::vector<std::string>> getTableColumns(std::string connStr, std::string table);
+	std::vector<std::string> getTableNames();
+	//std::vector<std::string> getTableNames(std::string connStr, std::string database);
 	std::string displayConnectionName(const std::string& directory);
 	void readConnString(const std::string dir, char* source, char* db, char* un, char* pw, bool);
 	bool readConnString(const std::string);

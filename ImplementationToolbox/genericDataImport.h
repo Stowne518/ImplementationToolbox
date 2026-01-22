@@ -15,6 +15,7 @@
 
 // Class declartion
 class Sql;
+class DestinationTable;
 struct AppLog;
 struct DisplaySettings
 {
@@ -23,7 +24,7 @@ private:
 	bool column_window = true;
 	bool data_window = true;
 	bool insert_window = true;
-	bool mapoverview = true;
+	bool mapoverview = false;
 
 	// Button style specs - compact
 	const float
@@ -81,7 +82,8 @@ void displayMappingTable(AppLog& log,
 	std::vector<std::string>& d_columns_name, 
 	std::vector<std::string>& d_columns_type, 
 	std::vector<std::string>& d_columns_max, 
-	std::vector<std::string>& d_columns_null, 
+	std::vector<std::string>& d_columns_null,
+	DestinationTable,
 	std::vector<std::string>& b_columns,
 	std::vector<std::string>& rows, 
 	std::vector<int>& b_column_index, 
@@ -95,8 +97,7 @@ void processData(std::vector<std::string>& data_rows,
 	std::vector<int>& buffer_columns_index, 
 	std::vector<int>& destination_columns_index, 
 	std::vector<int>& data_rows_index, 
-	AppLog& log, 
-	bool& cleanup);
+	AppLog& log);
 
 void buildInsertQuery(std::string table_name, 
 	std::vector<std::string>& insert_rows, 
